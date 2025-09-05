@@ -108,15 +108,11 @@ export const useSubmitMCQ = () => {
 
 // Admin hooks
 export const useAllTrainees = () => {
-  console.log('=== USE ALL TRAINEES DEBUG ===');
-  console.log('Hook called');
   
   return useQuery({
     queryKey: ['trainees'],
     queryFn: async () => {
-      console.log('Executing getAllTrainees query...');
       const result = await apiClient.getAllTrainees();
-      console.log('getAllTrainees result:', result);
       return result;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes

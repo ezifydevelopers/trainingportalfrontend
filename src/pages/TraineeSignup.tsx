@@ -46,7 +46,6 @@ export default function TraineeSignup() {
       }
     } catch (error) {
       toast.error("Signup failed. Please check your information and try again.");
-      console.error("Signup error:", error);
     } finally {
       setIsLoading(false);
     }

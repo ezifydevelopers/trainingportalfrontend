@@ -18,22 +18,6 @@ export default function TraineeDashboard() {
   // Fetch data from API
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useDashboard();
 
-  // Debug logging
-  console.log('=== TRAINEE DASHBOARD DEBUG ===');
-  console.log('Dashboard data:', dashboardData);
-  console.log('Module progress:', dashboardData?.moduleProgress);
-  if (dashboardData?.moduleProgress) {
-    dashboardData.moduleProgress.forEach((module, index) => {
-      console.log(`Module ${index + 1}:`, {
-        id: module.moduleId,
-        name: module.moduleName,
-        completed: module.completed,
-        pass: module.pass,
-        unlocked: module.unlocked,
-        isCurrent: !module.completed && module.unlocked
-      });
-    });
-  }
 
   if (!user || user.role !== "TRAINEE") {
     return <div>Access denied</div>;
@@ -53,7 +37,6 @@ export default function TraineeDashboard() {
   }
 
   if (dashboardError) {
-    console.error('Dashboard error:', dashboardError);
     toast.error("Failed to load dashboard data");
     return (
       <Layout>
@@ -92,7 +75,6 @@ export default function TraineeDashboard() {
   }
 
   const handleStartModule = (moduleId: number) => {
-    console.log(`Navigating to module ${moduleId}`);
     navigate(`/training/module/${moduleId}`);
   };
 

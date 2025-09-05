@@ -1,3 +1,5 @@
+import { logger } from '../lib/logger';
+
 interface WebSocketMessage {
   type: 'NEW_MESSAGE' | 'TYPING' | 'USER_ONLINE' | 'USER_OFFLINE' | 'JOIN_CHAT_ROOM' | 'LEAVE_CHAT_ROOM' | 'MODULE_COMPLETION';
   data: any;
@@ -34,7 +36,6 @@ class WebSocketService {
     // Handle page visibility changes to reconnect when tab becomes visible
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && !this.isConnected && this.userId && this.ws?.readyState !== WebSocket.CONNECTING) {
-        console.log('📱 Page became visible, reconnecting WebSocket...');
         this.connect(this.userId);
       }
     });
@@ -42,7 +43,6 @@ class WebSocketService {
     // Handle online/offline events
     window.addEventListener('online', () => {
       if (!this.isConnected && this.userId && this.ws?.readyState !== WebSocket.CONNECTING) {
-        console.log('🌐 Network came online, reconnecting WebSocket...');
         this.connect(this.userId);
       }
     });
@@ -51,7 +51,6 @@ class WebSocketService {
   connect(userId: number) {
     // Prevent multiple connections
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected, skipping connection');
       return;
     }
 
@@ -64,13 +63,11 @@ class WebSocketService {
     this.userId = userId;
     const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}/ws?userId=${userId}`;
     
-    console.log(`🔌 Connecting to WebSocket: ${wsUrl}`);
     
     try {
       this.ws = new WebSocket(wsUrl);
       this.setupWebSocketHandlers();
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
       this.scheduleReconnect();
     }
   }
@@ -79,9 +76,9 @@ class WebSocketService {
     if (!this.ws) return;
 
     this.ws.onopen = () => {
-      console.log('🔌 WebSocket connected successfully');
       this.isConnected = true;
       this.reconnectAttempts = 0;
+      logger.websocketEvent('connected', { userId: this.userId });
       
       // Send user online status
       this.send({
@@ -93,26 +90,23 @@ class WebSocketService {
     this.ws.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
-        console.log('📨 WebSocket message received:', message);
+        logger.websocketEvent('message_received', message);
         this.handleMessage(message);
       } catch (error) {
-        console.error('❌ Error parsing WebSocket message:', error);
+        logger.error('WebSocket message parsing error:', error);
       }
     };
 
     this.ws.onclose = (event) => {
-      console.log('🔌 WebSocket disconnected:', event.code, event.reason);
       this.isConnected = false;
       
       // Only attempt reconnection if it wasn't a clean close
       if (!event.wasClean && this.userId) {
-        console.log('🔄 WebSocket closed unexpectedly, scheduling reconnection...');
         this.scheduleReconnect();
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('❌ WebSocket error:', error);
       // Don't set isConnected to false here, let onclose handle it
     };
   }
@@ -123,25 +117,21 @@ class WebSocketService {
       try {
         handler(message.data);
       } catch (error) {
-        console.error('Error in message handler:', error);
       }
     });
   }
 
   private scheduleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log('Max reconnection attempts reached, stopping reconnection');
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
     
-    console.log(`🔄 Scheduling reconnection attempt ${this.reconnectAttempts} in ${delay}ms`);
     
     setTimeout(() => {
       if (this.userId && !this.isConnected) {
-        console.log(`🔄 Attempting reconnection...`);
         this.connect(this.userId);
       }
     }, delay);
@@ -151,7 +141,6 @@ class WebSocketService {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket not connected, message not sent:', message);
     }
   }
 

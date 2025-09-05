@@ -61,7 +61,6 @@ export default function TrackTrainee() {
 
   // Handle retry on error
   const handleRetry = () => {
-    console.log('Retrying to load trainees...');
     refetch();
     toast.info("Retrying to load trainees...");
   };
@@ -87,7 +86,6 @@ export default function TrackTrainee() {
       toast.success(`Trainee "${traineeToDelete.name}" deleted successfully!`);
       setTraineeToDelete(null);
     } catch (error) {
-      console.error('Failed to delete trainee:', error);
       let errorMessage = 'Unknown error occurred';
       if (error instanceof Error) {
         errorMessage = error.message;

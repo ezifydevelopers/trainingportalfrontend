@@ -49,7 +49,6 @@ export default function HelpRequestsAdmin() {
       setNewStatus('');
       setAdminNotes('');
     } catch (error) {
-      console.error('Error updating help request:', error);
       toast.error('Failed to update help request');
     }
   };

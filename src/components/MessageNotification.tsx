@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import websocketService from '@/services/websocketService';
+import { getApiBaseUrl } from '@/lib/api';
 
 interface MessageNotification {
   id: string;
@@ -82,7 +83,7 @@ export default function MessageNotification({ unreadCount, onNotificationClick }
 
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/unread-count`, {
+        const response = await fetch(`${getApiBaseUrl()}/chat/unread-count`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`
           }
@@ -93,11 +94,9 @@ export default function MessageNotification({ unreadCount, onNotificationClick }
           // Only show notification if there are actually new unread messages
           if (data.unreadCount > unreadCount && unreadCount > 0) {
             // New messages received - this will be handled by WebSocket now
-            console.log('New unread messages detected:', data.unreadCount);
           }
         }
       } catch (error) {
-        console.error('Error polling for messages:', error);
       }
     }, 10000);
 

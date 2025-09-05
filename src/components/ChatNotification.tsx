@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/api";
 
 interface ChatNotificationProps {
   className?: string;
@@ -20,7 +21,7 @@ export default function ChatNotification({ className = "" }: ChatNotificationPro
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/unread-count`, {
+      const response = await fetch(`${getApiBaseUrl()}/chat/unread-count`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -31,7 +32,6 @@ export default function ChatNotification({ className = "" }: ChatNotificationPro
         setUnreadCount(data.unreadCount);
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
     }
   };
 

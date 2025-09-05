@@ -36,7 +36,6 @@ export default function HelpRequestButton({ moduleId, moduleName }: HelpRequestB
       setMessage('');
       setIsOpen(false);
     } catch (error) {
-      console.error('Error submitting help request:', error);
       toast.error('Failed to submit help request. Please try again.');
     } finally {
       setIsSubmitting(false);

@@ -41,7 +41,6 @@ export default function LoginPage() {
       }
     } catch (error) {
       toast.error("Login failed. Please try again.");
-      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }

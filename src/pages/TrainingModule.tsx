@@ -12,6 +12,7 @@ import { Play, CheckCircle, ArrowLeft, ArrowRight, Clock, FileText, AlertCircle,
 import { toast } from "sonner";
 import HelpRequestButton from "@/components/HelpRequestButton";
 import FeedbackModal from "@/components/FeedbackModal";
+import { getApiBaseUrl } from "@/lib/api";
 
 export default function TrainingModule() {
   const { moduleId } = useParams();
@@ -47,16 +48,6 @@ export default function TrainingModule() {
     return dashboardData.modulesCompleted === totalModules && totalModules > 0;
   };
 
-  // Debug logging
-  console.log('=== TRAINING MODULE DEBUG ===');
-  console.log('Module ID:', moduleId);
-  console.log('Module data:', module);
-  console.log('Module MCQs:', module?.mcqs);
-  console.log('Module completed:', module?.completed);
-  console.log('Video completed state:', videoCompleted);
-  console.log('Complete module mutation:', completeModuleMutation);
-  console.log('Dashboard data:', dashboardData);
-  console.log('Has completed all modules:', hasCompletedAllModules());
 
   useEffect(() => {
     if (!user || user.role !== "TRAINEE") {
@@ -162,16 +153,11 @@ export default function TrainingModule() {
   const handleVideoComplete = async () => {
     if (!moduleId) return;
     
-    console.log('=== HANDLE VIDEO COMPLETE DEBUG ===');
-    console.log('Module ID:', moduleId);
-    console.log('Module MCQs:', module?.mcqs?.length || 0);
-    
     // Check if module has MCQs
     const hasMCQs = module?.mcqs && module.mcqs.length > 0;
     
     if (hasMCQs) {
       // Module has MCQs - don't mark as completed yet, just show quiz prompt
-      console.log('Module has MCQs - prompting for quiz without marking as completed');
       setVideoCompleted(true);
       setVideoProgress(100);
       toast.success("Video completed! You can now take the quiz.");
@@ -179,29 +165,21 @@ export default function TrainingModule() {
     }
     
     // Module has no MCQs - mark as completed and auto-pass
-    console.log('Module has no MCQs - calling completeModule API for auto-pass');
-    
     try {
       // Call the API to mark the module as completed (auto-pass)
       const result = await completeModuleMutation.mutateAsync(parseInt(moduleId));
-      console.log('Complete module API result:', result);
       
       // Update local state
       setVideoCompleted(true);
       setVideoProgress(100);
       
-      console.log('Module auto-passed');
       toast.success("Module completed successfully! You can now access the next module.");
       
       // Only show feedback modal if this is the last module
       if (hasCompletedAllModules()) {
-        console.log('All modules completed - showing feedback modal');
         setShowFeedbackModal(true);
       }
-      
-      console.log('Video completion successful');
     } catch (error) {
-      console.error('Error completing video:', error);
       toast.error("Failed to mark video as completed. Please try again.");
     }
   };
@@ -215,11 +193,9 @@ export default function TrainingModule() {
   };
 
   const handleAnswerSelect = (answerIndex: number) => {
-    console.log('Answer selected:', { question: currentQuestion, answerIndex });
     const newAnswers = [...selectedAnswers];
     newAnswers[currentQuestion] = answerIndex;
     setSelectedAnswers(newAnswers);
-    console.log('Updated selectedAnswers:', newAnswers);
   };
 
   const handleNextQuestion = () => {
@@ -240,10 +216,9 @@ export default function TrainingModule() {
       }
     });
 
-    console.log('Submitting answers:', answers);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/trainee/modules/${moduleId}/mcq`, {
+      const response = await fetch(`${getApiBaseUrl()}/trainee/modules/${moduleId}/mcq`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -259,19 +234,15 @@ export default function TrainingModule() {
           toast.success(`Congratulations! You passed with ${result.score}%`);
           
           // Invalidate dashboard data to refresh module unlock status
-          console.log('🔄 Invalidating queries to refresh dashboard data...');
           await Promise.all([
             queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
             queryClient.invalidateQueries({ queryKey: ['modules'] }),
             queryClient.invalidateQueries({ queryKey: ['module', parseInt(moduleId || "0")] })
           ]);
-          console.log('✅ Queries invalidated successfully');
           
           if (hasCompletedAllModules()) {
-            console.log('All modules completed - showing feedback modal');
             setShowFeedbackModal(true);
           } else {
-            console.log('🔄 Navigating back to training dashboard...');
             setTimeout(() => {
               navigate("/training");
             }, 1000);
@@ -286,7 +257,6 @@ export default function TrainingModule() {
         toast.error(result.message || "Failed to submit quiz");
       }
     } catch (error) {
-      console.error('Error submitting quiz:', error);
       toast.error("Failed to submit quiz. Please try again.");
     }
   };
@@ -301,7 +271,7 @@ export default function TrainingModule() {
     if (videoUrl.startsWith('http')) {
       return videoUrl;
     }
-    return `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/uploads/${videoUrl}`;
+    return `${import.meta.env.VITE_API_URL || 'http://localhost:7001'}/uploads/${videoUrl}`;
   };
 
   const capitalizeModuleName = (name: string) => {

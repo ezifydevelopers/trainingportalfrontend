@@ -1,4 +1,9 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+import { logger } from './logger';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7001/api';
+
+// Export the API base URL for use in other files
+export const getApiBaseUrl = () => API_BASE_URL;
 
 // Types based on the backend API
 export interface User {
@@ -258,32 +263,24 @@ class ApiClient {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
-    console.log(`=== API REQUEST DEBUG ===`);
-    console.log(`URL: ${url}`);
-    console.log(`Method: ${options.method || 'GET'}`);
-    console.log(`Headers:`, headers);
-    console.log(`Body:`, options.body);
-    console.log(`Token present:`, !!this.token);
-    console.log(`Token preview:`, this.token ? `${this.token.substring(0, 20)}...` : 'None');
+    // Log API request if debug mode is enabled
+    logger.apiRequest(url, options.method || 'GET', options.body);
 
     const response = await fetch(url, {
       ...options,
       headers,
     });
 
-    console.log(`=== API RESPONSE DEBUG ===`);
-    console.log(`Status: ${response.status}`);
-    console.log(`Status text: ${response.statusText}`);
-    console.log(`Headers:`, Object.fromEntries(response.headers.entries()));
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('API error response:', errorData);
+      logger.error('API Error:', { url, status: response.status, error: errorData });
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('API success response:', data);
+    
+    // Log API response if debug mode is enabled
+    logger.apiResponse(url, response.status, data);
     return data;
   }
 

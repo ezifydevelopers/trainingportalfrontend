@@ -87,7 +87,6 @@ const ComprehensiveDataTable = ({ contacts, companies }: ComprehensiveDataTableP
   };
 
   const handleShare = () => {
-    console.log("Sharing with options:", shareOptions);
     toast.success("Data shared successfully");
     setShareDialogOpen(false);
   };

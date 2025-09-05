@@ -107,9 +107,7 @@ export default function DataManagement() {
 
   const companyContacts = useMemo(() => {
     if (!selectedCompany) return [];
-    console.log("Filtering contacts for company:", selectedCompany.name);
     const filtered = contacts.filter(contact => contact.company === selectedCompany.name);
-    console.log("Found contacts:", filtered.length);
     return filtered;
   }, [selectedCompany, contacts]);
 
@@ -225,7 +223,6 @@ export default function DataManagement() {
           toast.error("No valid contacts found in the imported file");
         }
       } catch (error) {
-        console.error("Error importing CSV:", error);
         toast.error("Failed to import contacts. Please check your CSV format.");
       }
     };
@@ -318,7 +315,6 @@ export default function DataManagement() {
                   logoUrl={company.logoUrl}
                   contactCount={getContactCountForCompany(company.name)}
                   onClick={() => {
-                    console.log("Company selected:", company.name);
                     setSelectedCompany(company);
                   }}
                 />

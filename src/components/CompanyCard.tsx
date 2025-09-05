@@ -31,8 +31,6 @@ const CompanyCard = ({
     }
   };
 
-  // Debug logging for logo URL
-  console.log(`CompanyCard ${name}:`, { logoUrl, hasLogo: !!logoUrl });
 
   return (
     <Card
@@ -57,11 +55,10 @@ const CompanyCard = ({
               alt={`${name} logo`}
               className="w-full h-full object-cover"
               onError={(e) => {
-                console.error(`Failed to load logo for ${name}:`, logoUrl);
-                console.error('Image error:', e);
+                // Image failed to load - handled silently
               }}
               onLoad={() => {
-                console.log(`Successfully loaded logo for ${name}:`, logoUrl);
+                // Image loaded successfully - handled silently
               }}
             />
           ) : (

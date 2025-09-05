@@ -39,7 +39,6 @@ export default function FeedbackModal({ isOpen, onClose, moduleId, moduleName }:
       setComment('');
       onClose();
     } catch (error) {
-      console.error('Error submitting feedback:', error);
       toast.error('Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import MessageNotification from "./MessageNotification";
+import { getApiBaseUrl } from "@/lib/api";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -18,7 +19,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
     const fetchUnreadCount = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/unread-count`, {
+        const response = await fetch(`${getApiBaseUrl()}/chat/unread-count`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`
           }
@@ -29,7 +30,6 @@ export default function Layout({ children }: { children: ReactNode }) {
           setUnreadCount(data.unreadCount);
         }
       } catch (error) {
-        console.error('Error fetching unread count:', error);
       }
     };
 

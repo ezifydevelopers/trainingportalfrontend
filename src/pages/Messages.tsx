@@ -65,7 +65,6 @@ export default function Messages() {
         }));
         setConversations(conversationsWithDates);
       } catch (error) {
-        console.error("Failed to parse conversations:", error);
       }
     }
   }, []);

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import NotificationSettings from "@/components/NotificationSettings";
 import { useRealTimeChat } from "@/hooks/useRealTimeChat";
 import websocketService from "@/services/websocketService";
+import { getApiBaseUrl } from "@/lib/api";
 
 interface User {
   id: number;
@@ -74,28 +75,15 @@ export default function Chat() {
 
   // Real-time chat handlers
   const handleNewMessage = (message: ChatMessage) => {
-    console.log('📨 WebSocket message received:', {
-      id: message.id,
-      content: message.content,
-      senderId: message.senderId,
-      currentUserId: user?.id,
-      chatRoomId: message.chatRoomId,
-      selectedChatRoomId: selectedChatRoom?.id
-    });
-
     // Check if we already have this message to prevent duplicates
     if (messages.some(m => m.id === message.id)) {
-      console.log('❌ Message already exists, skipping duplicate:', message.id);
       return;
     }
 
     // Don't add messages that the current user just sent (they're already in local state)
     if (message.senderId === user?.id) {
-      console.log('🔄 Skipping own message from WebSocket:', message.id);
       return;
     }
-
-    console.log('✅ Adding new message from WebSocket:', message.id);
 
     // Add new message to current chat if it matches
     if (selectedChatRoom && message.chatRoomId === selectedChatRoom.id) {
@@ -163,8 +151,6 @@ export default function Chat() {
 
   useEffect(() => {
     if (user) {
-      console.log('👤 User logged in:', user);
-      console.log('🏢 User company ID:', user.companyId);
       
       // Request notification permission
       if ('Notification' in window && Notification.permission === 'default') {
@@ -184,8 +170,6 @@ export default function Chat() {
       }, 5000); // Poll every 5 seconds
       
       return () => clearInterval(messagePollingInterval);
-    } else {
-      console.log('❌ No user logged in');
     }
   }, [user]);
 
@@ -195,7 +179,6 @@ export default function Chat() {
       
       // Join chat room via WebSocket for real-time updates
       if (isConnected && user?.id) {
-        console.log(`Joining chat room ${selectedChatRoom.id} via WebSocket`);
         websocketService.send({
           type: 'JOIN_CHAT_ROOM',
           data: { chatRoomId: selectedChatRoom.id }
@@ -209,7 +192,6 @@ export default function Chat() {
     return () => {
       // Leave current chat room when component unmounts
       if (selectedChatRoom && isConnected && user?.id) {
-        console.log(`Leaving chat room ${selectedChatRoom.id} via WebSocket`);
         websocketService.send({
           type: 'LEAVE_CHAT_ROOM',
           data: { chatRoomId: selectedChatRoom.id }
@@ -220,7 +202,7 @@ export default function Chat() {
 
   const fetchChatRooms = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/rooms`, {
+      const response = await fetch(`${getApiBaseUrl()}/chat/rooms`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -231,42 +213,35 @@ export default function Chat() {
         setChatRooms(data);
       }
     } catch (error) {
-      console.error('Error fetching chat rooms:', error);
     }
   };
 
   const fetchCompanyUsers = async () => {
     try {
-      console.log('🔍 Fetching company users...');
       const token = localStorage.getItem('authToken');
-      console.log('🔑 Auth token:', token ? 'Present' : 'Missing');
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/users`, {
+      const response = await fetch(`${getApiBaseUrl()}/chat/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
-      console.log('📡 Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('👥 Company users data:', data);
         setCompanyUsers(data);
       } else {
         const errorData = await response.json();
-        console.error('❌ API Error:', errorData);
         toast.error(`Failed to fetch users: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('❌ Error fetching company users:', error);
       toast.error('Failed to fetch company users');
     }
   };
 
   const fetchMessages = async (chatRoomId: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/rooms/${chatRoomId}/messages`, {
+      const response = await fetch(`${getApiBaseUrl()}/chat/rooms/${chatRoomId}/messages`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -277,13 +252,12 @@ export default function Chat() {
         setMessages(data);
       }
     } catch (error) {
-      console.error('Error fetching messages:', error);
     }
   };
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/unread-count`, {
+      const response = await fetch(`${getApiBaseUrl()}/chat/unread-count`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -299,7 +273,6 @@ export default function Chat() {
         }
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
     }
   };
 
@@ -325,7 +298,7 @@ export default function Chat() {
   const startChatWithUser = async (participantId: number) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/direct/${participantId}`, {
+      const response = await fetch(`${getApiBaseUrl()}/chat/direct/${participantId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -343,7 +316,6 @@ export default function Chat() {
         }
       }
     } catch (error) {
-      console.error('Error starting chat:', error);
       toast.error('Failed to start chat');
     } finally {
       setIsLoading(false);
@@ -353,14 +325,8 @@ export default function Chat() {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChatRoom) return;
 
-    console.log('🚀 Sending message:', {
-      content: newMessage.trim(),
-      chatRoomId: selectedChatRoom.id,
-      senderId: user?.id
-    });
-
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/chat/send`, {
+      const response = await fetch(`${getApiBaseUrl()}/chat/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -369,13 +335,12 @@ export default function Chat() {
         body: JSON.stringify({
           chatRoomId: selectedChatRoom.id,
           content: newMessage.trim(),
-          receiverId: selectedChatRoom.participants.find(p => p.user.id !== user?.id)?.user.id
+          senderId: user?.id
         })
       });
       
       if (response.ok) {
         const message = await response.json();
-        console.log('✅ Message sent successfully:', message);
         
         // Add message to local state immediately for instant display
         setMessages(prev => [...prev, message]);
@@ -400,7 +365,6 @@ export default function Chat() {
         scrollToBottom();
       }
     } catch (error) {
-      console.error('Error sending message:', error);
       toast.error('Failed to send message');
     }
   };

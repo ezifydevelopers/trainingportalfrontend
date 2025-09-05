@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { apiClient, User as ApiUser, LoginRequest, SignupRequest, SignupResponse } from '@/lib/api';
+import { apiClient, User as ApiUser, LoginRequest, SignupRequest, SignupResponse, getApiBaseUrl } from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 
 export type UserRole = 'TRAINEE' | 'ADMIN';
 
@@ -44,17 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Check for stored token and user on app load
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const storedUser = localStorage.getItem('user');
 
-    console.log('AuthContext: Checking localStorage on init:', {
-      hasToken: !!token,
-      hasUser: !!storedUser,
-      token: token ? token.substring(0, 20) + '...' : null
-    });
 
     if (token && storedUser) {
       apiClient.setToken(token);
@@ -68,37 +65,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // For admin users, we'll use the trainees endpoint, but for trainees, we'll use their dashboard
             let validationEndpoint = '';
             if (parsedUser.role === 'ADMIN') {
-              validationEndpoint = '/api/admin/trainees';
+              validationEndpoint = '/admin/trainees';
             } else {
-              validationEndpoint = '/api/trainee/dashboard';
+              validationEndpoint = '/trainee/dashboard';
             }
             
-            console.log('AuthContext: Validating token with endpoint:', validationEndpoint);
+            const apiUrl = `${getApiBaseUrl()}${validationEndpoint}`;
             
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${validationEndpoint}`, {
+            const response = await fetch(apiUrl, {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
             });
             
-            console.log('AuthContext: Token validation response status:', response.status);
-            
             if (response.ok) {
               // Token is valid, restore user
               setUser(parsedUser);
-              console.log('AuthContext: Token validated, user restored:', parsedUser);
             } else {
-              // Token is invalid, clear storage
-              console.log('AuthContext: Token validation failed, clearing storage');
+              // Token is invalid, clear storage and cache
               localStorage.removeItem('authToken');
               localStorage.removeItem('user');
               apiClient.clearToken();
+              queryClient.clear();
             }
           } catch (error) {
-            console.error('AuthContext: Token validation error:', error);
             // On network error, still restore user but token might be invalid
             setUser(parsedUser);
-            console.log('AuthContext: Network error during validation, user restored:', parsedUser);
           } finally {
             setIsLoading(false);
           }
@@ -106,32 +98,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         validateToken();
       } catch (error) {
-        console.error('Failed to parse stored user:', error);
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         apiClient.clearToken();
+        queryClient.clear();
         setIsLoading(false);
       }
     } else if (token && !storedUser) {
       // Clear token if no user data
-      console.log('AuthContext: Token found but no user data, clearing token');
       localStorage.removeItem('authToken');
       apiClient.clearToken();
+      queryClient.clear();
       setIsLoading(false);
     } else {
-      console.log('AuthContext: No stored authentication data found');
       setIsLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      console.log('AuthContext: Attempting login with:', { email, password });
 
       // Determine if this is an admin login based on email
       const isAdminLogin = email.includes('admin') || email === 'jane@example.com';
-      console.log('AuthContext: Login type:', isAdminLogin ? 'ADMIN' : 'TRAINEE');
 
       let response;
       if (isAdminLogin) {
@@ -140,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         response = await apiClient.login({ email, password });
       }
       
-      console.log('AuthContext: Login response received:', response);
 
       // Store token and user
       localStorage.setItem('authToken', response.token);
@@ -149,11 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Set user
       setUser(response.user);
-      console.log('AuthContext: User set successfully:', response.user);
-      console.log('AuthContext: Token stored in localStorage:', response.token);
       return true;
     } catch (error) {
-      console.error('AuthContext: Login failed:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -167,10 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Don't store token or user - let them login separately
       // The backend signup endpoint doesn't return a token
-      console.log('Signup successful:', response);
       return true;
     } catch (error) {
-      console.error('Signup failed:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -178,10 +161,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // Clear authentication data
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     apiClient.clearToken();
     setUser(null);
+    
+    // Clear all React Query cache to prevent data leakage between users
+    queryClient.clear();
   };
 
   const updateUser = (userData: User) => {
@@ -200,7 +187,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAllUsers(prev => [...prev, response.user]);
       return true;
     } catch (error) {
-      console.error('Failed to create user:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -222,7 +208,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return true;
     } catch (error) {
-      console.error('Failed to update user:', error);
       return false;
     }
   };
@@ -234,7 +219,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAllUsers(prev => prev.filter(u => u.id !== userId));
       return true;
     } catch (error) {
-      console.error('Failed to delete user:', error);
       return false;
     }
   };
@@ -242,10 +226,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const forgotPassword = async (email: string): Promise<boolean> => {
     try {
       // Note: This would need a corresponding API endpoint in the backend
-      console.log('Password reset email sent to:', email);
       return true;
     } catch (error) {
-      console.error('Failed to send reset email:', error);
       return false;
     }
   };
@@ -253,10 +235,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resetPassword = async (token: string, password: string): Promise<boolean> => {
     try {
       // Note: This would need a corresponding API endpoint in the backend
-      console.log('Password reset for token:', token);
       return true;
     } catch (error) {
-      console.error('Failed to reset password:', error);
       return false;
     }
   };
@@ -265,11 +245,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const debugLocalStorage = () => {
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('user');
-    console.log('=== LocalStorage Debug ===');
-    console.log('Token:', token);
-    console.log('User:', user);
-    console.log('Parsed User:', user ? JSON.parse(user) : null);
-    console.log('=======================');
   };
 
   // Expose debug function in development

@@ -17,6 +17,7 @@ import {
   useDeleteCompany,
   useUpdateModule
 } from "@/hooks/useApi";
+import { getApiBaseUrl } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -266,24 +267,19 @@ export default function AdminCompanyModules() {
     if (videoUrl.startsWith('http')) {
       return videoUrl;
     }
-    const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/uploads/${videoUrl}`;
-    console.log('Video URL constructed:', { original: videoUrl, full: fullUrl });
+    const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:7001'}/uploads/${videoUrl}`;
     return fullUrl;
   };
 
   // Helper function to construct logo URL
   const getLogoUrl = (logoUrl: string) => {
-    console.log('getLogoUrl input:', logoUrl);
     if (!logoUrl) {
-      console.log('getLogoUrl: No logo URL provided, returning empty string');
       return "";
     }
     if (logoUrl.startsWith('http')) {
-      console.log('getLogoUrl: Logo URL is already a full URL, returning as is');
       return logoUrl;
     }
-    const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/uploads/${logoUrl}`;
-    console.log('Logo URL constructed:', { original: logoUrl, full: fullUrl });
+    const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:7001'}/uploads/${logoUrl}`;
     return fullUrl;
   };
 
@@ -408,7 +404,7 @@ export default function AdminCompanyModules() {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/modules/reorder`, {
+      const response = await fetch(`${getApiBaseUrl()}/admin/modules/reorder`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -431,7 +427,6 @@ export default function AdminCompanyModules() {
         toast.error(result.message || 'Failed to update module order');
       }
     } catch (error) {
-      console.error('Error updating module order:', error);
       toast.error('Failed to update module order. Please try again.');
     } finally {
       setIsSavingOrder(false);
@@ -476,7 +471,6 @@ export default function AdminCompanyModules() {
 
   const handleModuleSelect = (module: Module) => {
     if (!module || !module.id) {
-      console.error('Invalid module data:', module);
       return;
     }
     setSelectedModule(module);
@@ -506,7 +500,6 @@ export default function AdminCompanyModules() {
       await deleteModuleMutation.mutateAsync(moduleId);
       toast.success(`Module "${moduleName}" deleted successfully!`);
     } catch (error) {
-      console.error('Failed to delete module:', error);
       
       // Extract error message from the error object
       let errorMessage = 'Unknown error occurred';
@@ -552,21 +545,17 @@ export default function AdminCompanyModules() {
       
       video.onloadedmetadata = () => {
         const duration = video.duration;
-        console.log('Video duration detected:', duration);
         
         // Validate duration
         if (duration && isFinite(duration) && duration > 0) {
           setVideoDuration(Math.floor(duration));
-          console.log('Setting video duration to:', Math.floor(duration));
         } else {
-          console.warn('Invalid video duration:', duration);
           setVideoDuration(0);
         }
         setIsCalculatingDuration(false);
       };
       
       video.onerror = () => {
-        console.error('Error loading video metadata');
         setVideoDuration(0);
         setIsCalculatingDuration(false);
       };
@@ -611,40 +600,22 @@ export default function AdminCompanyModules() {
     }
     
     try {
-      console.log('=== MODULE CREATION DEBUG ===');
-      console.log('Creating module for company:', selectedCompany.id, 'with name:', moduleName);
-      console.log('Video file:', videoFile);
-      console.log('Video duration:', videoDuration);
-      console.log('MCQs count:', mcqs.length);
-      console.log('MCQs data:', JSON.stringify(mcqs, null, 2));
-      
       // 1. Add module to company
-      console.log('Step 1: Adding module to company...');
       const moduleRes = await addModuleMutation.mutateAsync({ companyId: selectedCompany.id, name: moduleName });
-      console.log('Module creation response:', moduleRes);
       
       const moduleId = moduleRes?.module?.id;
       if (!moduleId) {
-        console.error('Module creation failed - no module ID returned:', moduleRes);
         throw new Error(`Failed to create module: ${moduleRes?.message || 'No module ID returned'}`);
       }
       
-      console.log('Created module with ID:', moduleId);
-      
       // 2. Add video to module
-      console.log('Step 2: Adding video to module...');
       await addVideoMutation.mutateAsync({ moduleId, videoFile, duration: videoDuration });
-      console.log('Video added successfully');
       
       // 3. Add MCQs to module (optional)
       if (mcqs.length > 0) {
-        console.log('Step 3: Adding MCQs to module...');
-        console.log('Sending MCQs data:', JSON.stringify(mcqs, null, 2));
         await addMCQsMutation.mutateAsync({ moduleId, mcqs });
-        console.log('MCQs added successfully');
         toast.success("Module, video, and MCQs added successfully!");
       } else {
-        console.log('Step 3: No MCQs to add');
         toast.success("Module and video added successfully! (No MCQs added)");
       }
       
@@ -655,17 +626,6 @@ export default function AdminCompanyModules() {
       setModuleName("");
       setVideoDuration(0);
     } catch (error) {
-      console.error('=== MODULE CREATION ERROR ===');
-      console.error('Error details:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      
-      // Log more details about the error
-      if (error.response) {
-        console.error('Error response:', error.response);
-        console.error('Error response data:', error.response.data);
-      }
-      
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast.error(`Failed to add module, video, or MCQs: ${errorMessage}`);
     }
@@ -682,7 +642,6 @@ export default function AdminCompanyModules() {
       toast.success("Company created successfully!");
       setShowNewCompany(false);
     } catch (error) {
-      console.error('Failed to create company:', error);
       toast.error("Failed to create company. Please try again.");
     }
   };
@@ -696,7 +655,6 @@ export default function AdminCompanyModules() {
       setCompanyToDelete(null);
       setSelectedCompany(null);
     } catch (error) {
-      console.error('Delete company error:', error);
       
       // Provide more specific error messages
       let errorMessage = 'Failed to delete company';
@@ -718,13 +676,6 @@ export default function AdminCompanyModules() {
 
   // Edit mode handler functions
   const handleEditModule = (module: Module) => {
-    console.log('=== HANDLE EDIT MODULE DEBUG ===');
-    console.log('Module data:', module);
-    console.log('Module MCQs:', module.mcqs);
-    console.log('Module MCQs type:', typeof module.mcqs);
-    console.log('Module MCQs is array:', Array.isArray(module.mcqs));
-    console.log('Module MCQs length:', module.mcqs?.length);
-    
     setSelectedModule(module);
     setEditModuleName(module.name);
     setEditVideoFile(null);
@@ -856,65 +807,34 @@ export default function AdminCompanyModules() {
     if (!editModuleName.trim() || !selectedModule) return;
     
     try {
-      console.log('=== SAVE EDIT DEBUG ===');
-      console.log('Module ID:', selectedModule.id);
-      console.log('New module name:', editModuleName);
-      console.log('Edit MCQs:', editMcqs);
-      console.log('Edit MCQs length:', editMcqs.length);
-      console.log('Has new video:', !!editVideoFile);
-      
       // Validate MCQs before sending
-      console.log('Validating MCQs...');
       const validatedMCQs = validateMCQs([...editMcqs]); // Create a copy to avoid mutating original
-      console.log('MCQs validation passed:', validatedMCQs);
       
       // Update module name
-      console.log('Step 1: Updating module name...');
       await updateModuleMutation.mutateAsync({ 
         id: selectedModule.id, 
         name: editModuleName 
       });
-      console.log('Module name updated successfully');
       
       // If new video is uploaded, update video
       if (editVideoFile) {
-        console.log('Step 2: Updating video...');
         await addVideoMutation.mutateAsync({ 
           moduleId: selectedModule.id, 
           videoFile: editVideoFile, 
           duration: editVideoDuration 
         });
-        console.log('Video updated successfully');
       }
       
       // Always update MCQs (this will replace existing ones with current editMcqs)
-      console.log('Step 3: Updating MCQs...');
-      console.log('Updating MCQs with:', validatedMCQs);
-      console.log('Validated MCQs stringified:', JSON.stringify(validatedMCQs));
-      console.log('Validated MCQs length before sending:', validatedMCQs.length);
-      
       await addMCQsMutation.mutateAsync({ 
         moduleId: selectedModule.id, 
         mcqs: validatedMCQs 
       });
-      console.log('MCQs updated successfully');
       
       toast.success("Module updated successfully");
       handleCancelEdit();
       setShowModuleDetail(false);
     } catch (error) {
-      console.error('=== UPDATE MODULE ERROR ===');
-      console.error('Error details:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      
-      // Log more details about the error
-      if (error.response) {
-        console.error('Error response:', error.response);
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-      }
-      
       // Provide more specific error message
       let errorMessage = 'Failed to update module';
       if (error instanceof Error) {
@@ -1873,8 +1793,7 @@ export default function AdminCompanyModules() {
                             className="w-full h-auto"
                             preload="metadata"
                             onError={(e) => {
-                              console.error('Modal video loading error:', e);
-                              console.error('Modal video URL:', getVideoUrl(selectedModule.videos?.[0].url));
+                              // Video loading error handled silently
                             }}
                           />
                         </div>
