@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -168,14 +168,14 @@ export default function MessageNotification({ unreadCount, onNotificationClick }
 
   return (
     <div className="relative">
-      {/* Notification Bell with Badge */}
+      {/* Message Notification with Badge */}
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setShowNotifications(!showNotifications)}
-        className="relative p-2"
+        className="relative p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
       >
-        <Bell className="h-5 w-5" />
+        <MessageCircle className="h-5 w-5" />
         {unreadCount > 0 && (
           <Badge 
             variant="destructive" 

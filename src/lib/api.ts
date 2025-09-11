@@ -10,7 +10,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'TRAINEE' | 'ADMIN';
+  role: 'TRAINEE' | 'ADMIN' | 'MANAGER';
   companyId?: number;
   isVerified: boolean;
   company?: {
@@ -25,6 +25,24 @@ export interface User {
     totalModules: number;
     lastUpdated: string;
   };
+  managedCompanies?: ManagerCompanyAssignment[];
+}
+
+export interface ManagerCompanyAssignment {
+  id: number;
+  managerId: number;
+  companyId: number;
+  assignedAt: string;
+  company: Company;
+}
+
+export interface Manager {
+  id: number;
+  name: string;
+  email: string;
+  role: 'MANAGER';
+  isVerified: boolean;
+  managedCompanies: ManagerCompanyAssignment[];
 }
 
 export interface Company {
@@ -39,6 +57,28 @@ export interface Video {
   duration: number;
 }
 
+export interface Resource {
+  id: number;
+  filename: string;
+  originalName: string;
+  type: 'VIDEO' | 'PDF' | 'DOCUMENT' | 'IMAGE' | 'AUDIO';
+  duration?: number;
+  estimatedReadingTime?: number;
+  filePath: string;
+  url: string;
+  moduleId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ResourceTimeTracking {
+  id: number;
+  resourceId: number;
+  userId: number;
+  timeSpent: number;
+  lastUpdated: string;
+}
+
 export interface MCQ {
   id: number;
   question: string;
@@ -51,8 +91,11 @@ export interface TrainingModule {
   id: number;
   name: string;
   companyId: number;
-  video?: Video;
+  order: number;
+  isResourceModule?: boolean;
+  videos: Video[];
   mcqs: MCQ[];
+  resources?: Resource[];
   unlocked?: boolean;
   completed?: boolean;
   pass?: boolean;
@@ -116,7 +159,7 @@ export interface SignupRequest {
   name: string;
   email: string;
   password: string;
-  companyName: string;
+  companyName: string | null;
 }
 
 export interface LoginRequest {
@@ -355,6 +398,7 @@ class ApiClient {
     });
   }
 
+
   // Admin endpoints (require admin authentication)
   async getAllTrainees(): Promise<User[]> {
     return this.request<User[]>('/admin/trainees');
@@ -394,8 +438,61 @@ class ApiClient {
     return this.request<TraineeProgress>(`/admin/trainees/${traineeId}/progress`);
   }
 
-  async getAllCompanies(): Promise<Company[]> {
-    return this.request<Company[]>('/admin/companies');
+  async getTimeTrackingStats(params?: {
+    traineeId?: number;
+    companyId?: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    success: boolean;
+    stats: {
+      totalTrainees: number;
+      totalModules: number;
+      totalTimeSpent: number;
+      averageTimePerTrainee: number;
+      averageTimePerModule: number;
+      timeDistribution: {
+        under30min: number;
+        thirtyTo60min: number;
+        oneTo2hours: number;
+        twoTo4hours: number;
+        over4hours: number;
+      };
+      traineeStats: Array<{
+        traineeId: number;
+        traineeName: string;
+        traineeEmail: string;
+        company: { id: number; name: string } | null;
+        totalTimeSpent: number;
+        totalModules: number;
+        completedModules: number;
+        completionRate: number;
+        averageScore: number;
+        timeInHours: number;
+        timeInMinutes: number;
+      }>;
+      companyStats: Array<{
+        companyName: string;
+        traineeCount: number;
+        totalTimeSpent: number;
+        averageTimePerTrainee: number;
+        completionRate: number;
+      }>;
+    };
+    generatedAt: string;
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params?.traineeId) queryParams.append('traineeId', params.traineeId.toString());
+    if (params?.companyId) queryParams.append('companyId', params.companyId.toString());
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+    
+    const url = `/admin/time-tracking/stats${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.request(url);
+  }
+
+  async getAllCompanies(): Promise<{ success: boolean; companies: Company[] }> {
+    return this.request<{ success: boolean; companies: Company[] }>('/admin/companies');
   }
 
   async createCompany(data: FormData): Promise<{ message: string; company: Company }> {
@@ -526,11 +623,11 @@ class ApiClient {
     });
   }
 
-  async getCompanyModules(companyId: number): Promise<TrainingModule[]> {
-    // For now, get all modules and filter by companyId on the frontend
-    // until the backend implements the company-specific endpoint
+  async getCompanyModules(companyId: number): Promise<{ modules: TrainingModule[] }> {
+    // Get all modules and filter by companyId on the frontend
     const allModules = await this.request<TrainingModule[]>('/admin/modules');
-    return allModules.filter(module => module.companyId === companyId);
+    const filteredModules = allModules.filter(module => module.companyId === companyId);
+    return { modules: filteredModules };
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -582,6 +679,141 @@ class ApiClient {
   async getFeedbackStats(): Promise<FeedbackStats> {
     return this.request<FeedbackStats>('/admin/feedback/stats');
   }
+
+  // Resource management methods
+  async addResource(data: {
+    moduleId: number;
+    resourceFile: File;
+    type: string;
+    duration?: number;
+    estimatedReadingTime?: number;
+  }): Promise<any> {
+    const formData = new FormData();
+    formData.append('moduleId', data.moduleId.toString());
+    formData.append('resourceFile', data.resourceFile);
+    formData.append('type', data.type);
+    if (data.duration) {
+      formData.append('duration', data.duration.toString());
+    }
+    if (data.estimatedReadingTime) {
+      formData.append('estimatedReadingTime', data.estimatedReadingTime.toString());
+    }
+
+    return this.request('/admin/resources', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async getModuleResources(moduleId: number): Promise<Resource[]> {
+    const response = await this.request<{ success: boolean; resources: Resource[] }>(`/admin/resources/module/${moduleId}`);
+    return response.resources || [];
+  }
+
+  async deleteResource(resourceId: number): Promise<any> {
+    return this.request(`/admin/resources/${resourceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async updateResourceTimeTracking(data: {
+    resourceId: number;
+    timeSpent: number;
+  }): Promise<any> {
+    return this.request('/trainee/resource-time-tracking', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getResourceTimeTracking(resourceId: number): Promise<any> {
+    return this.request(`/trainee/resource-time-tracking/${resourceId}`);
+  }
+
+  // Manager management methods
+  async getManagers() {
+    return this.request<{ success: boolean; managers: Manager[] }>('/admin/managers');
+  }
+
+  async createManager(data: { name: string; email: string; password: string }) {
+    return this.request<{ success: boolean; manager: Manager }>('/admin/managers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateManager(id: number, data: { name?: string; email?: string; password?: string }) {
+    return this.request<{ success: boolean; manager: Manager }>(`/admin/managers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteManager(id: number) {
+    return this.request<{ success: boolean; message: string }>(`/admin/managers/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getManagerCompanies(managerId: number) {
+    return this.request<{ success: boolean; companies: ManagerCompanyAssignment[] }>(`/admin/managers/${managerId}/companies`);
+  }
+
+  async assignCompanyToManager(managerId: number, companyId: number) {
+    return this.request<{ success: boolean; assignment: ManagerCompanyAssignment }>(`/admin/managers/${managerId}/assign-company`, {
+      method: 'POST',
+      body: JSON.stringify({ companyId }),
+    });
+  }
+
+  async unassignCompanyFromManager(managerId: number, companyId: number) {
+    return this.request<{ success: boolean; message: string }>(`/admin/managers/${managerId}/unassign-company/${companyId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Manager-specific methods
+  async getCompanyTrainees(companyId: number) {
+    return this.request<{ success: boolean; trainees: User[] }>(`/admin/companies/${companyId}/trainees`);
+  }
+
+  // Trainee management methods
+  async getAllTrainees() {
+    return this.request<{ success: boolean; trainees: User[] }>('/admin/trainees');
+  }
+
+  async updateTrainee(id: number, updates: { companyId?: number; status?: string }) {
+    return this.request<{ success: boolean; trainee: User; message: string }>(`/admin/trainees/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+
+  // Notification methods
+  async getNotifications(limit = 50, offset = 0) {
+    return this.request<{ success: boolean; notifications: any[] }>(`/admin/notifications?limit=${limit}&offset=${offset}`);
+  }
+
+  async markNotificationAsRead(notificationId: number) {
+    return this.request<{ success: boolean; message: string }>(`/admin/notifications/${notificationId}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async markAllNotificationsAsRead() {
+    return this.request<{ success: boolean; message: string }>('/admin/notifications/read-all', {
+      method: 'PUT',
+    });
+  }
+
+  async getUnreadNotificationCount() {
+    return this.request<{ success: boolean; unreadCount: number }>('/admin/notifications/unread-count');
+  }
+
 }
 
 export const apiClient = new ApiClient(); 

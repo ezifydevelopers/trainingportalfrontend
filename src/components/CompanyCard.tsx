@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 
 interface CompanyCardProps {
   id: number;
@@ -12,7 +12,9 @@ interface CompanyCardProps {
   contactCount: number;
   onClick: () => void;
   onDelete?: (id: number) => void;
+  onEdit?: (id: number) => void;
   showDeleteButton?: boolean;
+  showEditButton?: boolean;
 }
 
 const CompanyCard = ({
@@ -22,12 +24,21 @@ const CompanyCard = ({
   contactCount,
   onClick,
   onDelete,
+  onEdit,
   showDeleteButton = false,
+  showEditButton = false,
 }: CompanyCardProps) => {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
       onDelete(id);
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit(id);
     }
   };
 
@@ -37,6 +48,16 @@ const CompanyCard = ({
       className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200 relative group"
       onClick={onClick}
     >
+      {showEditButton && onEdit && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+          onClick={handleEditClick}
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+      )}
       {showDeleteButton && onDelete && (
         <Button
           variant="destructive"
@@ -64,14 +85,14 @@ const CompanyCard = ({
           ) : (
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-2xl font-bold text-primary">
-                {name.charAt(0)}
+                {name?.charAt(0) || '?'}
               </span>
             </div>
           )}
         </div>
       </AspectRatio>
       <CardContent className="p-4">
-        <h3 className="font-semibold text-lg mb-1">{name}</h3>
+        <h3 className="font-semibold text-lg mb-1">{name || 'Unknown Company'}</h3>
         {/* <p className="text-sm text-muted-foreground">
           {contactCount} {contactCount === 1 ? "contact" : "contacts"}
         </p> */}

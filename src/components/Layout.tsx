@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import MessageNotification from "./MessageNotification";
+import NotificationBell from "./NotificationBell";
 import { getApiBaseUrl } from "@/lib/api";
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -67,12 +68,17 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className="flex-1 flex flex-col">
         <header className="bg-white border-b border-gray-200 flex items-center justify-between px-6 py-4">
           <div className="flex-1"></div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {/* Message Notification */}
             <MessageNotification 
               unreadCount={unreadCount}
               onNotificationClick={handleNotificationClick}
             />
+            
+            {/* System Notifications */}
+            {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+              <NotificationBell />
+            )}
             
             <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
               <div className="text-right">

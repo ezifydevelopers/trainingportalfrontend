@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { apiClient, User as ApiUser, LoginRequest, SignupRequest, SignupResponse, getApiBaseUrl } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 
-export type UserRole = 'TRAINEE' | 'ADMIN';
+export type UserRole = 'TRAINEE' | 'MANAGER' | 'ADMIN';
 
 export interface User {
   id: number;

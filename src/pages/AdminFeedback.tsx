@@ -69,164 +69,229 @@ export default function AdminFeedback() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Trainee Feedback</h1>
-            <p className="text-gray-600">View and analyze trainee feedback for training modules</p>
+      <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
+        {/* Enhanced Header Section */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+              <MessageSquare className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Trainee Feedback</h1>
+              <p className="text-blue-100 text-lg">View and analyze trainee feedback for training modules</p>
+            </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Feedback</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalFeedback}</div>
-                <p className="text-xs text-muted-foreground">responses received</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
-                <Star className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</div>
-                <p className="text-xs text-muted-foreground">out of 5 stars</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Trainees</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Array.from(new Set(feedback.map(f => f.trainee.id))).length}
-                </div>
-                <p className="text-xs text-muted-foreground">provided feedback</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Modules Rated</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Array.from(new Set(feedback.map(f => f.module.id))).length}
-                </div>
-                <p className="text-xs text-muted-foreground">unique modules</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Filter className="h-5 w-5 mr-2" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium">Module</label>
-                <Select value={filterModule} onValueChange={setFilterModule}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All modules" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All modules</SelectItem>
-                    {uniqueModules.map(moduleName => (
-                      <SelectItem key={moduleName} value={moduleName}>
-                        {moduleName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        {/* Enhanced Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2">Total Feedback</p>
+                <p className="text-3xl font-bold text-gray-900">{stats?.totalFeedback || 0}</p>
+                <p className="text-sm text-gray-500 mt-1">responses received</p>
               </div>
-              <div className="flex-1">
-                <label className="text-sm font-medium">Rating</label>
-                <Select value={filterRating} onValueChange={setFilterRating}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All ratings" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All ratings</SelectItem>
-                    <SelectItem value="5">5 stars (Excellent)</SelectItem>
-                    <SelectItem value="4">4 stars (Very Good)</SelectItem>
-                    <SelectItem value="3">3 stars (Good)</SelectItem>
-                    <SelectItem value="2">2 stars (Fair)</SelectItem>
-                    <SelectItem value="1">1 star (Poor)</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <MessageSquare className="h-6 w-6 text-blue-600" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2">Average Rating</p>
+                <p className="text-3xl font-bold text-gray-900">{stats?.averageRating?.toFixed(1) || '0.0'}</p>
+                <p className="text-sm text-gray-500 mt-1">out of 5 stars</p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+                <Star className="h-6 w-6 text-yellow-600" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2">Active Trainees</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {Array.from(new Set(feedback.map(f => f.trainee.id))).length}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">provided feedback</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2">Modules Rated</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {Array.from(new Set(feedback.map(f => f.module.id))).length}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">unique modules</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
 
-        {/* Feedback List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Feedback</CardTitle>
-            <CardDescription>
-              Showing {filteredFeedback.length} of {feedback.length} feedback responses
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* Enhanced Filters Section */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg border-0">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Filter className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Filters</h3>
+              <p className="text-gray-600">Filter feedback by module and rating</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label className="text-base font-semibold text-gray-900">Module</label>
+              <Select value={filterModule} onValueChange={setFilterModule}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder="All modules" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-base">All modules</SelectItem>
+                  {uniqueModules.map(moduleName => (
+                    <SelectItem key={moduleName} value={moduleName} className="text-base">
+                      {moduleName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-3">
+              <label className="text-base font-semibold text-gray-900">Rating</label>
+              <Select value={filterRating} onValueChange={setFilterRating}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder="All ratings" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-base">All ratings</SelectItem>
+                  <SelectItem value="5" className="text-base">
+                    <div className="flex items-center space-x-2">
+                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                      <span>5 stars (Excellent)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="4" className="text-base">
+                    <div className="flex items-center space-x-2">
+                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                      <span>4 stars (Very Good)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="3" className="text-base">
+                    <div className="flex items-center space-x-2">
+                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                      <span>3 stars (Good)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="2" className="text-base">
+                    <div className="flex items-center space-x-2">
+                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                      <span>2 stars (Fair)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="1" className="text-base">
+                    <div className="flex items-center space-x-2">
+                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                      <span>1 star (Poor)</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Feedback List */}
+        <div className="bg-white rounded-2xl shadow-xl border-0 overflow-hidden">
+          <div className="px-6 py-4 bg-gray-50 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">All Feedback</h3>
+                <p className="text-gray-600 mt-1">
+                  Showing {filteredFeedback.length} of {feedback.length} feedback responses
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
             {filteredFeedback.length === 0 ? (
-              <div className="text-center py-12">
-                <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No feedback found</h3>
-                <p className="text-gray-600">No feedback matches your current filters.</p>
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <MessageSquare className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">No Feedback Found</h3>
+                <p className="text-gray-600 text-lg">No feedback matches your current filters.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {filteredFeedback.map((item) => (
-                  <div key={item.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-medium text-gray-900">{item.module.name}</h3>
-                          <Badge className={getRatingColor(item.rating)}>
-                            <Star className="h-3 w-3 mr-1 fill-current" />
-                            {item.rating} - {getRatingText(item.rating)}
-                          </Badge>
-                        </div>
-                        
-                        <div className="text-sm text-gray-600 mb-2">
-                          <span className="font-medium">{item.trainee.name}</span>
-                          {item.trainee.company && (
-                            <span> • {item.trainee.company.name}</span>
-                          )}
-                          <span> • {new Date(item.createdAt).toLocaleDateString()}</span>
-                        </div>
-                        
-                        {item.comment && (
-                          <div className="bg-gray-50 rounded-lg p-3 mt-2">
-                            <p className="text-sm text-gray-700">{item.comment}</p>
+                  <div key={item.id} className="bg-gray-50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 border border-gray-200">
+                    <div className="space-y-4">
+                      {/* Header with Module and Rating */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2 break-words">{item.module.name}</h3>
+                          <div className="flex items-center space-x-3">
+                            <Badge className={`${getRatingColor(item.rating)} px-4 py-2 text-sm font-semibold`}>
+                              <Star className="h-4 w-4 mr-2 fill-current" />
+                              {item.rating} - {getRatingText(item.rating)}
+                            </Badge>
+                            <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-lg">
+                              {new Date(item.createdAt).toLocaleDateString()}
+                            </span>
                           </div>
-                        )}
+                        </div>
                       </div>
+
+                      {/* Trainee Info */}
+                      <div className="bg-white rounded-xl p-4">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Users className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{item.trainee.name}</p>
+                            <p className="text-sm text-gray-600">
+                              {item.trainee.company?.name || 'No company assigned'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Comment */}
+                      {item.comment && (
+                        <div className="bg-blue-50 rounded-xl p-4 border-l-4 border-blue-300">
+                          <div className="flex items-start space-x-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <MessageSquare className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-blue-600 font-medium mb-2">Trainee Comment</p>
+                              <p className="text-blue-800 break-words">{item.comment}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </Layout>
   );

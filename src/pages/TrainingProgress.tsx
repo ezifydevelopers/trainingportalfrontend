@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDashboard, useModules } from "@/hooks/useApi";
 import { courseModules } from "@/data/courseModules";
-import { Trophy, Clock, Target, CheckCircle, BarChart3, Loader2 } from "lucide-react";
+import { Trophy, Clock, Target, CheckCircle, BarChart3, Loader2, Award, Star } from "lucide-react";
 import { toast } from "sonner";
 import HelpRequestButton from "@/components/HelpRequestButton";
 import { useNavigate } from "react-router-dom";
@@ -64,6 +64,45 @@ export default function TrainingProgress() {
             <p className="text-gray-600">Track your learning journey and achievements</p>
           </div>
         </div>
+
+        {/* Congratulations Banner - Show when all modules are completed */}
+        {overallProgress === 100 && (dashboardData?.modulesCompleted || 0) > 0 && (
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-lg">
+            <CardContent className="p-8">
+              <div className="text-center">
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Award className="h-10 w-10 text-white" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                      <Star className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                </div>
+                <h2 className="text-3xl font-bold text-green-900 mb-4">
+                  🎉 Congratulations! 🎉
+                </h2>
+                <p className="text-xl text-green-800 mb-2 font-semibold">
+                  You have successfully completed all your training modules!
+                </p>
+                <p className="text-green-700 mb-6">
+                  You watched all videos and passed all assessments. Well done on your dedication and hard work!
+                </p>
+                <div className="flex items-center justify-center space-x-4 text-green-700">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-medium">{dashboardData?.modulesCompleted || 0} Modules Completed</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Trophy className="h-5 w-5" />
+                    <span className="font-medium">{dashboardData?.averageScore || 0}% Average Score</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

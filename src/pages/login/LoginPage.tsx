@@ -30,6 +30,8 @@ export default function LoginPage() {
         // Redirect based on user role
         if (currentUser?.role === 'TRAINEE') {
           navigate('/training');
+        } else if (currentUser?.role === 'MANAGER') {
+          navigate('/manager/dashboard');
         } else if (currentUser?.role === 'ADMIN') {
           navigate('/admin/company-modules');
         } else {
@@ -50,6 +52,8 @@ export default function LoginPage() {
     switch (role) {
       case "ADMIN":
         return <ShieldCheck className="h-8 w-8 text-purple-600" />;
+      case "MANAGER":
+        return <Users className="h-8 w-8 text-blue-600" />;
       case "TRAINEE":
         return <GraduationCap className="h-8 w-8 text-orange-600" />;
       default:
@@ -61,6 +65,8 @@ export default function LoginPage() {
     switch (role) {
       case "ADMIN":
         return "Admin Login";
+      case "MANAGER":
+        return "Manager Login";
       case "TRAINEE":
         return "Trainee Login";
       default:
@@ -132,24 +138,6 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-4 text-center">
-          <span className="text-sm text-gray-600">Login as:</span>
-          <div className="flex justify-center mt-2 space-x-2">
-            <Link 
-              to="/login/ADMIN" 
-              className={`px-3 py-2 text-xs rounded ${role === "ADMIN" ? "bg-blue-100 text-blue-600 font-medium" : "text-gray-600 hover:text-gray-900"}`}
-            >
-              Admin
-            </Link>
-            <Link 
-              to="/login/TRAINEE" 
-              className={`px-3 py-2 text-xs rounded ${role === "TRAINEE" ? "bg-blue-100 text-blue-600 font-medium" : "text-gray-600 hover:text-gray-900"}`}
-            >
-              Trainee
-            </Link>
-          </div>
-        </div>
-
         {role === "TRAINEE" && (
           <div className="mt-4 text-center">
             <span className="text-sm text-gray-600">Don't have an account?</span>
@@ -161,13 +149,6 @@ export default function LoginPage() {
             </Link>
           </div>
         )}
-
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Training Portal:</strong><br />
-            Access your training modules and track your progress
-          </p>
-        </div>
       </div>
     </div>
   );

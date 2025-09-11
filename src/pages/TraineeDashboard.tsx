@@ -6,17 +6,131 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDashboard } from "@/hooks/useApi";
-import { Play, CheckCircle, Lock, Clock, Trophy, BookOpen, Target, Loader2 } from "lucide-react";
+import { Play, CheckCircle, Lock, Clock, Trophy, BookOpen, Target, Loader2, Award, Star, FileText, Video } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { toast } from "sonner";
 import HelpRequestButton from "@/components/HelpRequestButton";
 
 export default function TraineeDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("videos");
   
   // Fetch data from API
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useDashboard();
+
+  // Separate video and resource modules
+  const videoModules = dashboardData?.moduleProgress?.filter(module => !module.isResourceModule) || [];
+  const resourceModules = dashboardData?.moduleProgress?.filter(module => module.isResourceModule) || [];
+
+  // Helper function to render modules
+  const renderModules = (modules) => {
+    if (!modules || modules.length === 0) {
+      return (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Modules Available</h3>
+          <p className="text-gray-600 mb-4">
+            You haven't been assigned any modules yet. Please contact your administrator.
+          </p>
+          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+            <Clock className="h-4 w-4" />
+            <span>Modules will appear here once assigned</span>
+          </div>
+        </div>
+      );
+    }
+
+    return modules.map((module) => {
+      const isCompleted = module.completed;
+      const isAvailable = module.unlocked;
+      const isLocked = !module.unlocked;
+      const isCurrent = !isCompleted && isAvailable;
+      
+      return (
+        <div
+          key={module.moduleId}
+          className={`rounded-lg border p-4 transition-colors ${
+            isCompleted ? 'bg-green-50 border-green-200' :
+            isCurrent ? 'bg-blue-50 border-blue-200' :
+            isAvailable ? 'bg-white border-gray-200' :
+            'bg-gray-50 border-gray-200'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
+                isCompleted ? 'bg-green-100' :
+                isCurrent ? 'bg-blue-100' :
+                isAvailable ? 'bg-gray-100' :
+                'bg-gray-100'
+              }`}>
+                {isCompleted ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : isLocked ? (
+                  <Lock className="h-5 w-5 text-gray-400" />
+                ) : module.isResourceModule ? (
+                  <FileText className="h-5 w-5 text-purple-600" />
+                ) : (
+                  <Play className="h-5 w-5 text-blue-600" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 
+                  className={`font-semibold text-gray-900 ${!isLocked ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''}`}
+                  onClick={!isLocked ? () => handleStartModule(module.moduleId) : undefined}
+                >
+                  {module.moduleName}
+                </h3>
+                <div className="flex items-center space-x-4 mt-2">
+                  <span className="text-xs text-gray-500 flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {formatTime(module.videoDuration)}
+                  </span>
+                  {module.marksObtained > 0 && (
+                    <span className="text-xs text-gray-500">
+                      Score: {module.marksObtained}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              {isCompleted && (
+                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Completed
+                </Badge>
+              )}
+              {isCurrent && (
+                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+                  <Play className="h-3 w-3 mr-1" />
+                  Current
+                </Badge>
+              )}
+              {isLocked && (
+                <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">
+                  <Lock className="h-3 w-3 mr-1" />
+                  Locked
+                </Badge>
+              )}
+              {!isLocked && (
+                <Button
+                  size="sm"
+                  onClick={() => handleStartModule(module.moduleId)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isCompleted ? 'Review' : 'Start'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    });
+  };
 
 
   if (!user || user.role !== "TRAINEE") {
@@ -93,6 +207,45 @@ export default function TraineeDashboard() {
             <p className="text-gray-600">Continue your learning journey</p>
           </div>
         </div>
+
+        {/* Congratulations Banner - Show when all modules are completed */}
+        {dashboardData?.overallProgress === 100 && dashboardData?.modulesCompleted > 0 && (
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-lg">
+            <CardContent className="p-8">
+              <div className="text-center">
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Award className="h-10 w-10 text-white" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                      <Star className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                </div>
+                <h2 className="text-3xl font-bold text-green-900 mb-4">
+                  🎉 Congratulations! 🎉
+                </h2>
+                <p className="text-xl text-green-800 mb-2 font-semibold">
+                  You have successfully completed all your training modules!
+                </p>
+                <p className="text-green-700 mb-6">
+                  You watched all videos and passed all assessments. Well done on your dedication and hard work!
+                </p>
+                <div className="flex items-center justify-center space-x-4 text-green-700">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-medium">{dashboardData.modulesCompleted} Modules Completed</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Trophy className="h-5 w-5" />
+                    <span className="font-medium">{dashboardData.averageScore}% Average Score</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         {/* Quick Progress Overview */}
         <Card className="bg-blue-50 border-blue-200">

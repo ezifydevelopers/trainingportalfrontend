@@ -1,27 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import CompanyCard from "@/components/CompanyCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash, Upload, Play, FileText, Check, ArrowLeft, X, Clock, Users, Eye, Edit, Save, XIcon, GripVertical } from "lucide-react";
+import { Plus, Trash, Upload, Play, FileText, Check, ArrowLeft, X, Clock, Users, Eye, Edit, Save, XIcon, GripVertical, File, Image, Music } from "lucide-react";
 import NewCompanyDialog from "@/components/NewCompanyDialog";
+import EditCompanyDialog from "@/components/EditCompanyDialog";
 import { 
   useAllCompanies, 
   useCreateCompany, 
+  useUpdateCompany,
   useCompanyModules, 
   useAddModuleToCompany, 
   useAddVideoToModule, 
   useAddMCQsToModule, 
   useDeleteModule,
   useDeleteCompany,
-  useUpdateModule
+  useUpdateModule,
+  useAddResource,
+  useGetModuleResources,
+  useDeleteResource
 } from "@/hooks/useApi";
 import { getApiBaseUrl } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import ResourceUploadDialog from "@/components/ResourceUploadDialog";
+import ModuleResources from "@/components/ModuleResources";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -59,6 +67,7 @@ interface Module {
   id: number;
   name: string;
   order?: number;
+  isResourceModule?: boolean;
   mcqs?: Array<{
     question: string;
     options: string[];
@@ -69,6 +78,15 @@ interface Module {
     url: string;
     duration: number;
   }>;
+  resources?: Array<{
+    id: number;
+    filename: string;
+    originalName: string;
+    type: string;
+    duration?: number;
+    estimatedReadingTime?: number;
+    filePath: string;
+  }>;
 }
 
 interface SortableModuleProps {
@@ -77,6 +95,7 @@ interface SortableModuleProps {
   onModuleSelect: (module: Module) => void;
   onEditModule: (module: Module) => void;
   onDeleteModule: (moduleId: number, moduleName: string) => void;
+  onUploadResource: (module: Module) => void;
   deletingModuleId: number | null;
   getVideoUrl: (url: string) => string;
   capitalizeModuleName: (name: string) => string;
@@ -88,6 +107,7 @@ function SortableModule({
   onModuleSelect, 
   onEditModule, 
   onDeleteModule, 
+  onUploadResource,
   deletingModuleId,
   getVideoUrl,
   capitalizeModuleName
@@ -147,25 +167,55 @@ function SortableModule({
           <div className="flex items-center space-x-3">
             {/* Module stats */}
             <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-xs bg-gray-50">
-                {module.mcqs?.length || 0} MCQs
-              </Badge>
-              {module.videos && module.videos.length > 0 && (
-                <Badge variant="outline" className="text-xs bg-gray-50">
-                  <Play className="h-3 w-3 mr-1" />
-                  {module.videos.length}
-                </Badge>
-              )}
-              {module.videos?.[0]?.url && (
-                <Badge variant="outline" className="text-xs bg-gray-50">
-                  <Clock className="h-3 w-3 mr-1" />
-                  {Math.floor((module.videos?.[0]?.duration || 0) / 60)}:{(module.videos?.[0]?.duration || 0) % 60 < 10 ? '0' : ''}{(module.videos?.[0]?.duration || 0) % 60}
-                </Badge>
+              {module.isResourceModule ? (
+                <>
+                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                    <FileText className="h-3 w-3 mr-1" />
+                    Resource Module
+                  </Badge>
+                  {module.mcqs && module.mcqs.length > 0 && (
+                    <Badge variant="outline" className="text-xs bg-gray-50">
+                      {module.mcqs.length} MCQs
+                    </Badge>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Badge variant="outline" className="text-xs bg-gray-50">
+                    {module.mcqs?.length || 0} MCQs
+                  </Badge>
+                  {module.videos && module.videos.length > 0 && (
+                    <Badge variant="outline" className="text-xs bg-gray-50">
+                      <Play className="h-3 w-3 mr-1" />
+                      {module.videos.length}
+                    </Badge>
+                  )}
+                  {module.videos?.[0]?.url && (
+                    <Badge variant="outline" className="text-xs bg-gray-50">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {Math.floor((module.videos?.[0]?.duration || 0) / 60)}:{(module.videos?.[0]?.duration || 0) % 60 < 10 ? '0' : ''}{(module.videos?.[0]?.duration || 0) % 60}
+                    </Badge>
+                  )}
+                </>
               )}
             </div>
             
             {/* Action buttons */}
             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              {module.isResourceModule && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUploadResource(module);
+                  }}
+                  title="Upload resources"
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -207,14 +257,18 @@ export default function AdminCompanyModules() {
   const queryClient = useQueryClient();
   
   // Fetch companies from API
-  const { data: companies = [], isLoading, isError } = useAllCompanies();
+  const { data: companiesData, isLoading, isError } = useAllCompanies();
+  const companies = companiesData?.companies || [];
   const createCompanyMutation = useCreateCompany();
+  const updateCompanyMutation = useUpdateCompany();
   const addModuleMutation = useAddModuleToCompany();
   const addVideoMutation = useAddVideoToModule();
   const addMCQsMutation = useAddMCQsToModule();
   const deleteModuleMutation = useDeleteModule();
   const deleteCompanyMutation = useDeleteCompany();
   const updateModuleMutation = useUpdateModule();
+  const addResourceMutation = useAddResource();
+  const deleteResourceMutation = useDeleteResource();
 
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [showNewCompany, setShowNewCompany] = useState(false);
@@ -230,8 +284,19 @@ export default function AdminCompanyModules() {
   const [moduleName, setModuleName] = useState("");
   const [videoDuration, setVideoDuration] = useState(0);
   const [isCalculatingDuration, setIsCalculatingDuration] = useState(false);
+  const [isCreatingModule, setIsCreatingModule] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showResourceUpload, setShowResourceUpload] = useState(false);
+  const [selectedModuleForResource, setSelectedModuleForResource] = useState(null);
   const [deletingModuleId, setDeletingModuleId] = useState<number | null>(null);
   const [companyToDelete, setCompanyToDelete] = useState(null);
+  const [showEditCompany, setShowEditCompany] = useState(false);
+  const [companyToEdit, setCompanyToEdit] = useState(null);
+  const [showResourceModuleDialog, setShowResourceModuleDialog] = useState(false);
+  
+  const [resourceModuleName, setResourceModuleName] = useState("");
+  const [resourceFiles, setResourceFiles] = useState<File[]>([]);
+
   const fileInputRef = React.useRef(null);
 
   // Edit mode state variables
@@ -258,6 +323,16 @@ export default function AdminCompanyModules() {
   const [isReordering, setIsReordering] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
 
+  // Refresh selectedModule when modules data changes
+  useEffect(() => {
+    if (selectedModule && modules.length > 0) {
+      const updatedModule = modules.find(m => m.id === selectedModule.id);
+      if (updatedModule) {
+        setSelectedModule(updatedModule);
+      }
+    }
+  }, [modules, selectedModule]);
+
   // Fetch modules for selected company
   const { data: modules = [], isLoading: modulesLoading, isError: modulesError } = useCompanyModules(selectedCompany?.id || null);
 
@@ -267,7 +342,22 @@ export default function AdminCompanyModules() {
     if (videoUrl.startsWith('http')) {
       return videoUrl;
     }
-    const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:7001'}/uploads/${videoUrl}`;
+    
+    // Use base URL without /api for static files
+    const baseUrl = import.meta.env.VITE_API_URL ? 
+      import.meta.env.VITE_API_URL.replace('/api', '') : 
+      'http://localhost:7001';
+    
+    // If videoUrl already starts with /uploads/, use it directly
+    if (videoUrl.startsWith('/uploads/')) {
+      const fullUrl = `${baseUrl}${videoUrl}`;
+      console.log('Generated video URL (with /uploads/):', fullUrl);
+      return fullUrl;
+    }
+    
+    // Otherwise, add /uploads/ prefix
+    const fullUrl = `${baseUrl}/uploads/${videoUrl}`;
+    console.log('Generated video URL (added /uploads/):', fullUrl);
     return fullUrl;
   };
 
@@ -279,7 +369,11 @@ export default function AdminCompanyModules() {
     if (logoUrl.startsWith('http')) {
       return logoUrl;
     }
-    const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:7001'}/uploads/${logoUrl}`;
+    // Use base URL without /api for static files
+    const baseUrl = import.meta.env.VITE_API_URL ? 
+      import.meta.env.VITE_API_URL.replace('/api', '') : 
+      'http://localhost:7001';
+    const fullUrl = `${baseUrl}/uploads/${logoUrl}`;
     return fullUrl;
   };
 
@@ -355,8 +449,9 @@ export default function AdminCompanyModules() {
   // Update ordered modules when modules data changes
   React.useEffect(() => {
     if (modules && modules.length > 0 && selectedCompany) {
-      // Sort modules by order field from database, then by ID as fallback
-      const sortedModules = [...modules].sort((a, b) => {
+      // Filter out resource modules and sort by order field from database, then by ID as fallback
+      const filteredModules = modules.filter(module => !module.isResourceModule);
+      const sortedModules = [...filteredModules].sort((a, b) => {
         // First sort by order field (if available)
         if (a.order !== undefined && b.order !== undefined) {
           return a.order - b.order;
@@ -460,6 +555,7 @@ export default function AdminCompanyModules() {
   };
 
   const handleCompanySelect = (company) => {
+    console.log('Company card clicked, opening module management for:', company.name);
     setSelectedCompany(company);
     setShowAddModule(false);
     setVideoFile(null);
@@ -591,7 +687,7 @@ export default function AdminCompanyModules() {
   };
 
   const handleSaveModule = async () => {
-    if (!videoFile || !moduleName.trim() || !selectedCompany) return;
+    if (!videoFile || !moduleName.trim() || !selectedCompany || isCreatingModule) return;
     
     // Validate video duration
     if (!videoDuration || videoDuration <= 0) {
@@ -600,7 +696,17 @@ export default function AdminCompanyModules() {
     }
     
     try {
+      setIsCreatingModule(true);
+      setUploadProgress(0);
+      
+      // Show loading toast for the entire process
+      const loadingToast = toast.loading("Creating module and uploading video... This may take a while depending on your internet speed.", {
+        duration: 0 // Keep toast until manually dismissed
+      });
+      
       // 1. Add module to company
+      setUploadProgress(10);
+      toast.loading("Step 1/3: Creating module...", { id: loadingToast });
       const moduleRes = await addModuleMutation.mutateAsync({ companyId: selectedCompany.id, name: moduleName });
       
       const moduleId = moduleRes?.module?.id;
@@ -608,17 +714,36 @@ export default function AdminCompanyModules() {
         throw new Error(`Failed to create module: ${moduleRes?.message || 'No module ID returned'}`);
       }
       
-      // 2. Add video to module
+      // 2. Add video to module (this is the critical step that needs to complete)
+      setUploadProgress(30);
+      toast.loading("Step 2/3: Uploading video... Please wait for complete upload.", { id: loadingToast });
       await addVideoMutation.mutateAsync({ moduleId, videoFile, duration: videoDuration });
+      setUploadProgress(80);
       
       // 3. Add MCQs to module (optional)
       if (mcqs.length > 0) {
+        console.log('Adding MCQs to module:', moduleId, mcqs);
+        setUploadProgress(90);
+        toast.loading("Step 3/3: Adding quiz questions...", { id: loadingToast });
         await addMCQsMutation.mutateAsync({ moduleId, mcqs });
-        toast.success("Module, video, and MCQs added successfully!");
+        console.log('MCQs added successfully');
+        setUploadProgress(100);
+        toast.success("✅ Module, video, and MCQs added successfully!", { id: loadingToast });
+        
+        // Update selectedModule with the new MCQs
+        if (selectedModule && selectedModule.id === moduleId) {
+          setSelectedModule({
+            ...selectedModule,
+            mcqs: mcqs
+          });
+        }
       } else {
-        toast.success("Module and video added successfully! (No MCQs added)");
+        console.log('No MCQs to add');
+        setUploadProgress(100);
+        toast.success("✅ Module and video added successfully! (No MCQs added)", { id: loadingToast });
       }
       
+      // Reset form
       setShowAddModule(false);
       setVideoFile(null);
       setVideoPreview("");
@@ -627,16 +752,19 @@ export default function AdminCompanyModules() {
       setVideoDuration(0);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      toast.error(`Failed to add module, video, or MCQs: ${errorMessage}`);
+      toast.error(`❌ Failed to add module, video, or MCQs: ${errorMessage}`);
+    } finally {
+      setIsCreatingModule(false);
+      setUploadProgress(0);
     }
   };
 
-  const handleAddCompany = async (companyName, logoUrl) => {
+  const handleAddCompany = async (companyName, logoFile) => {
     try {
       const formData = new FormData();
       formData.append('name', companyName);
-      if (logoUrl) {
-        formData.append('logo', logoUrl);
+      if (logoFile) {
+        formData.append('logo', logoFile);
       }
       await createCompanyMutation.mutateAsync(formData);
       toast.success("Company created successfully!");
@@ -644,6 +772,209 @@ export default function AdminCompanyModules() {
     } catch (error) {
       toast.error("Failed to create company. Please try again.");
     }
+  };
+
+  const handleUpdateCompany = async (companyId, companyName, logoFile) => {
+    try {
+      console.log('Updating company:', { companyId, companyName, logoFile });
+      const formData = new FormData();
+      formData.append('name', companyName);
+      if (logoFile) {
+        console.log('Adding logo file to form data:', logoFile.name);
+        formData.append('logo', logoFile);
+      }
+      await updateCompanyMutation.mutateAsync({ id: companyId, data: formData });
+      console.log('Company updated successfully');
+      toast.success("Company updated successfully!");
+      setShowEditCompany(false);
+      setCompanyToEdit(null);
+    } catch (error) {
+      console.error('Error updating company:', error);
+      toast.error("Failed to update company. Please try again.");
+    }
+  };
+
+
+
+
+  const handleCreateResourceModule = async () => {
+    console.log('Creating resource module:', { resourceModuleName, selectedCompany });
+    
+    if (!resourceModuleName.trim()) {
+      toast.error("Please enter a resource module name");
+      return;
+    }
+    if (!selectedCompany) {
+      toast.error("Please select a company first");
+      return;
+    }
+
+    try {
+      console.log('Calling addModuleMutation...');
+      const moduleRes = await addModuleMutation.mutateAsync({ 
+        companyId: selectedCompany.id, 
+        name: resourceModuleName 
+      });
+      
+      console.log('Module creation response:', moduleRes);
+      
+      const moduleId = moduleRes?.module?.id;
+      if (!moduleId) {
+        throw new Error(`Failed to create module: ${moduleRes?.message || 'No module ID returned'}`);
+      }
+
+      console.log('Resource module created successfully:', { moduleId, moduleName: resourceModuleName });
+      
+      // Set the created module and open resource upload dialog
+      setSelectedModuleForResource({ id: moduleId, name: resourceModuleName });
+      setShowResourceModuleDialog(false);
+      setShowResourceUpload(true);
+      
+      // Reset the module name
+      setResourceModuleName("");
+      
+      toast.success("Resource module created! Now upload your files.");
+    } catch (error) {
+      console.error('Error creating resource module:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Failed to create resource module: ${errorMessage}`);
+    }
+  };
+
+  const handleCreateResourceModuleWithFiles = async () => {
+    if (!resourceModuleName.trim() || !selectedCompany) return;
+    
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        toast.error('You are not logged in. Please log in again.');
+        return;
+      }
+
+      // First create the module
+      const moduleResponse = await fetch(`${getApiBaseUrl()}/admin/companies/${selectedCompany.id}/modules`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          name: resourceModuleName,
+          isResourceModule: true
+        })
+      });
+
+      if (!moduleResponse.ok) {
+        const errorData = await moduleResponse.json();
+        throw new Error(errorData.message || 'Failed to create resource module');
+      }
+
+      const moduleResult = await moduleResponse.json();
+      const moduleId = moduleResult.module?.id;
+
+      if (!moduleId) {
+        throw new Error('Failed to get module ID');
+      }
+
+      // Upload files if any were selected
+      if (resourceFiles.length > 0) {
+        const uploadPromises = resourceFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append('resourceFile', file);
+          formData.append('moduleId', moduleId.toString());
+          formData.append('type', getFileType(file.name));
+
+          const uploadResponse = await fetch(`${getApiBaseUrl()}/admin/resources`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: formData
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${file.name}`);
+          }
+
+          return uploadResponse.json();
+        });
+
+        await Promise.all(uploadPromises);
+      }
+
+      toast.success(`Resource module created successfully${resourceFiles.length > 0 ? ` with ${resourceFiles.length} files` : ''}!`);
+      setResourceModuleName('');
+      setResourceFiles([]);
+      setShowResourceModuleDialog(false);
+      
+      // Refresh the modules list
+      queryClient.invalidateQueries({ queryKey: ['companyModules', selectedCompany.id] });
+    } catch (error) {
+      console.error('Error creating resource module with files:', error);
+      toast.error(error.message || 'Failed to create resource module');
+    }
+  };
+
+  const getFileType = (filename: string): string => {
+    const extension = filename.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return 'PDF';
+      case 'doc':
+      case 'docx':
+        return 'DOCUMENT';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return 'IMAGE';
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+        return 'VIDEO';
+      case 'mp3':
+      case 'wav':
+        return 'AUDIO';
+      default:
+        return 'DOCUMENT';
+    }
+  };
+
+  const handleUploadResource = async (resourceFile: File, type: string, duration?: number, estimatedReadingTime?: number): Promise<void> => {
+    if (!selectedModuleForResource) {
+      toast.error("No module selected for resource upload");
+      return;
+    }
+
+    try {
+      await addResourceMutation.mutateAsync({
+        moduleId: selectedModuleForResource.id,
+        resourceFile,
+        type,
+        duration,
+        estimatedReadingTime
+      });
+      toast.success(`Resource uploaded successfully to ${selectedModuleForResource.name}`);
+      
+      // Close the dialog and refresh the selected module
+      setShowResourceUpload(false);
+      setSelectedModuleForResource(null);
+      
+      // Refresh the modules data to show the new resource
+      queryClient.invalidateQueries({ queryKey: ['company-modules'] });
+      queryClient.invalidateQueries({ queryKey: ['modules'] });
+      queryClient.invalidateQueries({ queryKey: ['module-resources', selectedModuleForResource.id] });
+      
+    } catch (error) {
+      console.error('Resource upload error:', error);
+      throw error; // Re-throw so ResourceUploadDialog can handle it
+    }
+  };
+
+  const handleEditCompany = (company) => {
+    console.log('Opening edit dialog for company:', company.name);
+    setCompanyToEdit(company);
+    setShowEditCompany(true);
   };
 
   const handleDeleteCompany = async () => {
@@ -849,82 +1180,230 @@ export default function AdminCompanyModules() {
 
   return (
     <Layout>
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Company Training Modules</h1>
-          <p className="text-gray-600">Manage training content and assessments for your companies</p>
-        </div>
+      <div className="p-6 max-w-7xl mx-auto" style={{ scrollBehavior: 'smooth' }}>
         
         {!selectedCompany ? (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Select a Company</h2>
-                <p className="text-gray-600 mt-1">Choose a company to manage their training modules</p>
+          <div className="space-y-8" style={{ scrollBehavior: 'smooth' }}>
+            {/* Enhanced Header Section */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <Users className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-bold mb-2">Company Training Modules</h2>
+                    <p className="text-blue-100 text-lg">Manage training content and assessments for your companies</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setShowNewCompany(true)} 
+                  className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-6 py-3 rounded-xl shadow-lg"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  New Company
+                </Button>
               </div>
-              <Button onClick={() => setShowNewCompany(true)} variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                New Company
-              </Button>
             </div>
+
+            {/* Company Selection Section */}
+            <div className="bg-white rounded-2xl p-8 shadow-xl border-0">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Select a Company</h3>
+                <p className="text-gray-600 text-lg">Choose a company to manage their training modules and resources</p>
+              </div>
             <NewCompanyDialog
               open={showNewCompany}
               onOpenChange={setShowNewCompany}
               onAddCompany={handleAddCompany}
             />
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading companies...</p>
-              </div>
-            ) : isError ? (
-              <div className="text-center py-12">
-                <div className="text-red-500 mb-4">
-                  <FileText className="h-12 w-12 mx-auto" />
+            <EditCompanyDialog
+              open={showEditCompany}
+              onOpenChange={setShowEditCompany}
+              company={companyToEdit}
+              onUpdateCompany={handleUpdateCompany}
+            />
+            
+            <ResourceUploadDialog
+              open={showResourceUpload}
+              onOpenChange={setShowResourceUpload}
+              onUploadResource={handleUploadResource}
+              moduleName={selectedModuleForResource?.name}
+            />
+            
+              {/* Company Cards Grid */}
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                  <span className="text-lg font-medium text-gray-600">Loading companies...</span>
                 </div>
-                <p className="text-red-600 font-medium">Failed to load companies.</p>
-                <p className="text-gray-500 text-sm mt-1">Please try refreshing the page.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {companies.map((company) => (
-                  <CompanyCard
-                    key={company.id}
-                    id={company.id}
-                    name={company.name}
-                    logoUrl={getLogoUrl(company.logo || "")}
-                    contactCount={0}
-                    onClick={() => handleCompanySelect(company)}
-                    onDelete={(id) => setCompanyToDelete(companies.find(c => c.id === id))}
-                    showDeleteButton={true}
-                  />
-                ))}
-              </div>
-            )}
+              ) : isError ? (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <X className="h-8 w-8 text-red-600" />
+                  </div>
+                  <p className="text-xl font-semibold text-red-600 mb-2">Failed to load companies</p>
+                  <p className="text-gray-500">Please try refreshing the page</p>
+                </div>
+              ) : companies.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-xl font-semibold text-gray-600 mb-2">No companies found</p>
+                  <p className="text-gray-500 mb-6">Get started by creating your first company</p>
+                  <Button
+                    onClick={() => setShowNewCompany(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Create First Company
+                  </Button>
+                  
+                  {/* Test Edit Dialog Button */}
+                  <Button
+                    onClick={() => {
+                      console.log('TEST BUTTON CLICKED');
+                      setCompanyToEdit({ id: 1, name: 'Test Company', logo: null });
+                      setShowEditCompany(true);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl ml-4"
+                  >
+                    Test Edit Dialog
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" style={{ scrollBehavior: 'smooth' }}>
+                  {companies.map((company) => (
+                    <div key={company.id} className="relative">
+                      <div
+                        className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 overflow-hidden transform hover:-translate-y-1"
+                      >
+                        {/* Company Logo/Avatar */}
+                        <div className="h-32 w-full flex items-center justify-center overflow-hidden relative border-b border-gray-100">
+                          {company.logo ? (
+                            <img 
+                              src={getLogoUrl(company.logo)} 
+                              alt={company.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                                <span className="text-2xl font-bold text-white">
+                                  {company.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Company Info */}
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                            {company.name}
+                          </h3>
+                          <p className="text-gray-500 text-sm mb-4">Click to manage training modules</p>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('EDIT BUTTON CLICKED FOR:', company.name);
+                                  handleEditCompany(company);
+                                }}
+                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-md hover:bg-blue-50 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 z-10 relative"
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('DELETE BUTTON CLICKED FOR:', company.name);
+                                  setCompanyToDelete(company);
+                                }}
+                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 z-10 relative"
+                              >
+                                <Trash className="h-4 w-4 mr-1" />
+                                Delete
+                              </button>
+                            </div>
+                            
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('MANAGE BUTTON CLICKED FOR:', company.name);
+                                handleCompanySelect(company);
+                              }}
+                              className="flex items-center text-blue-600 hover:text-blue-700 focus:outline-none z-10 relative"
+                            >
+                              <span className="text-sm font-medium">Manage</span>
+                              <ArrowLeft className="h-4 w-4 ml-1" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/5 transition-colors duration-300"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div>
-            <div className="mb-6">
-              <Button 
-                variant="ghost" 
-                onClick={() => setSelectedCompany(null)} 
-                className="mb-4 text-blue-600 hover:text-blue-800"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Companies
-              </Button>
+            {/* Enhanced Header Section */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white mb-8">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">{selectedCompany.name}</h2>
-                  <p className="text-gray-600">Training modules and assessments</p>
+                <div className="flex items-center space-x-4">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setSelectedCompany(null)} 
+                    className="text-white hover:bg-white/20 p-2 rounded-xl"
+                  >
+                    <ArrowLeft className="h-5 w-5 mr-2" />
+                    Back to Companies
+                  </Button>
+                  <div className="w-px h-8 bg-white/30"></div>
+                  <div>
+                    <h2 className="text-4xl font-bold mb-2">{selectedCompany.name}</h2>
+                    <p className="text-blue-100 text-lg">Training modules and assessments</p>
+                  </div>
                 </div>
-                <Button 
-                  onClick={handleShowAddModule}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" /> 
-                  Add Training Module
-                </Button>
+                <div className="flex items-center space-x-3">
+                  <Button 
+                    onClick={handleShowAddModule}
+                    className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-6 py-3 rounded-xl shadow-lg"
+                  >
+                    <Plus className="h-5 w-5 mr-2" /> 
+                    Add Training Module
+                  </Button>
+                  <Button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Add Resource Module button clicked');
+                      setShowResourceModuleDialog(true);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-xl shadow-lg"
+                  >
+                    <FileText className="h-5 w-5 mr-2" /> 
+                    Add Resource Module
+                  </Button>
+                </div>
               </div>
             </div>
             
@@ -1006,10 +1485,13 @@ export default function AdminCompanyModules() {
                           )}
                         </div>
                       </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+
+
                   
-                  {/* MCQ Section */}
+                  {/* MCQ Section - Only show for video modules */}
+                  {!showResourceModuleDialog && (
                   <div className="mb-6">
                     <h4 className="font-medium mb-3 flex items-center">
                       <FileText className="h-4 w-4 mr-2" />
@@ -1094,46 +1576,45 @@ export default function AdminCompanyModules() {
                       </div>
                     </div>
                   </div>
-                  
-                  {/* List of MCQs to be added */}
-                  {mcqs.length > 0 && (
-                    <div className="mb-6">
-                      <h4 className="font-medium mb-3 flex items-center">
-                        <FileText className="h-4 w-4 mr-2" />
-                        MCQs to be added ({mcqs.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {mcqs.map((mcq, idx) => (
-                          <div key={idx} className="flex items-center justify-between bg-white p-3 rounded border">
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">{mcq.question}</p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Correct: {mcq.answer} • {mcq.options.length} options
-                              </p>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleRemoveMcq(idx)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   )}
                   
+                  {/* Progress Bar */}
+                  {isCreatingModule && (
+                    <div className="space-y-2 pt-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between text-sm text-gray-600">
+                        <span>Creating module and uploading video...</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <Progress value={uploadProgress} className="w-full" />
+                      <p className="text-xs text-gray-500">
+                        Please wait for the complete upload. Do not close this window.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="flex space-x-3 pt-4 border-t border-gray-200">
                     <Button 
                       onClick={handleSaveModule} 
-                      disabled={!videoFile || !moduleName.trim() || isCalculatingDuration || !videoDuration || videoDuration <= 0}
+                      disabled={!videoFile || !moduleName.trim() || isCalculatingDuration || !videoDuration || videoDuration <= 0 || isCreatingModule}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {isCalculatingDuration ? 'Calculating Duration...' : 'Save Module'}
+                      {isCreatingModule ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Creating Module...
+                        </>
+                      ) : isCalculatingDuration ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Calculating Duration...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Save Module
+                        </>
+                      )}
                     </Button>
                     <Button 
                       variant="outline" 
@@ -1176,44 +1657,49 @@ export default function AdminCompanyModules() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-medium text-gray-900">Modules</h3>
-                      {isReordering && (
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                          Order Changed
-                        </Badge>
+                  <div className="bg-white rounded-2xl p-6 shadow-lg border-0 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                          <GripVertical className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900">Modules</h3>
+                          <p className="text-gray-600">Manage your training modules and assessments</p>
+                        </div>
+                        {isReordering && (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 px-3 py-1">
+                            Order Changed
+                          </Badge>
+                        )}
+                      </div>
+                      {!isReordering ? (
+                        <Button
+                          onClick={() => setIsReordering(true)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium"
+                        >
+                          <GripVertical className="h-5 w-5 mr-2" />
+                          Reorder Modules
+                        </Button>
+                      ) : (
+                        <div className="flex items-center space-x-3">
+                          <Button
+                            onClick={handleSaveOrder}
+                            disabled={isSavingOrder}
+                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium disabled:opacity-50"
+                          >
+                            {isSavingOrder ? 'Saving...' : 'Save Order'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={handleCancelOrder}
+                            className="px-6 py-3 rounded-xl font-medium"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       )}
                     </div>
-                    {!isReordering ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsReordering(true)}
-                        className="flex items-center space-x-2"
-                      >
-                        <GripVertical className="h-4 w-4" />
-                        <span>Reorder Modules</span>
-                      </Button>
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleSaveOrder}
-                          disabled={isSavingOrder}
-                          className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-                        >
-                          {isSavingOrder ? 'Saving...' : 'Save Order'}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCancelOrder}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    )}
                   </div>
                   
                   {isReordering ? (
@@ -1251,6 +1737,10 @@ export default function AdminCompanyModules() {
                              onModuleSelect={handleModuleSelect}
                              onEditModule={handleEditModule}
                              onDeleteModule={handleDeleteModule}
+                             onUploadResource={(module) => {
+                               setSelectedModuleForResource({ id: module.id, name: module.name });
+                               setShowResourceUpload(true);
+                             }}
                              deletingModuleId={deletingModuleId}
                              getVideoUrl={getVideoUrl}
                              capitalizeModuleName={capitalizeModuleName}
@@ -1265,44 +1755,81 @@ export default function AdminCompanyModules() {
                       </DndContext>
                     </>
                   ) : (
-                  <div className="space-y-1">
-                    {modules.map((module, index) => (
+                  <div className="space-y-4">
+                    {modules.filter(module => !module.isResourceModule).map((module, index) => (
                       <div key={module.id}>
                         <div 
-                          className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-300 group"
+                          className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-blue-300 group transform hover:-translate-y-1"
                           onClick={() => handleModuleSelect(module)}
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3 flex-1">
-                              <span className="text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-full min-w-[2rem] text-center">
+                            {/* Left side - Module info */}
+                            <div className="flex items-center space-x-4 flex-1 min-w-0">
+                              <span className="text-lg font-bold text-gray-600 bg-gray-100 px-3 py-2 rounded-full min-w-[3rem] text-center flex-shrink-0">
                                 #{index + 1}
                               </span>
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-lg mb-1 truncate" title={capitalizeModuleName(module.name) || `Module ${index + 1}`}>
                                   {capitalizeModuleName(module.name) || `Module ${index + 1}`}
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-sm text-gray-500">
                                   Click to view full details
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-3">
+                            
+                            {/* Right side - Stats and actions */}
+                            <div className="flex items-center space-x-4 flex-shrink-0">
+                              {/* Module stats */}
                               <div className="flex items-center space-x-2">
-                                <Badge variant="outline" className="text-xs bg-gray-50">
-                                  {module.mcqs?.length || 0} MCQs
-                                </Badge>
-                                {module.videos && module.videos.length > 0 && (
-                                  <Badge variant="outline" className="text-xs bg-gray-50">
-                                    <Play className="h-3 w-3 mr-1" />
-                                    {module.videos.length}
-                                  </Badge>
+                                {module.isResourceModule ? (
+                                  <>
+                                    <Badge variant="outline" className="text-sm bg-purple-50 text-purple-700 border-purple-200 px-3 py-1">
+                                      <FileText className="h-3 w-3 mr-1" />
+                                      {module.resources?.length || 0} Resources
+                                    </Badge>
+                                    {module.mcqs && module.mcqs.length > 0 && (
+                                      <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
+                                        {module.mcqs.length} MCQs
+                                      </Badge>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
+                                      {module.mcqs?.length || 0} MCQs
+                                    </Badge>
+                                    {module.videos && module.videos.length > 0 && (
+                                      <Badge variant="outline" className="text-sm bg-green-50 text-green-700 border-green-200 px-3 py-1">
+                                        <Play className="h-3 w-3 mr-1" />
+                                        {module.videos.length} Videos
+                                      </Badge>
+                                    )}
+                                  </>
                                 )}
                               </div>
-                              <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              
+                              {/* Action buttons */}
+                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                {module.isResourceModule && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-9 w-9 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedModuleForResource({ id: module.id, name: module.name });
+                                      setShowResourceUpload(true);
+                                    }}
+                                    title="Upload resources"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                  size="sm"
+                                  className="h-9 w-9 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEditModule(module);
@@ -1313,8 +1840,8 @@ export default function AdminCompanyModules() {
                                 </Button>
                                 <Button
                                   variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  size="sm"
+                                  className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDeleteModule(module.id, module.name);
@@ -1344,6 +1871,73 @@ export default function AdminCompanyModules() {
             </div>
           </div>
         )}
+
+        {/* Resources Section - Only show if there are resource modules */}
+        {selectedCompany && modules.some(module => module.isResourceModule) && (
+          <div className="mt-8">
+            <div className="bg-white rounded-2xl shadow-lg border-0 overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FileText className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">Learning Resources</h2>
+                      <p className="text-sm text-gray-600">Manage documents, PDFs, and other learning materials</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {modules
+                    .filter(module => module.isResourceModule)
+                    .map((module) => (
+                      <div key={module.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-purple-300 transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-2 flex-1 min-w-0">
+                            <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                              <FileText className="h-4 w-4 text-purple-600" />
+                            </div>
+                            <h3 className="font-medium text-gray-900 truncate text-sm">{module.name}</h3>
+                          </div>
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs flex-shrink-0 ml-2">
+                            {module.resources?.length || 0} Resources
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">Click to manage resources</p>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedModuleForResource({ id: module.id, name: module.name });
+                              setShowResourceUpload(true);
+                            }}
+                            className="flex-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleModuleSelect(module)}
+                            className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Module Detail Modal */}
         <Dialog open={showModuleDetail && !!selectedModule} onOpenChange={setShowModuleDetail}>
@@ -1362,15 +1956,30 @@ export default function AdminCompanyModules() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {selectedModule && !isEditMode && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => handleEditModule(selectedModule)}
-                    >
-                      <Edit className="h-5 w-5" />
-                    </Button>
+                  {selectedModule && !isEditMode && selectedModule.isResourceModule && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-green-500 hover:text-green-700 hover:bg-green-50"
+                        onClick={() => {
+                          setSelectedModuleForResource({ id: selectedModule.id, name: selectedModule.name });
+                          setShowResourceUpload(true);
+                        }}
+                        title="Add Resources"
+                      >
+                        <FileText className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => handleEditModule(selectedModule)}
+                        title="Edit Module"
+                      >
+                        <Edit className="h-5 w-5" />
+                      </Button>
+                    </>
                   )}
                   {selectedModule && (
                     <Button
@@ -1413,20 +2022,21 @@ export default function AdminCompanyModules() {
                       />
                     </div>
 
-                    {/* Video Upload */}
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <Play className="h-5 w-5 text-blue-600" />
+                    {/* Video Upload - Only show for non-resource modules */}
+                    {selectedModule && !selectedModule.isResourceModule && (
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <Play className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900">Video Tutorial</h3>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900">Video Tutorial</h3>
-                      </div>
                       
                       {/* Current Video */}
                       {selectedModule.videos?.[0]?.url && !editVideoFile && (
                         <div className="space-y-3">
                           <p className="text-sm text-gray-600">Current video:</p>
-                          <div className="relative bg-black rounded-lg overflow-hidden shadow-lg">
+                          <div className="relative bg-black rounded-lg overflow-hidden shadow-lg min-h-[200px]">
                             <video 
                               src={getVideoUrl(selectedModule.videos?.[0].url)} 
                               controls 
@@ -1434,7 +2044,57 @@ export default function AdminCompanyModules() {
                               disablePictureInPicture
                               className="w-full h-auto"
                               preload="metadata"
+                              onError={(e) => {
+                                console.error('Video loading error:', e);
+                                console.error('Video URL:', getVideoUrl(selectedModule.videos?.[0].url));
+                                console.error('Original video URL:', selectedModule.videos?.[0].url);
+                                // Show error message
+                                const videoElement = e.target as HTMLVideoElement;
+                                const errorDiv = document.createElement('div');
+                                errorDiv.className = 'absolute inset-0 flex items-center justify-center bg-red-900 text-white p-4';
+                                errorDiv.innerHTML = `
+                                  <div class="text-center">
+                                    <div class="text-2xl mb-2">⚠️</div>
+                                    <div class="font-semibold">Video failed to load</div>
+                                    <div class="text-sm mt-1">Check console for details</div>
+                                    <div class="text-xs mt-2 opacity-75">URL: ${getVideoUrl(selectedModule.videos?.[0].url)}</div>
+                                  </div>
+                                `;
+                                videoElement.parentNode?.appendChild(errorDiv);
+                              }}
+                              onLoadStart={() => {
+                                console.log('Video loading started:', getVideoUrl(selectedModule.videos?.[0].url));
+                                // Test if the video URL is accessible
+                                fetch(getVideoUrl(selectedModule.videos?.[0].url), { method: 'HEAD' })
+                                  .then(response => {
+                                    console.log('Video URL accessibility test:', response.status, response.statusText);
+                                    if (!response.ok) {
+                                      console.error('Video URL not accessible:', response.status, response.statusText);
+                                    }
+                                  })
+                                  .catch(error => {
+                                    console.error('Video URL fetch error:', error);
+                                  });
+                              }}
+                              onCanPlay={() => {
+                                console.log('Video can play:', getVideoUrl(selectedModule.videos?.[0].url));
+                                // Hide loading placeholder
+                                const placeholder = document.getElementById('video-loading-placeholder');
+                                if (placeholder) {
+                                  placeholder.style.display = 'none';
+                                }
+                              }}
+                              onLoadedMetadata={() => {
+                                console.log('Video metadata loaded:', getVideoUrl(selectedModule.videos?.[0].url));
+                              }}
                             />
+                            {/* Loading placeholder */}
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-white" id="video-loading-placeholder">
+                              <div className="text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                                <div>Loading video...</div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1501,8 +2161,10 @@ export default function AdminCompanyModules() {
                         )}
                       </div>
                     </div>
+                    )}
 
-                    {/* MCQs Section */}
+                    {/* MCQs Section - Only show for video modules */}
+                    {selectedModule && !selectedModule.isResourceModule && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
@@ -1713,6 +2375,7 @@ export default function AdminCompanyModules() {
                         </div>
                       </div>
                     </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
@@ -1738,47 +2401,85 @@ export default function AdminCompanyModules() {
                     {/* Module Overview */}
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <Clock className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Duration</p>
-                            <p className="font-semibold text-gray-900">
-                              {selectedModule.videos?.[0]?.duration 
-                                ? `${Math.floor(selectedModule.videos?.[0].duration / 60)}:${(selectedModule.videos?.[0].duration % 60).toString().padStart(2, '0')}`
-                                : 'Not specified'
-                              }
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-green-100 rounded-lg">
-                            <FileText className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Questions</p>
-                            <p className="font-semibold text-gray-900">
-                              {selectedModule.mcqs?.length || 0} MCQs
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-purple-100 rounded-lg">
-                            <Users className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Company</p>
-                            <p className="font-semibold text-gray-900">
-                              {selectedCompany?.name || 'Unknown'}
-                            </p>
-                          </div>
-                        </div>
+                        {selectedModule && selectedModule.isResourceModule ? (
+                          <>
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-purple-100 rounded-lg">
+                                <FileText className="h-5 w-5 text-purple-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Type</p>
+                                <p className="font-semibold text-gray-900">Resource Module</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-green-100 rounded-lg">
+                                <FileText className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Questions</p>
+                                <p className="font-semibold text-gray-900">
+                                  {selectedModule.mcqs?.length || 0} MCQs
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-purple-100 rounded-lg">
+                                <Users className="h-5 w-5 text-purple-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Company</p>
+                                <p className="font-semibold text-gray-900">
+                                  {selectedCompany?.name || 'Unknown'}
+                                </p>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-blue-100 rounded-lg">
+                                <Clock className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Duration</p>
+                                <p className="font-semibold text-gray-900">
+                                  {selectedModule.videos?.[0]?.duration 
+                                    ? `${Math.floor(selectedModule.videos?.[0].duration / 60)}:${(selectedModule.videos?.[0].duration % 60).toString().padStart(2, '0')}`
+                                    : 'Not specified'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-green-100 rounded-lg">
+                                <FileText className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Questions</p>
+                                <p className="font-semibold text-gray-900">
+                                  {selectedModule.mcqs?.length || 0} MCQs
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-purple-100 rounded-lg">
+                                <Users className="h-5 w-5 text-purple-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">Company</p>
+                                <p className="font-semibold text-gray-900">
+                                  {selectedCompany?.name || 'Unknown'}
+                                </p>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    {/* Video Section */}
-                    {selectedModule.videos?.[0]?.url && (
+                    {/* Video Section - Only show for non-resource modules */}
+                    {selectedModule && !selectedModule.isResourceModule && (
                       <div className="space-y-4">
                         <div className="flex items-center space-x-2">
                           <div className="p-2 bg-blue-100 rounded-lg">
@@ -1786,21 +2487,63 @@ export default function AdminCompanyModules() {
                           </div>
                           <h3 className="text-lg font-semibold text-gray-900">Video Tutorial</h3>
                         </div>
-                        <div className="relative bg-black rounded-lg overflow-hidden shadow-lg">
-                          <video 
-                            src={getVideoUrl(selectedModule.videos?.[0].url)} 
-                            controls 
-                            className="w-full h-auto"
-                            preload="metadata"
-                            onError={(e) => {
-                              // Video loading error handled silently
-                            }}
-                          />
-                        </div>
+                        
+                        {selectedModule.videos?.[0]?.url ? (
+                          <div className="relative bg-black rounded-lg overflow-hidden shadow-lg">
+                            <video 
+                              src={getVideoUrl(selectedModule.videos[0].url)} 
+                              controls 
+                              className="w-full h-auto"
+                              preload="metadata"
+                              onError={(e) => {
+                                console.error('Video loading error:', e);
+                                console.error('Video URL:', getVideoUrl(selectedModule.videos[0].url));
+                              }}
+                              onLoadStart={() => {
+                                console.log('Video loading started:', getVideoUrl(selectedModule.videos[0].url));
+                              }}
+                              onCanPlay={() => {
+                                console.log('Video can play:', getVideoUrl(selectedModule.videos[0].url));
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="bg-gray-100 rounded-lg p-8 text-center">
+                            <Play className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                            <p className="text-gray-600 font-medium">No video uploaded</p>
+                            <p className="text-sm text-gray-500">Upload a video to get started</p>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* MCQs Section */}
+
+                    {/* Module Resources - Only show for resource modules */}
+                    {selectedModule && selectedModule.isResourceModule && (
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <FileText className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900">Learning Resources</h3>
+                        </div>
+                        
+                        <ModuleResources
+                          moduleId={selectedModule.id}
+                          onAddResource={(module) => {
+                            setSelectedModuleForResource({ id: module.id, name: selectedModule.name });
+                            setShowResourceUpload(true);
+                          }}
+                          onViewResource={(resource) => {
+                            // Handle resource viewing if needed
+                            console.log('Viewing resource:', resource);
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* MCQs Section - Only show for video modules */}
+                    {selectedModule && !selectedModule.isResourceModule && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
@@ -1808,7 +2551,7 @@ export default function AdminCompanyModules() {
                             <FileText className="h-5 w-5 text-green-600" />
                           </div>
                           <h3 className="text-lg font-semibold text-gray-900">
-                            Multiple Choice Questions ({selectedModule.mcqs?.length || 0})
+                            Multiple Choice Questions ({selectedModule?.mcqs?.length || 0})
                           </h3>
                         </div>
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
@@ -1895,6 +2638,7 @@ export default function AdminCompanyModules() {
                         </div>
                       )}
                     </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
@@ -1949,6 +2693,120 @@ export default function AdminCompanyModules() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Resource Module Dialog */}
+        <Dialog open={showResourceModuleDialog} onOpenChange={setShowResourceModuleDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <FileText className="h-5 w-5 mr-2 text-green-600" />
+                Create Resource Module
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Module Name
+                </label>
+                <Input
+                  placeholder="Enter resource module name..."
+                  value={resourceModuleName}
+                  onChange={(e) => setResourceModuleName(e.target.value)}
+                />
+              </div>
+              
+              {/* Resource Upload Section */}
+              <div className="border-2 border-dashed border-green-200 rounded-lg p-6">
+                <div className="text-center">
+                  <FileText className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Resources</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Upload documents, PDFs, images, and other learning resources for this module
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.wav"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setResourceFiles(files);
+                        }}
+                        className="hidden"
+                        id="resource-upload"
+                      />
+                      <label
+                        htmlFor="resource-upload"
+                        className="inline-flex items-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 cursor-pointer"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose Files
+                      </label>
+                    </div>
+                    
+                    {resourceFiles.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files:</h4>
+                        <div className="space-y-2">
+                          {resourceFiles.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                              <span className="text-sm text-gray-700">{file.name}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const newFiles = resourceFiles.filter((_, i) => i !== index);
+                                  setResourceFiles(newFiles);
+                                }}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <FileText className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Resource Module</span>
+                </div>
+                <p className="text-sm text-green-700">
+                  This will create a module specifically for documents, PDFs, and other learning resources.
+                  You can upload files now or add more later.
+                </p>
+              </div>
+              
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowResourceModuleDialog(false);
+                    setResourceFiles([]);
+                    setResourceModuleName("");
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateResourceModuleWithFiles}
+                  disabled={!resourceModuleName.trim()}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Create Module & Upload Files
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

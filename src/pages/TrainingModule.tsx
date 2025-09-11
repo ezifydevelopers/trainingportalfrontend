@@ -12,6 +12,8 @@ import { Play, CheckCircle, ArrowLeft, ArrowRight, Clock, FileText, AlertCircle,
 import { toast } from "sonner";
 import HelpRequestButton from "@/components/HelpRequestButton";
 import FeedbackModal from "@/components/FeedbackModal";
+import ResourceViewer from "@/components/ResourceViewer";
+import ModuleResources from "@/components/ModuleResources";
 import { getApiBaseUrl } from "@/lib/api";
 
 export default function TrainingModule() {
@@ -27,6 +29,8 @@ export default function TrainingModule() {
    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
    const [isVideoPlaying, setIsVideoPlaying] = useState(false);
    const [isFullscreen, setIsFullscreen] = useState(false);
+   const [isVideoLoading, setIsVideoLoading] = useState(true);
+   const [videoError, setVideoError] = useState<string | null>(null);
 
   // Fetch module data from API
   const { 
@@ -56,6 +60,23 @@ export default function TrainingModule() {
     }
   }, [user, navigate]);
 
+  // Debug module data
+  useEffect(() => {
+    if (module) {
+      console.log('Module data loaded:', {
+        id: module.id,
+        name: module.name,
+        videos: module.videos,
+        completed: module.completed,
+        videoUrl: module.videos?.[0]?.url
+      });
+      // Reset video states when module changes
+      setIsVideoLoading(true);
+      setVideoError(null);
+      setIsVideoPlaying(false);
+    }
+  }, [module]);
+
   // Sync videoCompleted state with module.completed from API
   useEffect(() => {
     if (module?.completed) {
@@ -69,8 +90,8 @@ export default function TrainingModule() {
      const preventVideoManipulation = () => {
        const video = (window as any).currentVideo;
        if (video) {
-         // Disable all video controls
-         video.controls = false;
+         // Keep controls enabled but restrict certain features
+         video.controls = true;
          video.controlsList = "nodownload nofullscreen noremoteplayback";
          video.disablePictureInPicture = true;
          
@@ -268,10 +289,30 @@ export default function TrainingModule() {
   };
 
   const getVideoUrl = (videoUrl: string) => {
-    if (videoUrl.startsWith('http')) {
-      return videoUrl;
+    if (!videoUrl) {
+      console.error('No video URL provided');
+      return '';
     }
-    return `${import.meta.env.VITE_API_URL || 'http://localhost:7001'}/uploads/${videoUrl}`;
+    
+    let fullUrl;
+    if (videoUrl.startsWith('http')) {
+      fullUrl = videoUrl;
+    } else if (videoUrl.startsWith('/uploads/')) {
+      // Video URL already has /uploads/ prefix, just add the base URL
+      const baseUrl = import.meta.env.VITE_API_URL ? 
+        import.meta.env.VITE_API_URL.replace('/api', '') : 
+        'http://localhost:7001';
+      fullUrl = `${baseUrl}${videoUrl}`;
+    } else {
+      // Video URL is just a filename, add /uploads/ prefix
+      const baseUrl = import.meta.env.VITE_API_URL ? 
+        import.meta.env.VITE_API_URL.replace('/api', '') : 
+        'http://localhost:7001';
+      fullUrl = `${baseUrl}/uploads/${videoUrl}`;
+    }
+    
+    console.log('Generated video URL:', fullUrl);
+    return fullUrl;
   };
 
   const capitalizeModuleName = (name: string) => {
@@ -327,19 +368,54 @@ export default function TrainingModule() {
 
         {!showQuiz ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Video Section */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-lg">
-                    <Play className="h-4 w-4 mr-2" />
-                    Video Tutorial
-                  </CardTitle>
-                </CardHeader>
+            {/* Video Section - Only show for non-resource modules */}
+            {!module?.isResourceModule && (
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center text-lg">
+                      <Play className="h-4 w-4 mr-2" />
+                      Video Tutorial
+                    </CardTitle>
+                  </CardHeader>
                 <CardContent className="pt-0">
                   {module.videos?.[0] ? (
                     <div className="space-y-3">
                       <div className="aspect-video bg-black rounded-lg overflow-hidden select-none relative">
+                        {/* Loading indicator */}
+                        {isVideoLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                            <div className="text-center text-white">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                              <p className="text-sm">Loading video...</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Error state */}
+                        {videoError && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-red-900 bg-opacity-50">
+                            <div className="text-center text-white p-4">
+                              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                              <p className="text-sm mb-2">{videoError}</p>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="text-white border-white hover:bg-white hover:text-black"
+                                onClick={() => {
+                                  setVideoError(null);
+                                  setIsVideoLoading(true);
+                                  const video = (window as any).currentVideo;
+                                  if (video) {
+                                    video.load();
+                                  }
+                                }}
+                              >
+                                Retry
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                         <video 
                           ref={(el) => {
                             if (el) {
@@ -348,6 +424,7 @@ export default function TrainingModule() {
                             }
                           }}
                           src={getVideoUrl(module.videos?.[0]?.url)} 
+                          controls
                           controlsList="nodownload nofullscreen noremoteplayback"
                           disablePictureInPicture
                           className="w-full h-full"
@@ -362,10 +439,45 @@ export default function TrainingModule() {
                           onContextMenu={(e) => e.preventDefault()}
                           onLoadedMetadata={(e) => {
                             const video = e.target as HTMLVideoElement;
-                            // Don't auto-play, wait for user interaction
+                            console.log('Video metadata loaded:', {
+                              duration: video.duration,
+                              videoWidth: video.videoWidth,
+                              videoHeight: video.videoHeight,
+                              readyState: video.readyState,
+                              src: video.src
+                            });
                           }}
-                          onPlay={() => setIsVideoPlaying(true)}
-                          onPause={() => setIsVideoPlaying(false)}
+                          onLoadStart={() => {
+                            console.log('Video loading started');
+                            setIsVideoLoading(true);
+                            setVideoError(null);
+                          }}
+                          onCanPlay={() => {
+                            console.log('Video can play');
+                            setIsVideoLoading(false);
+                            setVideoError(null);
+                          }}
+                          onError={(e) => {
+                            console.error('Video error:', e);
+                            const video = e.target as HTMLVideoElement;
+                            console.error('Video error details:', {
+                              error: video.error,
+                              networkState: video.networkState,
+                              readyState: video.readyState,
+                              src: video.src
+                            });
+                            setIsVideoLoading(false);
+                            setVideoError('Failed to load video. Please check your internet connection and try again.');
+                            toast.error('Failed to load video. Please try refreshing the page.');
+                          }}
+                          onPlay={() => {
+                            console.log('Video started playing');
+                            setIsVideoPlaying(true);
+                          }}
+                          onPause={() => {
+                            console.log('Video paused');
+                            setIsVideoPlaying(false);
+                          }}
                           onSeeked={(e) => {
                             // Prevent seeking by resetting to allowed position
                             const video = e.target as HTMLVideoElement;
@@ -423,8 +535,8 @@ export default function TrainingModule() {
                            }}
                         />
                         
-                                                 {/* Custom Play/Pause Button Overlay - Only show when video is paused */}
-                         {!isVideoPlaying && (
+                                                 {/* Custom Play/Pause Button Overlay - Only show when video is loaded and paused */}
+                         {!isVideoPlaying && !isVideoLoading && !videoError && (
                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-20 transition-all duration-200">
                              <Button
                                size="lg"
@@ -448,17 +560,17 @@ export default function TrainingModule() {
                              variant="ghost"
                              className="bg-black bg-opacity-70 text-white hover:bg-black hover:bg-opacity-80 rounded-full w-8 h-8 p-0"
                              onClick={() => {
-                               if (isFullscreen) {
-                                 // Exit fullscreen
-                                 if (document.exitFullscreen) {
-                                   document.exitFullscreen();
-                                 } else if (document.webkitExitFullscreen) {
-                                   document.webkitExitFullscreen();
-                                 } else if (document.mozCancelFullScreen) {
-                                   document.mozCancelFullScreen();
-                                 } else if (document.msExitFullscreen) {
-                                   document.msExitFullscreen();
-                                 }
+                              if (isFullscreen) {
+                                // Exit fullscreen
+                                if (document.exitFullscreen) {
+                                  document.exitFullscreen();
+                                } else if ((document as any).webkitExitFullscreen) {
+                                  (document as any).webkitExitFullscreen();
+                                } else if ((document as any).mozCancelFullScreen) {
+                                  (document as any).mozCancelFullScreen();
+                                } else if ((document as any).msExitFullscreen) {
+                                  (document as any).msExitFullscreen();
+                                }
                                } else {
                                  // Enter fullscreen
                                  const video = (window as any).currentVideo;
@@ -528,10 +640,22 @@ export default function TrainingModule() {
                 </CardContent>
               </Card>
             </div>
+            )}
+
+            {/* Resources Section */}
+            <div className={`${module?.isResourceModule ? 'lg:col-span-3' : 'lg:col-span-2'} mb-4`}>
+              <ModuleResources
+                moduleId={Number(moduleId)}
+                onViewResource={(resource) => {
+                  // Handle resource viewing if needed
+                  console.log('Viewing resource:', resource);
+                }}
+              />
+            </div>
 
             {/* Quiz Section */}
             <div className="space-y-4">
-              {videoCompleted && (
+              {(videoCompleted || module?.isResourceModule) && (
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">

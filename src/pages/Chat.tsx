@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,11 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState("");
   const [companyUsers, setCompanyUsers] = useState<User[]>([]);
   const [showUserList, setShowUserList] = useState(false);
+  
+  // Debug logging for showUserList state changes
+  useEffect(() => {
+    console.log('showUserList state changed:', showUserList);
+  }, [showUserList]);
   const [searchQuery, setSearchQuery] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -145,6 +150,28 @@ export default function Chat() {
     onUserOffline: handleUserOffline
   });
 
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/chat/unread-count`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadCount(data.unreadCount);
+        
+        // If there are new unread messages, show notification
+        if (data.unreadCount > 0 && data.unreadCount > unreadCount) {
+          showNewMessageNotification();
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  }, [unreadCount]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -171,7 +198,7 @@ export default function Chat() {
       
       return () => clearInterval(messagePollingInterval);
     }
-  }, [user]);
+  }, [user, fetchUnreadCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selectedChatRoom) {
@@ -213,6 +240,7 @@ export default function Chat() {
         setChatRooms(data);
       }
     } catch (error) {
+      console.error('Error fetching chat rooms:', error);
     }
   };
 
@@ -252,27 +280,7 @@ export default function Chat() {
         setMessages(data);
       }
     } catch (error) {
-    }
-  };
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/chat/unread-count`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setUnreadCount(data.unreadCount);
-        
-        // If there are new unread messages, show notification
-        if (data.unreadCount > 0 && data.unreadCount > unreadCount) {
-          showNewMessageNotification();
-        }
-      }
-    } catch (error) {
+      console.error('Error fetching messages:', error);
     }
   };
 
@@ -423,216 +431,253 @@ export default function Chat() {
 
     return (
     <Layout>
-      <div className="flex h-[calc(100vh-4rem)] bg-white">
-                 {/* Chat Rooms Sidebar */}
-         <div className="w-80 border-r border-gray-200 bg-white flex flex-col shadow-sm">
-           <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-             <div className="mb-4">
-               <h2 className="text-xl font-bold text-gray-900 mb-2">Cross-Company Chat</h2>
-               <p className="text-sm text-gray-600">Connect with trainees and managers from any company</p>
-             </div>
-             
-             <Button
-               size="sm"
-               onClick={() => setShowUserList(!showUserList)}
-               variant={showUserList ? "default" : "outline"}
-               className="w-full h-10 font-medium"
-             >
-               <Users className="h-4 w-4 mr-2" />
-               {showUserList ? 'Show Chats' : 'New Chat'}
-             </Button>
+      <div className="flex h-[calc(100vh-4rem)] bg-gray-50">
+        {/* Enhanced Chat Rooms Sidebar */}
+        <div className="w-96 border-r border-gray-200 bg-white flex flex-col shadow-xl">
+          <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold mb-3">Cross-Company Chat</h2>
+              <p className="text-blue-100 text-lg">Connect with trainees and managers from any company</p>
+            </div>
             
-                         {showUserList && (
-               <div className="mt-4 space-y-3">
-                 <div className="relative">
-                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                   <Input
-                     placeholder="Search users by name or email..."
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     className="pl-10 h-10 text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
-                   />
-                 </div>
-                                 <ScrollArea className="h-80">
-                   <div className="space-y-2 pr-2">
-                     {filteredUsers.map((user) => (
-                       <div
-                         key={user.id}
-                         className="flex items-center p-4 hover:bg-blue-50 rounded-xl cursor-pointer transition-all duration-200 border border-transparent hover:border-blue-200 hover:shadow-sm"
-                         onClick={() => startChatWithUser(user.id)}
-                       >
-                         <Avatar className="h-12 w-12 mr-4 ring-2 ring-gray-100">
-                           <AvatarFallback className="text-base font-semibold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                             {user.name.charAt(0)}
-                           </AvatarFallback>
-                         </Avatar>
-                         <div className="flex-1 min-w-0">
-                           <div className="flex items-center gap-2 mb-1">
-                             <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
-                             <Badge 
-                               variant={user.role === 'ADMIN' ? "default" : "secondary"} 
-                               className="text-xs px-2 py-1 font-medium"
-                             >
-                               {user.role}
-                             </Badge>
-                           </div>
-                           <p className="text-xs text-gray-500 truncate mb-2">{user.email}</p>
-                           {user.company && (
-                             <Badge variant="outline" className="text-xs px-3 py-1 bg-gray-50 text-gray-700 border-gray-200">
-                               {user.company.name}
-                             </Badge>
-                           )}
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 </ScrollArea>
+            <Button
+              onClick={() => setShowUserList(!showUserList)}
+              className={`w-full h-12 font-semibold text-base rounded-xl shadow-lg ${
+                showUserList 
+                  ? 'bg-white text-blue-600 hover:bg-blue-50' 
+                  : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'
+              }`}
+            >
+              <Users className="h-5 w-5 mr-3" />
+              {showUserList ? 'Show Chats' : 'New Chat'}
+            </Button>
+            
+            {showUserList && (
+              <div className="mt-6 space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    placeholder="Search users by name or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-12 h-12 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl bg-white/90"
+                  />
+                </div>
+                <ScrollArea className="h-96">
+                  <div className="space-y-3 pr-3">
+                    {filteredUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center p-5 hover:bg-white/20 rounded-2xl cursor-pointer transition-all duration-300 border border-transparent hover:border-white/30 hover:shadow-lg transform hover:-translate-y-1"
+                        onClick={() => startChatWithUser(user.id)}
+                      >
+                        <Avatar className="h-14 w-14 mr-4 ring-4 ring-white/20">
+                          <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-white to-blue-100 text-blue-600">
+                            {user.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-2">
+                            <p className="text-base font-bold text-white truncate">{user.name}</p>
+                            <Badge 
+                              className={`text-xs px-3 py-1 font-semibold ${
+                                user.role === 'ADMIN' 
+                                  ? 'bg-yellow-500 text-white' 
+                                  : 'bg-green-500 text-white'
+                              }`}
+                            >
+                              {user.role}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-blue-100 truncate mb-2">{user.email}</p>
+                          {user.company && (
+                            <Badge className="text-xs px-3 py-1 bg-white/20 text-white border border-white/30">
+                              {user.company.name}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </div>
 
           {!showUserList && (
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden bg-white">
               <ScrollArea className="h-full">
-                                 <div className="p-3 space-y-2">
-                   {chatRooms.length === 0 ? (
-                     <div className="text-center py-12 text-gray-500">
-                       <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                       <p className="text-sm font-medium">No chats yet</p>
-                       <p className="text-xs">Start a new conversation</p>
-                     </div>
-                   ) : (
-                     chatRooms.map((chatRoom) => {
-                       const otherUser = getOtherParticipant(chatRoom);
-                       const lastMessage = getLastMessage(chatRoom);
-                        
-                       return (
-                         <div
-                           key={chatRoom.id}
-                           className={`flex items-center p-4 rounded-xl cursor-pointer transition-all duration-200 ${
-                             selectedChatRoom?.id === chatRoom.id 
-                               ? 'bg-blue-100 border border-blue-300 shadow-sm' 
-                               : 'hover:bg-gray-50 border border-transparent hover:border-gray-200 hover:shadow-sm'
-                           }`}
-                           onClick={() => setSelectedChatRoom(chatRoom)}
-                         >
-                           <Avatar className="h-11 w-11 mr-4 ring-2 ring-gray-100">
-                             <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-gray-500 to-gray-600 text-white">
-                               {otherUser?.name.charAt(0)}
-                             </AvatarFallback>
-                           </Avatar>
-                           <div className="flex-1 min-w-0">
-                             <div className="flex items-center justify-between mb-2">
-                               <p className="text-sm font-semibold text-gray-900 truncate">{otherUser?.name}</p>
-                               {lastMessage && (
-                                 <span className="text-xs text-gray-500 flex-shrink-0 ml-2 bg-gray-100 px-2 py-1 rounded-full">
-                                   {formatTime(lastMessage.createdAt)}
-                                 </span>
-                               )}
-                             </div>
-                             {lastMessage && (
-                               <p className="text-xs text-gray-600 truncate leading-relaxed">
-                                 {lastMessage.sender.id === user.id ? 'You: ' : ''}
-                                 {lastMessage.content}
-                               </p>
-                             )}
-                           </div>
-                         </div>
-                       );
-                     })
-                   )}
-                 </div>
+                <div className="p-3 space-y-2">
+                  {chatRooms.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <MessageCircle className="h-10 w-10 text-gray-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">No Chats Yet</h3>
+                      <p className="text-gray-600 mb-6">Start a new conversation to connect with others</p>
+                      <Button 
+                        onClick={() => setShowUserList(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        Start New Chat
+                      </Button>
+                    </div>
+                  ) : (
+                    chatRooms.map((chatRoom) => {
+                      const otherUser = getOtherParticipant(chatRoom);
+                      const lastMessage = getLastMessage(chatRoom);
+                       
+                      return (
+                        <div
+                          key={chatRoom.id}
+                          className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            selectedChatRoom?.id === chatRoom.id 
+                              ? 'bg-blue-50 border border-blue-300' 
+                              : 'hover:bg-gray-50 border border-transparent hover:border-gray-200'
+                          }`}
+                          onClick={() => setSelectedChatRoom(chatRoom)}
+                        >
+                          <Avatar className="h-10 w-10 mr-3">
+                            <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                              {otherUser?.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{otherUser?.name}</p>
+                              {lastMessage && (
+                                <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                                  {formatTime(lastMessage.createdAt)}
+                                </span>
+                              )}
+                            </div>
+                            {lastMessage && (
+                              <div className="space-y-1">
+                                <p className="text-xs text-gray-600 truncate">
+                                  <span className="font-medium text-blue-600">
+                                    {lastMessage.sender.id === user.id ? 'You: ' : `${otherUser?.name}: `}
+                                  </span>
+                                  {lastMessage.content}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                  <Badge 
+                                    className={`text-xs px-2 py-0.5 ${
+                                      otherUser?.role === 'ADMIN' 
+                                        ? 'bg-yellow-100 text-yellow-800' 
+                                        : 'bg-green-100 text-green-800'
+                                    }`}
+                                  >
+                                    {otherUser?.role}
+                                  </Badge>
+                                  {otherUser?.company && (
+                                    <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                      {otherUser.company.name}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </ScrollArea>
             </div>
           )}
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-gray-50/30">
+        {/* Enhanced Chat Area */}
+        <div className="flex-1 flex flex-col bg-gray-50">
           {selectedChatRoom ? (
             <>
-                             {/* Chat Header */}
-               <div className="p-6 border-b border-gray-100 bg-white shadow-sm">
-                 <div className="flex items-center justify-between">
-                   <div className="flex items-center">
-                     <Avatar className="h-12 w-12 mr-4 ring-2 ring-gray-100">
-                       <AvatarFallback className="text-base font-semibold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                         {getOtherParticipant(selectedChatRoom)?.name.charAt(0)}
-                       </AvatarFallback>
-                     </Avatar>
-                     <div>
-                       <h3 className="font-bold text-gray-900 text-xl mb-2">
-                         {getOtherParticipant(selectedChatRoom)?.name}
-                       </h3>
-                       <div className="flex items-center gap-3">
-                         <Badge 
-                           variant={getOtherParticipant(selectedChatRoom)?.role === 'ADMIN' ? "default" : "secondary"} 
-                           className="text-xs px-3 py-1 font-medium"
-                         >
-                           {getOtherParticipant(selectedChatRoom)?.role}
-                         </Badge>
-                         {/* Company Badge */}
-                         {getOtherParticipant(selectedChatRoom)?.company && (
-                           <Badge variant="outline" className="text-xs px-3 py-1 bg-gray-50 text-gray-700 border-gray-200">
-                             {getOtherParticipant(selectedChatRoom)?.company?.name}
-                           </Badge>
-                         )}
-                         {/* Online/Offline Status */}
-                         {getOtherParticipant(selectedChatRoom) && (
-                           <div className="flex items-center gap-2 ml-3">
-                             <div className={`w-3 h-3 rounded-full ${
-                               onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) 
-                                 ? 'bg-green-500' 
-                                 : 'bg-gray-400'
-                             }`} />
-                             <span className="text-xs font-medium text-gray-600">
-                               {onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) ? 'Online' : 'Offline'}
-                             </span>
-                           </div>
-                         )}
-                       </div>
-                     </div>
-                   </div>
-                                     <div className="flex items-center gap-3">
-                     {/* Connection Status */}
-                     <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-full ${
-                       isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                     }`}>
-                       {isConnected ? (
-                         <Wifi className="h-4 w-4" />
-                       ) : (
-                         <WifiOff className="h-4 w-4" />
-                       )}
-                       <span className="font-medium">
-                         {isConnected ? 'Connected' : 'Disconnected'}
-                       </span>
-                     </div>
-                     
-                     <Button 
-                       variant="ghost" 
-                       size="sm"
-                       onClick={() => setShowNotificationSettings(true)}
-                       title="Notification Settings"
-                       className="h-9 w-9 p-0 hover:bg-gray-100"
-                     >
-                       <Settings className="h-4 w-4" />
-                     </Button>
-                     <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-gray-100">
-                       <MoreVertical className="h-4 w-4" />
-                     </Button>
-                   </div>
+              {/* Enhanced Chat Header */}
+              <div className="p-8 border-b border-gray-200 bg-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-6">
+                    <Avatar className="h-16 w-16 ring-4 ring-gray-100">
+                      <AvatarFallback className="text-xl font-bold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                        {getOtherParticipant(selectedChatRoom)?.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                        {getOtherParticipant(selectedChatRoom)?.name}
+                      </h3>
+                      <div className="flex items-center gap-4">
+                        <Badge 
+                          className={`text-sm px-4 py-2 font-semibold ${
+                            getOtherParticipant(selectedChatRoom)?.role === 'ADMIN' 
+                              ? 'bg-yellow-500 text-white' 
+                              : 'bg-green-500 text-white'
+                          }`}
+                        >
+                          {getOtherParticipant(selectedChatRoom)?.role}
+                        </Badge>
+                        {getOtherParticipant(selectedChatRoom)?.company && (
+                          <Badge className="text-sm px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300">
+                            {getOtherParticipant(selectedChatRoom)?.company?.name}
+                          </Badge>
+                        )}
+                        {getOtherParticipant(selectedChatRoom) && (
+                          <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded-full ${
+                              onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) 
+                                ? 'bg-green-500' 
+                                : 'bg-gray-400'
+                            }`} />
+                            <span className="text-sm font-semibold text-gray-600">
+                              {onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) ? 'Online' : 'Offline'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {/* Connection Status */}
+                    <div className={`flex items-center gap-3 text-sm px-4 py-3 rounded-xl font-semibold ${
+                      isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {isConnected ? (
+                        <Wifi className="h-5 w-5" />
+                      ) : (
+                        <WifiOff className="h-5 w-5" />
+                      )}
+                      <span>
+                        {isConnected ? 'Connected' : 'Disconnected'}
+                      </span>
+                    </div>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setShowNotificationSettings(true)}
+                      title="Notification Settings"
+                      className="h-12 w-12 p-0 hover:bg-gray-100 rounded-xl"
+                    >
+                      <Settings className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-12 w-12 p-0 hover:bg-gray-100 rounded-xl">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-hidden bg-gradient-to-b from-gray-50/50 to-white">
+              <div className="flex-1 overflow-hidden bg-gradient-to-b from-gray-50 to-white">
                 <ScrollArea className="h-full">
-                  <div className="p-6 space-y-4">
+                  <div className="p-4 space-y-3">
                     {messages.length === 0 ? (
-                      <div className="text-center py-12 text-gray-500">
-                        <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                        <p className="text-sm font-medium">No messages yet</p>
-                        <p className="text-xs">Start the conversation!</p>
+                      <div className="text-center py-20">
+                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
+                          <MessageCircle className="h-12 w-12 text-gray-400" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-4">No Messages Yet</h3>
+                        <p className="text-gray-600 text-lg">Start the conversation by sending your first message!</p>
                       </div>
                     ) : (
                       <>
@@ -642,15 +687,15 @@ export default function Chat() {
                             className={`flex ${message.senderId === user.id ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
+                              className={`max-w-md px-3 py-2 rounded-lg ${
                                 message.senderId === user.id
                                   ? 'bg-blue-600 text-white'
                                   : 'bg-white text-gray-900 border border-gray-200'
                               }`}
                             >
-                              <p className="text-sm leading-relaxed">{message.content}</p>
-                              <p className={`text-xs mt-2 ${
-                                message.senderId === user.id ? 'text-blue-100' : 'text-gray-400'
+                              <p className="text-sm leading-relaxed break-words">{message.content}</p>
+                              <p className={`text-xs mt-1 ${
+                                message.senderId === user.id ? 'text-blue-100' : 'text-gray-500'
                               }`}>
                                 {formatTime(message.createdAt)}
                               </p>
@@ -661,8 +706,8 @@ export default function Chat() {
                         {/* Typing Indicator */}
                         {typingUsers.size > 0 && (
                           <div className="flex justify-start">
-                            <div className="bg-white text-gray-900 px-4 py-3 rounded-2xl border border-gray-200 shadow-sm">
-                              <div className="flex items-center gap-3">
+                            <div className="bg-white text-gray-900 px-3 py-2 rounded-lg border border-gray-200">
+                              <div className="flex items-center gap-2">
                                 <div className="flex space-x-1">
                                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
                                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -686,52 +731,65 @@ export default function Chat() {
                 </ScrollArea>
               </div>
 
-                             {/* Message Input */}
-               <div className="p-6 border-t border-gray-100 bg-white shadow-sm">
-                 <div className="flex space-x-3">
-                   <div className="flex-1 relative">
-                     <Input
-                       placeholder="Type your message here..."
-                       value={newMessage}
-                       onChange={handleInputChange}
-                       onKeyPress={handleKeyPress}
-                       className="pr-14 h-12 text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm"
-                     />
-                     <Button 
-                       onClick={sendMessage} 
-                       disabled={!newMessage.trim()}
-                       size="sm"
-                       className="absolute right-2 top-1/2 transform -translate-y-1/2 h-9 w-9 p-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 rounded-lg shadow-sm"
-                     >
-                       <Send className="h-4 w-4" />
-                     </Button>
-                   </div>
-                 </div>
-               </div>
+              {/* Enhanced Message Input */}
+              <div className="p-8 border-t border-gray-200 bg-white shadow-lg">
+                <div className="flex space-x-4">
+                  <div className="flex-1 relative">
+                    <Input
+                      placeholder="Type your message here..."
+                      value={newMessage}
+                      onChange={handleInputChange}
+                      onKeyPress={handleKeyPress}
+                      className="pr-16 h-14 text-base border-2 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-2xl shadow-lg"
+                    />
+                    <Button 
+                      onClick={sendMessage} 
+                      disabled={!newMessage.trim()}
+                      size="sm"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 rounded-xl shadow-lg"
+                    >
+                      <Send className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </>
           ) : (
-                         /* Welcome Screen */
-             <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-               <div className="text-center max-w-lg mx-auto px-8">
-                 <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-8 shadow-xl">
-                   <MessageCircle className="h-12 w-12 text-white" />
-                 </div>
-                 <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                   Welcome to Cross-Company Chat
-                 </h3>
-                 <p className="text-gray-600 mb-8 leading-relaxed text-lg">
-                   Connect with trainees and managers from any company. Start meaningful conversations and build professional relationships across organizations.
-                 </p>
-                 <Button 
-                   onClick={() => setShowUserList(true)}
-                   size="lg"
-                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-8 py-4 rounded-xl shadow-lg text-white font-semibold text-base"
-                 >
-                   <Users className="h-5 w-5 mr-3" />
-                   Start New Chat
-                 </Button>
-               </div>
-             </div>
+            /* Enhanced Welcome Screen */
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+              <div className="text-center max-w-2xl mx-auto px-12">
+                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-12 shadow-2xl">
+                  <MessageCircle className="h-16 w-16 text-white" />
+                </div>
+                <h3 className="text-4xl font-bold text-gray-900 mb-6">
+                  Welcome to Cross-Company Chat
+                </h3>
+                <p className="text-gray-600 mb-12 leading-relaxed text-xl">
+                  Connect with trainees and managers from any company. Start meaningful conversations and build professional relationships across organizations.
+                </p>
+                <div className="space-y-4">
+                  <Button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Start New Chat button clicked');
+                      toast.success('Button clicked! Opening user list...');
+                      setShowUserList(true);
+                    }}
+                    size="lg"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-12 py-6 rounded-2xl shadow-2xl text-white font-bold text-lg cursor-pointer relative z-10"
+                    disabled={false}
+                    type="button"
+                  >
+                    <Users className="h-6 w-6 mr-4" />
+                    Start New Chat
+                  </Button>
+                  <div className="text-sm text-gray-500">
+                    Select a user from the sidebar to begin chatting
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

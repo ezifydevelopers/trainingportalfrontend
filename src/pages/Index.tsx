@@ -22,6 +22,9 @@ const Index = () => {
     if (user.role === "TRAINEE") {
       return <Navigate to="/training" />;
     }
+    if (user.role === "MANAGER") {
+      return <Navigate to="/manager/dashboard" />;
+    }
     if (user.role === "ADMIN") {
       return <Navigate to="/admin/company-modules" />;
     }

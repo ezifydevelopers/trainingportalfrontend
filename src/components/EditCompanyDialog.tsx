@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   Dialog,
@@ -13,35 +12,63 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-interface NewCompanyDialogProps {
+interface EditCompanyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddCompany: (companyName: string, logoFile: File | null) => void;
+  company: {
+    id: number;
+    name: string;
+    logo?: string;
+  } | null;
+  onUpdateCompany: (companyId: number, companyName: string, logoFile: File | null) => void;
 }
 
-const NewCompanyDialog = ({ open, onOpenChange, onAddCompany }: NewCompanyDialogProps) => {
+const EditCompanyDialog = ({ open, onOpenChange, company, onUpdateCompany }: EditCompanyDialogProps) => {
   const [companyName, setCompanyName] = React.useState("");
-  const [logoFile, setLogoFile] = React.useState(null);
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [logoPreview, setLogoPreview] = React.useState("");
 
-  const handleLogoChange = (e) => {
-    const file = e.target.files[0];
+  // Update form when company changes
+  React.useEffect(() => {
+    if (company) {
+      setCompanyName(company.name);
+      setLogoFile(null);
+      setLogoPreview(company.logo || "");
+    }
+  }, [company]);
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    console.log('Logo file selected:', file);
     if (file) {
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
+      console.log('Logo preview URL created');
     } else {
       setLogoFile(null);
-      setLogoPreview("");
+      setLogoPreview(company?.logo || "");
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('EditCompanyDialog submit:', { companyName, logoFile, company });
     if (!companyName.trim()) {
       toast.error("Company name is required");
       return;
     }
-    onAddCompany(companyName, logoFile);
+    if (!company) {
+      toast.error("No company selected");
+      return;
+    }
+    onUpdateCompany(company.id, companyName, logoFile);
+    setCompanyName("");
+    setLogoFile(null);
+    setLogoPreview("");
+    onOpenChange(false);
+  };
+
+  const handleCancel = () => {
     setCompanyName("");
     setLogoFile(null);
     setLogoPreview("");
@@ -53,9 +80,9 @@ const NewCompanyDialog = ({ open, onOpenChange, onAddCompany }: NewCompanyDialog
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add New Company</DialogTitle>
+            <DialogTitle>Edit Company</DialogTitle>
             <DialogDescription>
-              Add a new company to your database. Click save when you're done.
+              Update company information and logo. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -83,13 +110,25 @@ const NewCompanyDialog = ({ open, onOpenChange, onAddCompany }: NewCompanyDialog
                   onChange={handleLogoChange}
                 />
                 {logoPreview && (
-                  <img src={logoPreview} alt="Logo Preview" className="mt-2 h-16 w-16 object-contain rounded border" />
+                  <div className="mt-2 flex items-center gap-2">
+                    <img 
+                      src={logoPreview} 
+                      alt="Logo Preview" 
+                      className="h-16 w-16 object-contain rounded border" 
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {logoFile ? "New logo selected" : "Current logo"}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Save Company</Button>
+            <Button type="button" variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button type="submit">Save Changes</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -97,4 +136,4 @@ const NewCompanyDialog = ({ open, onOpenChange, onAddCompany }: NewCompanyDialog
   );
 };
 
-export default NewCompanyDialog;
+export default EditCompanyDialog;

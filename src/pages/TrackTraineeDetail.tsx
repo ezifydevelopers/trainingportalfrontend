@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -10,9 +10,47 @@ import { useEffect, useState } from "react";
 
 export default function TrackTraineeDetail() {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const traineeId = Number(id);
+  const location = useLocation();
+  const { id, traineeId: urlTraineeId } = useParams();
+  const traineeId = Number(id || urlTraineeId);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Debug logging
+  console.log('TrackTraineeDetail Debug:', { id, urlTraineeId, traineeId, currentPath: location.pathname });
+
+  // Determine appropriate back navigation based on current route
+  const getBackNavigation = () => {
+    const currentPath = location.pathname;
+    
+    // If coming from manager route, go back to manager trainees
+    if (currentPath.includes('/manager/company/')) {
+      const companyId = currentPath.split('/manager/company/')[1]?.split('/')[0];
+      return `/manager/company/${companyId}/trainees`;
+    }
+    
+    // If coming from admin route, go back to admin track trainee
+    if (currentPath.includes('/admin/track-trainee/')) {
+      return '/admin/track-trainee';
+    }
+    
+    // Default fallback
+    return -1; // Go back in browser history
+  };
+
+  // Get appropriate button text based on current route
+  const getBackButtonText = () => {
+    const currentPath = location.pathname;
+    
+    if (currentPath.includes('/manager/company/')) {
+      return 'Back to Company Trainees';
+    }
+    
+    if (currentPath.includes('/admin/track-trainee/')) {
+      return 'Back to Trainee List';
+    }
+    
+    return 'Go Back';
+  };
 
   // Fetch trainee data and progress with real-time updates
   const { data: trainees = [] } = useAllTrainees();
@@ -21,9 +59,29 @@ export default function TrackTraineeDetail() {
     isLoading, 
     error, 
     refetch 
-  } = useTraineeProgress(traineeId);
+  } = useTraineeProgress(isNaN(traineeId) ? 0 : traineeId);
 
   const trainee = trainees.find(t => t.id === traineeId);
+
+  // Handle invalid trainee ID
+  if (isNaN(traineeId) || traineeId <= 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Trainee ID</h2>
+              <p className="text-gray-600 mb-4">The trainee ID in the URL is invalid.</p>
+              <Button onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Go Back
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Auto-refresh progress every 30 seconds for real-time updates
   useEffect(() => {
@@ -72,15 +130,33 @@ export default function TrackTraineeDetail() {
   const modulesCompleted = progressData?.modulesCompleted || 0;
   const averageScore = progressData?.averageScore || 0;
   const totalTimeSpent = progressData?.totalTimeSpent || 0;
-  const moduleProgress = progressData?.moduleProgress || [];
+  const moduleProgressRaw = progressData?.moduleProgress || [];
+  
+  // Deduplicate moduleProgress by moduleId, keeping the record with highest score or most recent
+  const moduleProgress = moduleProgressRaw.reduce((acc: any[], current: any) => {
+    const existing = acc.find(item => item.moduleId === current.moduleId);
+    if (!existing) {
+      acc.push(current);
+    } else {
+      // Keep the record with higher score, or if scores are equal, keep the one with more time spent
+      if (current.score > existing.score || 
+          (current.score === existing.score && current.timeSpent > existing.timeSpent)) {
+        const index = acc.findIndex(item => item.moduleId === current.moduleId);
+        acc[index] = current;
+      }
+    }
+    return acc;
+  }, []);
+  
   const totalModules = moduleProgress.length;
   const modulesWithScores = moduleProgress.filter(module => module.score !== null).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <Button variant="outline" onClick={() => navigate('/admin/track-trainee')} className="mb-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+      <Button variant="outline" onClick={() => navigate(getBackNavigation())} className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Trainee List
+        {getBackButtonText()}
       </Button>
       
       <div className="mb-8">
@@ -185,14 +261,133 @@ export default function TrackTraineeDetail() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Time Invested</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Training Time</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{Math.round(totalTimeSpent / 60)}</div>
+              <div className="text-2xl font-bold">
+                {(() => {
+                  const hours = Math.floor(totalTimeSpent / 3600);
+                  const minutes = Math.floor((totalTimeSpent % 3600) / 60);
+                  const seconds = totalTimeSpent % 60;
+                  
+                  if (hours > 0) {
+                    return `${hours}h ${minutes}m`;
+                  } else if (minutes > 0) {
+                    return `${minutes}m ${seconds}s`;
+                  } else {
+                    return `${seconds}s`;
+                  }
+                })()}
+              </div>
               <p className="text-xs text-muted-foreground">
-                minutes total ({Math.round(totalTimeSpent / 3600 * 10) / 10} hours)
+                {totalTimeSpent > 0 ? 
+                  `${Math.round(totalTimeSpent / 60)} minutes (${Math.round(totalTimeSpent / 3600 * 10) / 10} hours)` : 
+                  'No time spent yet'
+                }
               </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Time Tracking Summary */}
+      <div className="mb-8">
+        <div className="flex items-center space-x-3 mb-6">
+          <Clock className="h-6 w-6 text-green-600" />
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Time Tracking Summary</h2>
+            <p className="text-gray-600">Detailed breakdown of training time investment</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-700">Total Time Spent</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-gray-900 mb-2">
+                {(() => {
+                  const hours = Math.floor(totalTimeSpent / 3600);
+                  const minutes = Math.floor((totalTimeSpent % 3600) / 60);
+                  const seconds = totalTimeSpent % 60;
+                  
+                  if (hours > 0) {
+                    return `${hours}h ${minutes}m`;
+                  } else if (minutes > 0) {
+                    return `${minutes}m ${seconds}s`;
+                  } else {
+                    return `${seconds}s`;
+                  }
+                })()}
+              </div>
+              <div className="text-sm text-gray-600">
+                {totalTimeSpent > 0 ? 
+                  `${Math.round(totalTimeSpent / 60)} minutes total` : 
+                  'No training time recorded'
+                }
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-700">Average Time per Module</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-gray-900 mb-2">
+                {totalModules > 0 ? 
+                  (() => {
+                    const avgTime = totalTimeSpent / totalModules;
+                    const hours = Math.floor(avgTime / 3600);
+                    const minutes = Math.floor((avgTime % 3600) / 60);
+                    
+                    if (hours > 0) {
+                      return `${hours}h ${minutes}m`;
+                    } else {
+                      return `${Math.round(avgTime / 60)}m`;
+                    }
+                  })() : 
+                  '0m'
+                }
+              </div>
+              <div className="text-sm text-gray-600">
+                {totalModules > 0 ? 
+                  `Across ${totalModules} modules` : 
+                  'No modules assigned'
+                }
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-700">Time Efficiency</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-gray-900 mb-2">
+                {modulesCompleted > 0 ? 
+                  (() => {
+                    const avgTimePerCompleted = totalTimeSpent / modulesCompleted;
+                    const hours = Math.floor(avgTimePerCompleted / 3600);
+                    const minutes = Math.floor((avgTimePerCompleted % 3600) / 60);
+                    
+                    if (hours > 0) {
+                      return `${hours}h ${minutes}m`;
+                    } else {
+                      return `${Math.round(avgTimePerCompleted / 60)}m`;
+                    }
+                  })() : 
+                  'N/A'
+                }
+              </div>
+              <div className="text-sm text-gray-600">
+                {modulesCompleted > 0 ? 
+                  `Per completed module` : 
+                  'No completed modules'
+                }
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -217,7 +412,7 @@ export default function TrackTraineeDetail() {
               const modulePercentage = totalModules > 0 ? (100 / totalModules).toFixed(1) : '0';
               
               return (
-                <div key={module.moduleId} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 hover:border-gray-300">
+                <div key={`${module.moduleId}-${idx}`} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 hover:border-gray-300">
                   {/* Header with status badges */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -243,10 +438,25 @@ export default function TrackTraineeDetail() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 flex items-center">
                         <Clock className="h-4 w-4 mr-2 text-gray-400" />
-                        Duration
+                        Video Duration
                       </span>
                       <span className="font-medium text-gray-900">
-                        {module.videoDuration ? Math.round(module.videoDuration / 60) : 0} mins
+                        {module.videoDuration ? 
+                          (() => {
+                            const hours = Math.floor(module.videoDuration / 3600);
+                            const minutes = Math.floor((module.videoDuration % 3600) / 60);
+                            const seconds = module.videoDuration % 60;
+                            
+                            if (hours > 0) {
+                              return `${hours}h ${minutes}m`;
+                            } else if (minutes > 0) {
+                              return `${minutes}m ${seconds}s`;
+                            } else {
+                              return `${seconds}s`;
+                            }
+                          })() : 
+                          '0s'
+                        }
                       </span>
                     </div>
                     
@@ -256,7 +466,20 @@ export default function TrackTraineeDetail() {
                         Time Spent
                       </span>
                       <span className="font-medium text-gray-900">
-                        {Math.round((module.timeSpent || 0) / 60)} mins
+                        {(() => {
+                          const timeSpent = module.timeSpent || 0;
+                          const hours = Math.floor(timeSpent / 3600);
+                          const minutes = Math.floor((timeSpent % 3600) / 60);
+                          const seconds = timeSpent % 60;
+                          
+                          if (hours > 0) {
+                            return `${hours}h ${minutes}m`;
+                          } else if (minutes > 0) {
+                            return `${minutes}m ${seconds}s`;
+                          } else {
+                            return `${seconds}s`;
+                          }
+                        })()}
                         {module.timeSpent > 0 && module.videoDuration && (
                           <span className="text-xs text-gray-500 ml-1">
                             ({Math.round((module.timeSpent / module.videoDuration) * 100)}% watched)
@@ -314,6 +537,7 @@ export default function TrackTraineeDetail() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 } 

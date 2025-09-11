@@ -107,17 +107,6 @@ export const useSubmitMCQ = () => {
 };
 
 // Admin hooks
-export const useAllTrainees = () => {
-  
-  return useQuery({
-    queryKey: ['trainees'],
-    queryFn: async () => {
-      const result = await apiClient.getAllTrainees();
-      return result;
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-};
 
 export const useCreateTrainee = () => {
   const queryClient = useQueryClient();
@@ -132,18 +121,6 @@ export const useCreateTrainee = () => {
   });
 };
 
-export const useUpdateTrainee = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { name?: string; email?: string; password?: string; companyId?: number } }) => 
-      apiClient.updateTrainee(id, data),
-    onSuccess: () => {
-      // Invalidate and refetch trainees data
-      queryClient.invalidateQueries({ queryKey: ['trainees'] });
-    },
-  });
-};
 
 export const useDeleteTrainee = () => {
   const queryClient = useQueryClient();
@@ -170,7 +147,9 @@ export const useAllCompanies = () => {
   return useQuery({
     queryKey: ['companies'],
     queryFn: () => apiClient.getAllCompanies(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000, // 30 seconds - more frequent updates
+    refetchInterval: 5 * 60 * 1000, // Auto-refetch every 5 minutes
+    refetchIntervalInBackground: true, // Continue refetching when tab is not active
   });
 };
 
@@ -224,7 +203,11 @@ export const useAllModules = () => {
 export const useCompanyModules = (companyId: number | null) => {
   return useQuery({
     queryKey: ["company-modules", companyId],
-    queryFn: () => companyId ? apiClient.getCompanyModules(companyId) : Promise.resolve([]),
+    queryFn: async () => {
+      if (!companyId) return [];
+      const result = await apiClient.getCompanyModules(companyId);
+      return result.modules || [];
+    },
     enabled: !!companyId,
     staleTime: 2 * 60 * 1000,
   });
@@ -443,4 +426,250 @@ export const useGetFeedbackStats = () => {
     queryFn: () => apiClient.getFeedbackStats(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-}; 
+};
+
+// Resource management hooks
+export const useAddResource = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: {
+      moduleId: number;
+      resourceFile: File;
+      type: string;
+      duration?: number;
+      estimatedReadingTime?: number;
+    }) => apiClient.addResource(data),
+    onSuccess: (data, variables) => {
+      // Invalidate module resources query
+      queryClient.invalidateQueries({ queryKey: ['module-resources', variables.moduleId] });
+      // Invalidate all company modules queries
+      queryClient.invalidateQueries({ queryKey: ['company-modules'] });
+      // Also invalidate all modules queries to ensure data consistency
+      queryClient.invalidateQueries({ queryKey: ['modules'] });
+    },
+  });
+};
+
+export const useGetModuleResources = (moduleId: number) => {
+  return useQuery({
+    queryKey: ['module-resources', moduleId],
+    queryFn: () => apiClient.getModuleResources(moduleId),
+    enabled: !!moduleId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useDeleteResource = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (resourceId: number) => apiClient.deleteResource(resourceId),
+    onSuccess: () => {
+      // Invalidate all module resources queries
+      queryClient.invalidateQueries({ queryKey: ['module-resources'] });
+      // Invalidate company modules query
+      queryClient.invalidateQueries({ queryKey: ['company-modules'] });
+    },
+  });
+};
+
+export const useUpdateResourceTimeTracking = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: {
+      resourceId: number;
+      timeSpent: number;
+    }) => apiClient.updateResourceTimeTracking(data),
+    onSuccess: () => {
+      // Invalidate resource time tracking queries
+      queryClient.invalidateQueries({ queryKey: ['resource-time-tracking'] });
+    },
+  });
+};
+
+export const useGetResourceTimeTracking = (resourceId: number) => {
+  return useQuery({
+    queryKey: ['resource-time-tracking', resourceId],
+    queryFn: () => apiClient.getResourceTimeTracking(resourceId),
+    enabled: !!resourceId,
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
+};
+
+// Manager management hooks
+export const useGetManagers = () => {
+  return useQuery({
+    queryKey: ['managers'],
+    queryFn: () => apiClient.getManagers(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useCreateManager = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: { name: string; email: string; password: string }) => 
+      apiClient.createManager(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['managers'] });
+    },
+  });
+};
+
+export const useUpdateManager = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name?: string; email?: string; password?: string } }) => 
+      apiClient.updateManager(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['managers'] });
+    },
+  });
+};
+
+export const useDeleteManager = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: number) => apiClient.deleteManager(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['managers'] });
+    },
+  });
+};
+
+export const useGetManagerCompanies = (managerId: number) => {
+  return useQuery({
+    queryKey: ['manager-companies', managerId],
+    queryFn: () => apiClient.getManagerCompanies(managerId),
+    enabled: !!managerId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useAssignCompanyToManager = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ managerId, companyId }: { managerId: number; companyId: number }) => 
+      apiClient.assignCompanyToManager(managerId, companyId),
+    onSuccess: (_, { managerId }) => {
+      queryClient.invalidateQueries({ queryKey: ['managers'] });
+      queryClient.invalidateQueries({ queryKey: ['manager-companies', managerId] });
+    },
+  });
+};
+
+export const useUnassignCompanyFromManager = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ managerId, companyId }: { managerId: number; companyId: number }) => 
+      apiClient.unassignCompanyFromManager(managerId, companyId),
+    onSuccess: (_, { managerId }) => {
+      queryClient.invalidateQueries({ queryKey: ['managers'] });
+      queryClient.invalidateQueries({ queryKey: ['manager-companies', managerId] });
+    },
+  });
+};
+
+// Manager-specific hooks
+
+export const useGetCompanyTrainees = (companyId: number) => {
+  return useQuery({
+    queryKey: ['company-trainees', companyId],
+    queryFn: () => apiClient.getCompanyTrainees(companyId),
+    enabled: !!companyId,
+  });
+};
+
+// Time tracking hooks
+export const useTimeTrackingStats = (params?: {
+  traineeId?: number;
+  companyId?: number;
+  startDate?: string;
+  endDate?: string;
+}) => {
+  return useQuery({
+    queryKey: ['time-tracking-stats', params],
+    queryFn: () => apiClient.getTimeTrackingStats(params),
+    staleTime: 30 * 1000, // 30 seconds - more frequent updates
+    refetchInterval: 60 * 1000, // Auto-refetch every 60 seconds
+    refetchIntervalInBackground: true, // Continue refetching when tab is not active
+  });
+};
+
+// Trainee management hooks
+export const useAllTrainees = () => {
+  return useQuery({
+    queryKey: ['trainees'],
+    queryFn: async () => {
+      const response = await apiClient.getAllTrainees();
+      // The API is returning the trainees directly as an array, not wrapped in an object
+      return response;
+    },
+    staleTime: 30 * 1000,
+    refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
+    refetchIntervalInBackground: true,
+  });
+};
+
+export const useUpdateTrainee = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: { companyId?: number; status?: string } }) =>
+      apiClient.updateTrainee(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainees'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+    },
+  });
+};
+
+// Notification hooks
+export const useNotifications = (limit = 50, offset = 0) => {
+  return useQuery({
+    queryKey: ['notifications', limit, offset],
+    queryFn: () => apiClient.getNotifications(limit, offset),
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 60 * 1000, // Refetch every minute
+    refetchIntervalInBackground: true,
+  });
+};
+
+export const useMarkNotificationAsRead = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (notificationId: number) => apiClient.markNotificationAsRead(notificationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useMarkAllAsRead = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => apiClient.markAllNotificationsAsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useUnreadNotificationCount = () => {
+  return useQuery({
+    queryKey: ['unread-notification-count'],
+    queryFn: () => apiClient.getUnreadNotificationCount(),
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 60 * 1000, // Refetch every minute
+    refetchIntervalInBackground: true,
+  });
+};
