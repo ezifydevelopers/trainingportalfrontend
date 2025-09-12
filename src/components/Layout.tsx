@@ -15,7 +15,6 @@ export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch unread message count
   const fetchUnreadCount = async () => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/chat/unread-count`, {
