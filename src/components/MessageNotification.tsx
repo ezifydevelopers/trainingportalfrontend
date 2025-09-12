@@ -20,13 +20,57 @@ interface MessageNotification {
 interface MessageNotificationProps {
   unreadCount: number;
   onNotificationClick: (chatRoomId: number) => void;
+  onUnreadCountChange?: () => void;
 }
 
-export default function MessageNotification({ unreadCount, onNotificationClick }: MessageNotificationProps) {
+export default function MessageNotification({ unreadCount, onNotificationClick, onUnreadCountChange }: MessageNotificationProps) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<MessageNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [lastMessageTime, setLastMessageTime] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Function to fetch all unread messages
+  const fetchRecentMessages = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${getApiBaseUrl()}/chat/recent-messages?limit=50`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Convert recent messages to notification format
+        const messageNotifications: MessageNotification[] = data.messages?.map((msg: any) => ({
+          id: `msg_${msg.id}`,
+          message: msg.content,
+          senderName: msg.sender.name,
+          chatRoomId: msg.chatRoomId,
+          timestamp: new Date(msg.createdAt),
+          isRead: msg.isRead,
+          type: 'message'
+        })) || [];
+        
+        setNotifications(messageNotifications);
+        console.log(`Loaded ${data.showing} of ${data.totalUnread} unread messages`);
+      }
+    } catch (error) {
+      console.error('Error fetching recent messages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch recent messages when component mounts or when dropdown opens
+  useEffect(() => {
+    if (showNotifications) {
+      fetchRecentMessages();
+    }
+  }, [showNotifications, user]);
 
   // Listen for real-time notifications from WebSocket
   useEffect(() => {
@@ -156,12 +200,59 @@ export default function MessageNotification({ unreadCount, onNotificationClick }
     );
   };
 
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  const clearAllNotifications = async () => {
+    // Mark all notifications as read locally
+    setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
+    
+    // Mark all as read on server
+    try {
+      await fetch(`${getApiBaseUrl()}/chat/mark-all-read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Refresh the unread count in the parent component
+      if (onUnreadCountChange) {
+        onUnreadCountChange();
+      }
+    } catch (error) {
+      console.error('Error marking all messages as read:', error);
+    }
   };
 
-  const handleNotificationClick = (notification: MessageNotification) => {
+  const refreshNotifications = () => {
+    fetchRecentMessages();
+  };
+
+  const handleNotificationClick = async (notification: MessageNotification) => {
+    // Mark as read locally
     markNotificationAsRead(notification.id);
+    
+    // Mark as read on server
+    try {
+      await fetch(`${getApiBaseUrl()}/chat/mark-read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chatRoomId: notification.chatRoomId,
+          messageId: notification.id.replace('msg_', '')
+        })
+      });
+      
+      // Refresh the unread count in the parent component
+      if (onUnreadCountChange) {
+        onUnreadCountChange();
+      }
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+    }
+    
     onNotificationClick(notification.chatRoomId);
     setShowNotifications(false);
   };
@@ -193,8 +284,17 @@ export default function MessageNotification({ unreadCount, onNotificationClick }
             <h3 className="font-medium text-sm">Notifications</h3>
             <div className="flex items-center space-x-2">
               <Badge variant="secondary" className="text-xs">
-                {notifications.filter(n => !n.isRead).length} new
+                {unreadCount} total unread
               </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refreshNotifications}
+                className="h-6 px-2 text-xs"
+                disabled={isLoading}
+              >
+                {isLoading ? '...' : 'Refresh'}
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -207,38 +307,56 @@ export default function MessageNotification({ unreadCount, onNotificationClick }
           </div>
 
           <div className="max-h-64 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {isLoading ? (
+              <div className="p-4 text-center text-gray-500">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-sm">Loading notifications...</p>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 <MessageCircle className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">No notifications</p>
+                <p className="text-sm">No unread messages</p>
+                <p className="text-xs text-gray-400 mt-1">You're all caught up!</p>
               </div>
             ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${
-                    !notification.isRead ? 'bg-blue-50' : ''
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {notification.senderName}
-                      </p>
-                      <p className="text-xs text-gray-600 truncate">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {notification.timestamp.toLocaleTimeString()}
-                      </p>
+              <>
+                {notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${
+                      !notification.isRead ? 'bg-blue-50' : ''
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {notification.senderName}
+                        </p>
+                        <p className="text-xs text-gray-600 truncate">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {notification.timestamp.toLocaleTimeString()}
+                        </p>
+                      </div>
+                      {!notification.isRead && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 flex-shrink-0" />
+                      )}
                     </div>
-                    {!notification.isRead && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 flex-shrink-0" />
-                    )}
                   </div>
-                </div>
-              ))
+                ))}
+                {unreadCount > notifications.length && (
+                  <div className="p-3 text-center text-gray-500 border-t">
+                    <p className="text-xs">
+                      Showing {notifications.length} of {unreadCount} unread messages
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Click "Refresh" to load more
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

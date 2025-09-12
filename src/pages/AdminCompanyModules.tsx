@@ -293,6 +293,7 @@ export default function AdminCompanyModules() {
   const [showEditCompany, setShowEditCompany] = useState(false);
   const [companyToEdit, setCompanyToEdit] = useState(null);
   const [showResourceModuleDialog, setShowResourceModuleDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<'video' | 'resource'>('video');
   
   const [resourceModuleName, setResourceModuleName] = useState("");
   const [resourceFiles, setResourceFiles] = useState<File[]>([]);
@@ -323,6 +324,9 @@ export default function AdminCompanyModules() {
   const [isReordering, setIsReordering] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
 
+  // Fetch modules for selected company
+  const { data: modules = [], isLoading: modulesLoading, isError: modulesError } = useCompanyModules(selectedCompany?.id || null);
+
   // Refresh selectedModule when modules data changes
   useEffect(() => {
     if (selectedModule && modules.length > 0) {
@@ -332,9 +336,6 @@ export default function AdminCompanyModules() {
       }
     }
   }, [modules, selectedModule]);
-
-  // Fetch modules for selected company
-  const { data: modules = [], isLoading: modulesLoading, isError: modulesError } = useCompanyModules(selectedCompany?.id || null);
 
   // Helper function to construct video URL
   const getVideoUrl = (videoUrl: string) => {
@@ -672,14 +673,44 @@ export default function AdminCompanyModules() {
   };
 
   const handleAddMcq = () => {
-    if (!question.trim() || options.some((opt) => !opt.trim())) return;
+    console.log('handleAddMcq called');
+    console.log('question:', question);
+    console.log('options:', options);
+    console.log('correctAnswer:', correctAnswer);
+    
+    // Filter out empty options for validation
+    const validOptions = options.filter(opt => opt.trim());
+    
+    if (!question.trim() || validOptions.length < 2) {
+      console.log('Validation failed - question or insufficient options');
+      toast.error("Please provide a question and at least 2 options");
+      return;
+    }
+    
+    // Validate that the correct answer is one of the valid options
+    if (correctAnswer >= validOptions.length) {
+      console.log('Validation failed - correct answer index out of range');
+      toast.error("Please select a valid correct answer");
+      return;
+    }
+    
+    const newMcq = {
+      question: question.trim(),
+      options: validOptions,
+      answer: validOptions[correctAnswer],
+      explanation: ""
+    };
+    
+    console.log('Adding MCQ to list:', newMcq);
     setMcqs([
       ...mcqs,
-      { question, options: [...options], answer: options[correctAnswer], explanation: "" },
+      newMcq,
     ]);
     setQuestion("");
     setOptions(["", "", "", ""]);
     setCorrectAnswer(0);
+    console.log('MCQ added successfully');
+    toast.success("Question added successfully!");
   };
 
   const handleRemoveMcq = (idx) => {
@@ -723,12 +754,23 @@ export default function AdminCompanyModules() {
       // 3. Add MCQs to module (optional)
       if (mcqs.length > 0) {
         console.log('Adding MCQs to module:', moduleId, mcqs);
+        console.log('MCQ validation:', mcqs.map(mcq => ({
+          question: mcq.question,
+          options: mcq.options,
+          answer: mcq.answer,
+          hasValidAnswer: mcq.options.includes(mcq.answer)
+        })));
         setUploadProgress(90);
         toast.loading("Step 3/3: Adding quiz questions...", { id: loadingToast });
-        await addMCQsMutation.mutateAsync({ moduleId, mcqs });
-        console.log('MCQs added successfully');
-        setUploadProgress(100);
-        toast.success("✅ Module, video, and MCQs added successfully!", { id: loadingToast });
+        try {
+          await addMCQsMutation.mutateAsync({ moduleId, mcqs });
+          console.log('MCQs added successfully');
+          setUploadProgress(100);
+          toast.success("✅ Module, video, and MCQs added successfully!", { id: loadingToast });
+        } catch (mcqError) {
+          console.error('MCQ saving error:', mcqError);
+          throw mcqError;
+        }
         
         // Update selectedModule with the new MCQs
         if (selectedModule && selectedModule.id === moduleId) {
@@ -1551,12 +1593,23 @@ export default function AdminCompanyModules() {
                         </Button>
                       </div>
                       <div className="flex space-x-2">
+                        {/* Debug info */}
+                        <div className="text-xs text-gray-500 mr-2">
+                          Question: "{question}" | Options: {options.filter(opt => opt.trim()).length}/{options.length}
+                        </div>
                         <Button 
                           type="button" 
                           size="sm" 
-                          onClick={handleAddMcq}
-                          disabled={!question.trim() || options.some(opt => !opt.trim())}
-                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            console.log('Add MCQ button clicked');
+                            console.log('Current question:', question);
+                            console.log('Current options:', options);
+                            const validOptions = options.filter(opt => opt.trim());
+                            console.log('Button disabled:', !question.trim() || validOptions.length < 2);
+                            handleAddMcq();
+                          }}
+                          disabled={!question.trim() || options.filter(opt => opt.trim()).length < 2}
+                          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
                           <Plus className="h-4 w-4 mr-1" />
                           Add MCQ
@@ -1578,6 +1631,61 @@ export default function AdminCompanyModules() {
                   </div>
                   )}
                   
+                  {/* Display Added MCQs */}
+                  {mcqs.length > 0 ? (
+                    <div className="mb-6">
+                      <h4 className="font-medium mb-3 flex items-center">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Added Questions ({mcqs.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {mcqs.map((mcq, idx) => (
+                          <div key={idx} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900 mb-2">{mcq.question}</p>
+                                <div className="space-y-1">
+                                  {mcq.options.map((option, optIdx) => (
+                                    <div key={optIdx} className="flex items-center space-x-2">
+                                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                        option === mcq.answer ? 'border-green-500 bg-green-500' : 'border-gray-300'
+                                      }`}>
+                                        {option === mcq.answer && (
+                                          <Check className="h-3 w-3 text-white" />
+                                        )}
+                                      </div>
+                                      <span className={`text-sm ${
+                                        option === mcq.answer ? 'text-green-700 font-medium' : 'text-gray-600'
+                                      }`}>
+                                        {option}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveMcq(idx)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-6">
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                        <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-600 text-sm">No questions added yet. Add some questions above to test trainees' understanding.</p>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Progress Bar */}
                   {isCreatingModule && (
                     <div className="space-y-2 pt-4 border-t border-gray-200">
@@ -1591,6 +1699,28 @@ export default function AdminCompanyModules() {
                       </p>
                     </div>
                   )}
+
+                  {/* Summary Section */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <h4 className="font-medium text-blue-900 mb-2">Module Summary</h4>
+                    <div className="space-y-1 text-sm text-blue-800">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-4 w-4" />
+                        <span>Module Name: {moduleName || 'Not specified'}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Play className="h-4 w-4" />
+                        <span>Video: {videoFile ? videoFile.name : 'No video selected'}</span>
+                        {videoDuration > 0 && (
+                          <span className="text-blue-600">({Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')})</span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Check className="h-4 w-4" />
+                        <span>MCQs: {mcqs.length} question{mcqs.length !== 1 ? 's' : ''} added</span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Action Buttons */}
                   <div className="flex space-x-3 pt-4 border-t border-gray-200">
@@ -1612,7 +1742,7 @@ export default function AdminCompanyModules() {
                       ) : (
                         <>
                           <Plus className="h-4 w-4 mr-2" />
-                          Save Module
+                          Save Module {mcqs.length > 0 && `(${mcqs.length} MCQs)`}
                         </>
                       )}
                     </Button>
@@ -1674,13 +1804,26 @@ export default function AdminCompanyModules() {
                         )}
                       </div>
                       {!isReordering ? (
-                        <Button
-                          onClick={() => setIsReordering(true)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium"
-                        >
-                          <GripVertical className="h-5 w-5 mr-2" />
-                          Reorder Modules
-                        </Button>
+                        <div className="flex items-center space-x-3">
+                          {activeTab === 'video' && (
+                            <Button
+                              onClick={() => setIsReordering(true)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium"
+                            >
+                              <GripVertical className="h-5 w-5 mr-2" />
+                              Reorder Video Modules
+                            </Button>
+                          )}
+                          {activeTab === 'resource' && (
+                            <Button
+                              onClick={() => setShowResourceModuleDialog(true)}
+                              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-medium"
+                            >
+                              <FileText className="h-5 w-5 mr-2" />
+                              Add Resource Module
+                            </Button>
+                          )}
+                        </div>
                       ) : (
                         <div className="flex items-center space-x-3">
                           <Button
@@ -1700,6 +1843,44 @@ export default function AdminCompanyModules() {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Tab Navigation */}
+                    <div className="mt-6 border-b border-gray-200">
+                      <nav className="-mb-px flex space-x-8">
+                        <button
+                          onClick={() => setActiveTab('video')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'video'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Play className="h-4 w-4" />
+                            <span>Video Modules</span>
+                            <Badge variant="secondary" className="ml-2">
+                              {modules.filter(module => !module.isResourceModule).length}
+                            </Badge>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('resource')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'resource'
+                              ? 'border-purple-500 text-purple-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <FileText className="h-4 w-4" />
+                            <span>Resource Modules</span>
+                            <Badge variant="secondary" className="ml-2">
+                              {modules.filter(module => module.isResourceModule).length}
+                            </Badge>
+                          </div>
+                        </button>
+                      </nav>
+                    </div>
                   </div>
                   
                   {isReordering ? (
@@ -1709,11 +1890,11 @@ export default function AdminCompanyModules() {
                         <div className="flex items-start space-x-3">
                           <GripVertical className="h-5 w-5 text-blue-600 mt-0.5" />
                           <div className="flex-1">
-                            <h4 className="text-sm font-medium text-blue-900 mb-1">Drag & Drop to Reorder</h4>
+                            <h4 className="text-sm font-medium text-blue-900 mb-1">Drag & Drop to Reorder Video Modules</h4>
                             <p className="text-sm text-blue-700">
-                              Use the grip handle (⋮⋮) on the left of each module to drag and reorder them. 
+                              Use the grip handle (⋮⋮) on the left of each video module to drag and reorder them. 
                               The order will determine how modules appear to trainees. 
-                              Click "Save Order" when you're satisfied with the new arrangement.
+                              Resource modules are not included in reordering as they are managed separately.
                             </p>
                           </div>
                         </div>
@@ -1756,7 +1937,10 @@ export default function AdminCompanyModules() {
                     </>
                   ) : (
                   <div className="space-y-4">
-                    {modules.filter(module => !module.isResourceModule).map((module, index) => (
+                    {/* Video Modules Tab Content */}
+                    {activeTab === 'video' && (
+                      <>
+                        {modules.filter(module => !module.isResourceModule).map((module, index) => (
                       <div key={module.id}>
                         <div 
                           className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-blue-300 group transform hover:-translate-y-1"
@@ -1863,7 +2047,76 @@ export default function AdminCompanyModules() {
                           <div className="h-px bg-gray-200 mx-4 my-1"></div>
                         )}
                       </div>
-                    ))}
+                        ))}
+                      </>
+                    )}
+                    
+                    {/* Resource Modules Tab Content */}
+                    {activeTab === 'resource' && (
+                      <>
+                        {modules.filter(module => module.isResourceModule).length === 0 ? (
+                          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">No resource modules yet</h3>
+                            <p className="text-gray-600 mb-4">Get started by adding your first resource module.</p>
+                            <Button 
+                              onClick={() => setShowResourceModuleDialog(true)}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              <FileText className="h-4 w-4 mr-2" /> 
+                              Add Resource Module
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {modules
+                              .filter(module => module.isResourceModule)
+                              .map((module) => (
+                                <div key={module.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-purple-300 transition-colors">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="p-2 bg-purple-100 rounded-lg">
+                                        <FileText className="h-5 w-5 text-purple-600" />
+                                      </div>
+                                      <div>
+                                        <h4 className="font-medium text-gray-900">{capitalizeModuleName(module.name)}</h4>
+                                        <p className="text-sm text-gray-500">Resource Module</p>
+                                      </div>
+                                    </div>
+                                    <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                                      {module.resources?.length || 0} Resources
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-600 mb-4">Click to manage resources</p>
+                                  <div className="flex items-center space-x-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedModuleForResource({ id: module.id, name: module.name });
+                                        setShowResourceUpload(true);
+                                      }}
+                                      className="flex-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                                    >
+                                      <Plus className="h-4 w-4 mr-1" />
+                                      Add
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleModuleSelect(module)}
+                                      className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      View
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
                 </div>
@@ -1872,8 +2125,8 @@ export default function AdminCompanyModules() {
           </div>
         )}
 
-        {/* Resources Section - Only show if there are resource modules */}
-        {selectedCompany && modules.some(module => module.isResourceModule) && (
+        {/* Legacy Resources Section - Keep for backward compatibility but hide when using tabs */}
+        {selectedCompany && modules.some(module => module.isResourceModule) && activeTab !== 'resource' && (
           <div className="mt-8">
             <div className="bg-white rounded-2xl shadow-lg border-0 overflow-hidden">
               <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-200 p-6">

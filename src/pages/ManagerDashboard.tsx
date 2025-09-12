@@ -114,6 +114,15 @@ const ManagerDashboard = () => {
   const [options, setOptions] = useState(["", "", "", ""]);
   const [correctAnswer, setCorrectAnswer] = useState(0);
 
+  // Get only assigned companies for manager
+  const { data: companiesData, isLoading: companiesLoading, error: companiesError } = useGetManagerCompanies(user?.id || 0);
+  const { data: modulesData, isLoading: modulesLoading } = useCompanyModules(selectedCompany?.id || 0);
+  const { data: traineesData, isLoading: traineesLoading } = useAllTrainees();
+  
+  // Extract companies from the manager-specific response
+  const companies = companiesData?.companies?.map((assignment: { company: Company }) => assignment.company) || [];
+  const modules: Module[] = modulesData || [];
+
   // Refresh selectedModule when modules data changes
   useEffect(() => {
     if (selectedModule && modules.length > 0) {
@@ -123,15 +132,6 @@ const ManagerDashboard = () => {
       }
     }
   }, [modules, selectedModule]);
-
-  // Get only assigned companies for manager
-  const { data: companiesData, isLoading: companiesLoading, error: companiesError } = useGetManagerCompanies(user?.id || 0);
-  const { data: modulesData, isLoading: modulesLoading } = useCompanyModules(selectedCompany?.id || 0);
-  const { data: traineesData, isLoading: traineesLoading } = useAllTrainees();
-  
-  // Extract companies from the manager-specific response
-  const companies = companiesData?.companies?.map((assignment: { company: Company }) => assignment.company) || [];
-  const modules: Module[] = modulesData || [];
   const trainees = traineesData || [];
 
   // Helper function to construct video URL

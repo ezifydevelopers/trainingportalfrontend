@@ -112,11 +112,14 @@ class WebSocketService {
   }
 
   private handleMessage(message: WebSocketMessage) {
+    console.log('WebSocket message received:', message);
     const handlers = this.messageHandlers.get(message.type) || [];
+    console.log(`Handlers for ${message.type}:`, handlers.length);
     handlers.forEach(handler => {
       try {
         handler(message.data);
       } catch (error) {
+        console.error('Error in WebSocket handler:', error);
       }
     });
   }

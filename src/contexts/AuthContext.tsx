@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { apiClient, User as ApiUser, LoginRequest, SignupRequest, SignupResponse, getApiBaseUrl } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
+import websocketService from '@/services/websocketService';
 
 export type UserRole = 'TRAINEE' | 'MANAGER' | 'ADMIN';
 
@@ -81,6 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (response.ok) {
               // Token is valid, restore user
               setUser(parsedUser);
+              
+              // Connect to WebSocket for real-time notifications
+              websocketService.connect(parsedUser.id);
             } else {
               // Token is invalid, clear storage and cache
               localStorage.removeItem('authToken');
@@ -91,6 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } catch (error) {
             // On network error, still restore user but token might be invalid
             setUser(parsedUser);
+            
+            // Connect to WebSocket for real-time notifications
+            websocketService.connect(parsedUser.id);
           } finally {
             setIsLoading(false);
           }
@@ -137,6 +144,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Set user
       setUser(response.user);
+      
+      // Connect to WebSocket for real-time notifications
+      websocketService.connect(response.user.id);
+      
       return true;
     } catch (error) {
       return false;
@@ -161,6 +172,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // Disconnect WebSocket
+    websocketService.disconnect();
+    
     // Clear authentication data
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
