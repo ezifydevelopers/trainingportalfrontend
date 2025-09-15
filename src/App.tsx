@@ -31,7 +31,7 @@ import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
 
-// Dashboard redirect component
+// Dashboard redirect component to redirect to the appropriate page based on the user's role
 const DashboardRedirect = () => {
   const { user } = useAuth();
   
