@@ -269,7 +269,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
   return (
     <ErrorBoundary>
       <div className="w-full">
-        {/* Header */}
+        {/* Header (Manager) */}
         <CompanyHeader
           selectedCompany={selectedCompany}
           searchTerm={searchTerm}
@@ -283,7 +283,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
 
         {/* Main Content */}
         {!selectedCompany ? (
-          // Companies List View
+          // Companies List View (Manager)
           <div className="max-w-7xl mx-auto pb-16">
             <CompanyList
               companies={companies}
@@ -293,9 +293,9 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
               isLoading={companiesLoading}
               searchTerm={searchTerm}
             />
-          </div>
+          </div> 
         ) : selectedCompany ? (
-          // Modules Management View
+          // Modules Management View (Manager) 
           <div className="max-w-7xl mx-auto pb-16">
             {/* Modules Tabs */}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
