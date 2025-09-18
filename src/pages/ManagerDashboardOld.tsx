@@ -3,7 +3,8 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Users, Edit, File, Building2, ArrowRight, Play, FileText, Check, X, Clock, Eye, Save, XIcon, GripVertical, Video, Image, Music, Plus, Trash, Upload } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Users, Edit, File, Building2, ArrowRight, Play, FileText, Check, X, Clock, Eye, Save, XIcon, GripVertical, Video, Image, Music, Plus, Trash, Upload, Trophy, Upload as UploadIcon } from "lucide-react";
 import EditCompanyDialog from "@/components/EditCompanyDialog";
 import ResourceUploadDialog from "@/components/ResourceUploadDialog";
 import ResourceViewer from "@/components/ResourceViewer";
@@ -25,6 +26,8 @@ import {
 } from "@/hooks/useApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getApiBaseUrl } from "@/lib/api";
+import { getVideoUrl, getImageUrl } from "@/shared/utils/imageUtils";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -40,6 +43,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 // Simple interface for company data
 interface Company {
@@ -83,6 +87,7 @@ interface Module {
 
 const ManagerDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
@@ -98,6 +103,17 @@ const ManagerDashboard = () => {
   const [showResourceModuleDialog, setShowResourceModuleDialog] = useState(false);
   const [showResourceUploadDialog, setShowResourceUploadDialog] = useState(false);
   const [deletingModuleId, setDeletingModuleId] = useState<number | null>(null);
+  const [showModuleDetail, setShowModuleDetail] = useState(false);
+  const [showVideoModuleDialog, setShowVideoModuleDialog] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState("");
+  const [moduleName, setModuleName] = useState("");
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [isCalculatingDuration, setIsCalculatingDuration] = useState(false);
+  const [mcqs, setMcqs] = useState<any[]>([]);
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState(["", "", "", ""]);
+  const [correctAnswer, setCorrectAnswer] = useState(0);
 
   // Get only assigned companies for manager
   const { data: companiesData, isLoading: companiesLoading, error: companiesError } = useGetManagerCompanies(user?.id || 0);
@@ -107,20 +123,47 @@ const ManagerDashboard = () => {
   // Extract companies from the manager-specific response
   const companies = companiesData?.companies?.map((assignment: { company: Company }) => assignment.company) || [];
   const modules: Module[] = modulesData || [];
+
+  // Refresh selectedModule when modules data changes
+  useEffect(() => {
+    if (selectedModule && modules.length > 0) {
+      const updatedModule = modules.find(m => m.id === selectedModule.id);
+      if (updatedModule) {
+        setSelectedModule(updatedModule);
+      }
+    }
+  }, [modules, selectedModule]);
   const trainees = traineesData || [];
 
-  // Debug logging
-  if (user?.role === 'MANAGER') {
-    console.log('Manager Dashboard Debug:');
-    console.log('Companies:', companies);
-    console.log('Selected Company:', selectedCompany);
-    console.log('Modules Data:', modulesData);
-    console.log('Modules:', modules);
-    console.log('Trainees Data:', traineesData);
-    console.log('Trainees:', trainees);
-    console.log('Modules Loading:', modulesLoading);
-    console.log('Trainees Loading:', traineesLoading);
-  }
+
+  // Helper function to capitalize module name
+  const capitalizeModuleName = (name: string) => {
+    if (!name) return "";
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  };
+
+  // Trainee action handlers
+  const handleViewTrainee = (traineeId: number) => {
+    // Navigate to trainee detail page
+    navigate(`/manager/company/${selectedCompany?.id}/trainee/${traineeId}`);
+  };
+
+  const handleEditTrainee = (traineeId: number) => {
+    // Navigate to trainee edit page or open edit dialog
+    toast.info("Edit trainee functionality coming soon!");
+  };
+
+  const handleViewProgress = () => {
+    // Navigate to progress page
+    navigate(`/manager/company/${selectedCompany?.id}/progress`);
+  };
+
+  const handleAddTrainee = () => {
+    // Redirect to trainee signup page
+    window.open('/signup-trainee', '_blank');
+  };
+
+  // Debug logging removed for production
 
   // Filter companies based on search term
   const filteredCompanies = companies.filter((company) =>
@@ -163,7 +206,7 @@ const ManagerDashboard = () => {
 
 
   const handleAddModule = () => {
-    setShowAddModule(true);
+    setShowVideoModuleDialog(true);
   };
 
   const handleAddResourceModule = () => {
@@ -172,6 +215,7 @@ const ManagerDashboard = () => {
 
   const handleModuleSelect = (module: Module) => {
     setSelectedModule(module);
+    setShowModuleDetail(true);
   };
 
   const handleEditModule = (module: Module) => {
@@ -228,6 +272,107 @@ const ManagerDashboard = () => {
       queryClient.invalidateQueries({ queryKey: ['company-modules', selectedCompany!.id] });
     } catch (error) {
       toast.error("Failed to add video");
+    }
+  };
+
+  // Video module creation functions
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVideoFile(file);
+      const url = URL.createObjectURL(file);
+      setVideoPreview(url);
+      
+      // Calculate video duration
+      setIsCalculatingDuration(true);
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        setVideoDuration(video.duration);
+        setIsCalculatingDuration(false);
+      };
+      video.src = url;
+    }
+  };
+
+  const handleBoxClick = () => {
+    const input = document.getElementById('video-upload') as HTMLInputElement;
+    input?.click();
+  };
+
+  const addMCQ = () => {
+    if (question.trim() && options.every(opt => opt.trim())) {
+      const filteredOptions = options.filter(opt => opt.trim());
+      const newMCQ = {
+        question: question.trim(),
+        options: filteredOptions,
+        answer: filteredOptions[correctAnswer],
+        explanation: ""
+      };
+      setMcqs([...mcqs, newMCQ]);
+      setQuestion("");
+      setOptions(["", "", "", ""]);
+      setCorrectAnswer(0);
+    }
+  };
+
+  const removeMCQ = (index: number) => {
+    setMcqs(mcqs.filter((_, i) => i !== index));
+  };
+
+  const handleCreateVideoModule = async () => {
+    if (!moduleName.trim() || !videoFile) {
+      toast.error("Please provide module name and video file");
+      return;
+    }
+
+    try {
+      // First create the module
+      const moduleResponse = await addModuleMutation.mutateAsync({
+        companyId: selectedCompany!.id,
+        name: moduleName.trim()
+      });
+
+      const moduleId = moduleResponse.module.id;
+
+      // Then add video
+      await addVideoMutation.mutateAsync({
+        moduleId: moduleId,
+        videoFile: videoFile,
+        duration: videoDuration
+      });
+
+      // Then add MCQs if any
+      if (mcqs.length > 0) {
+        await addMCQsMutation.mutateAsync({
+          moduleId: moduleId,
+          mcqs: mcqs
+        });
+        
+        // Update selectedModule with the new MCQs if it's the same module
+        if (selectedModule && selectedModule.id === moduleId) {
+          setSelectedModule({
+            ...selectedModule,
+            mcqs: mcqs
+          });
+        }
+      }
+
+      // Reset form
+      setModuleName("");
+      setVideoFile(null);
+      setVideoPreview("");
+      setVideoDuration(0);
+      setMcqs([]);
+      setQuestion("");
+      setOptions(["", "", "", ""]);
+      setCorrectAnswer(0);
+      setShowVideoModuleDialog(false);
+
+      toast.success("Video module created successfully!");
+      queryClient.invalidateQueries({ queryKey: ['company-modules', selectedCompany!.id] });
+    } catch (error) {
+      toast.error("Failed to create video module");
     }
   };
 
@@ -319,7 +464,7 @@ const ManagerDashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-8 p-6">
+      <div className="space-y-8 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
         {/* Enhanced Header Section */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
           <div className="flex items-center justify-between">
@@ -363,15 +508,19 @@ const ManagerDashboard = () => {
                     <div className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center">
                       {company.logo ? (
                         <img 
-                          src={company.logo} 
+                          src={getImageUrl(company.logo)} 
                           alt={company.name}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Hide the broken image and show fallback
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
                         />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
-                          {company.name.charAt(0)}
-                        </div>
-                      )}
+                      ) : null}
+                      <div className={`w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl ${company.logo ? 'hidden' : ''}`}>
+                        {company.name.charAt(0)}
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
@@ -427,9 +576,9 @@ const ManagerDashboard = () => {
                   </div>
                   <div>
                     <CardTitle className="text-2xl font-bold text-gray-900">
-                      {selectedCompany.name} - Training Modules
+                      {selectedCompany.name} - Management Dashboard
                     </CardTitle>
-                    <p className="text-gray-600 mt-1">Manage training modules and resources</p>
+                    <p className="text-gray-600 mt-1">Manage training modules and trainees</p>
                   </div>
                 </div>
                 <div className="flex space-x-3">
@@ -445,13 +594,26 @@ const ManagerDashboard = () => {
               </div>
             </CardHeader>
             <CardContent className="p-8">
-              {modulesLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="text-gray-600 mt-4">Loading modules...</p>
-                </div>
-              ) : (
-                <>
+              <Tabs defaultValue="modules" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="modules" className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4" />
+                    <span>Modules</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="trainees" className="flex items-center space-x-2">
+                    <Users className="h-4 w-4" />
+                    <span>Company Trainees</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="modules" className="space-y-6">
+                  {modulesLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-gray-600 mt-4">Loading modules...</p>
+                    </div>
+                  ) : (
+                    <>
                   {/* Module Management Header */}
                   <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 mb-8">
                     <div className="flex items-center justify-between mb-6">
@@ -604,42 +766,37 @@ const ManagerDashboard = () => {
                     </div>
                   )}
 
-                  {/* Selected Module Details */}
-                  {selectedModule && (
-                    <div className="mt-8">
-                      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-                        <div className="flex items-center justify-between mb-6">
-                          <div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">{selectedModule.name}</h3>
-                            <div className="flex items-center space-x-4">
-                              {selectedModule.videos && selectedModule.videos.length > 0 && (
-                                <span className="text-sm text-gray-500 flex items-center">
-                                  <Play className="h-4 w-4 mr-1" />
-                                  {selectedModule.videos.length} Video{selectedModule.videos.length !== 1 ? 's' : ''}
-                                </span>
-                              )}
-                              {selectedModule.mcqs && selectedModule.mcqs.length > 0 && (
-                                <span className="text-sm text-gray-500 flex items-center">
-                                  <FileText className="h-4 w-4 mr-1" />
-                                  {selectedModule.mcqs.length} MCQ{selectedModule.mcqs.length !== 1 ? 's' : ''}
-                                </span>
-                              )}
-                              {selectedModule.resources && selectedModule.resources.length > 0 && (
-                                <span className="text-sm text-gray-500 flex items-center">
-                                  <File className="h-4 w-4 mr-1" />
-                                  {selectedModule.resources.length} Resource{selectedModule.resources.length !== 1 ? 's' : ''}
-                                </span>
-                              )}
-                            </div>
+                  {/* Module Details Modal */}
+                  {selectedModule && showModuleDetail && (
+                    <Dialog open={showModuleDetail} onOpenChange={setShowModuleDetail}>
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle className="text-2xl font-bold text-gray-900 mb-4">
+                            {selectedModule.name}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-6">
+                          {/* Module Stats */}
+                          <div className="flex items-center space-x-4">
+                            {selectedModule.videos && selectedModule.videos.length > 0 && (
+                              <span className="text-sm text-gray-500 flex items-center">
+                                <Play className="h-4 w-4 mr-1" />
+                                {selectedModule.videos.length} Video{selectedModule.videos.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {selectedModule.mcqs && selectedModule.mcqs.length > 0 && (
+                              <span className="text-sm text-gray-500 flex items-center">
+                                <FileText className="h-4 w-4 mr-1" />
+                                {selectedModule.mcqs.length} MCQ{selectedModule.mcqs.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {selectedModule.resources && selectedModule.resources.length > 0 && (
+                              <span className="text-sm text-gray-500 flex items-center">
+                                <File className="h-4 w-4 mr-1" />
+                                {selectedModule.resources.length} Resource{selectedModule.resources.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
                           </div>
-                          <Button
-                            variant="ghost"
-                            onClick={() => setSelectedModule(null)}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <X className="h-5 w-5" />
-                          </Button>
-                        </div>
 
                         {/* Video Section - Only show for non-resource modules */}
                         {!selectedModule.isResourceModule && selectedModule.videos && selectedModule.videos.length > 0 && (
@@ -653,14 +810,29 @@ const ManagerDashboard = () => {
                             
                             <div className="relative bg-black rounded-lg overflow-hidden shadow-lg">
                               <video 
-                                src={selectedModule.videos[0].url} 
+                                src={getVideoUrl(selectedModule.videos[0].url)} 
                                 controls 
                                 className="w-full h-auto"
                                 preload="metadata"
-                                onError={(e) => {
-                                  console.error('Video loading error:', e);
+                                crossOrigin="anonymous"
+                                onLoadStart={() => {
+                                  // Video loading started
                                 }}
-                              />
+                                onCanPlay={() => {
+                                  // Video can play
+                                }}
+                                onError={(e) => {
+                                  // Video loading error handled by fallback UI
+                                }}
+                              >
+                                <div className="flex items-center justify-center h-64 text-white">
+                                  <div className="text-center">
+                                    <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                    <p className="text-sm">Video not available</p>
+                                    <p className="text-xs opacity-75 mt-1">Check console for details</p>
+                                  </div>
+                                </div>
+                              </video>
                             </div>
                           </div>
                         )}
@@ -757,13 +929,19 @@ const ManagerDashboard = () => {
                             <p className="text-gray-600">This module doesn't have any videos, resources, or quiz questions yet.</p>
                           </div>
                         )}
-                      </div>
-                    </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   )}
+                    </>
+                  )}
+                </TabsContent>
 
+                <TabsContent value="trainees" className="space-y-6">
                   {/* Trainees Section */}
                   <div className="mt-8">
                     <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+                      {/* Header */}
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center space-x-4">
                           <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
@@ -775,6 +953,7 @@ const ManagerDashboard = () => {
                           </div>
                         </div>
                         <Button
+                          onClick={handleAddTrainee}
                           className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl font-semibold"
                         >
                           <Plus className="h-4 w-4 mr-2" />
@@ -782,6 +961,84 @@ const ManagerDashboard = () => {
                         </Button>
                       </div>
 
+                      {/* Stats Cards */}
+                      {!traineesLoading && trainees.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-blue-600">Total Trainees</p>
+                                <p className="text-2xl font-bold text-blue-900">{trainees.length}</p>
+                              </div>
+                              <Users className="h-8 w-8 text-blue-500" />
+                            </div>
+                          </div>
+                          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-green-600">Verified</p>
+                                <p className="text-2xl font-bold text-green-900">
+                                  {trainees.filter((t: { isVerified?: boolean }) => t.isVerified).length}
+                                </p>
+                              </div>
+                              <Check className="h-8 w-8 text-green-500" />
+                            </div>
+                          </div>
+                          <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-orange-600">Pending</p>
+                                <p className="text-2xl font-bold text-orange-900">
+                                  {trainees.filter((t: { isVerified?: boolean }) => !t.isVerified).length}
+                                </p>
+                              </div>
+                              <Clock className="h-8 w-8 text-orange-500" />
+                            </div>
+                          </div>
+                          <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-purple-600">Completion Rate</p>
+                                <p className="text-2xl font-bold text-purple-900">85%</p>
+                              </div>
+                              <Trophy className="h-8 w-8 text-purple-500" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Search and Actions */}
+                      {!traineesLoading && trainees.length > 0 && (
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="relative flex-1 max-w-md">
+                            <input
+                              type="text"
+                              placeholder="Search trainees..."
+                              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <Users className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              variant="outline" 
+                              className="px-4 py-2 rounded-lg"
+                              onClick={handleViewProgress}
+                            >
+                              <Trophy className="h-4 w-4 mr-2" />
+                              View Progress
+                            </Button>
+                            <Button 
+                              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg"
+                              onClick={handleAddTrainee}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Trainee
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Trainees List */}
                       {traineesLoading ? (
                         <div className="text-center py-8">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
@@ -798,45 +1055,48 @@ const ManagerDashboard = () => {
                           </Button>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          {trainees.map((trainee: { id?: number; name?: string; email?: string; isVerified?: boolean; createdAt?: string }, index: number) => (
+                        <div className="space-y-3">
+                          {trainees.map((trainee: { id?: number; name?: string; email?: string; isVerified?: boolean }, index: number) => (
                             <div
                               key={trainee.id || index}
-                              className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 hover:shadow-md transition-all duration-200"
+                              className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300"
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
-                                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
                                     {trainee.name?.charAt(0) || '?'}
                                   </div>
-                                  <div>
-                                    <h4 className="font-semibold text-gray-900">{trainee.name || 'Unknown Trainee'}</h4>
-                                    <p className="text-sm text-gray-600">{trainee.email || 'No email'}</p>
-                                    <div className="flex items-center space-x-2 mt-1">
-                                      <Badge className={trainee.isVerified ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"}>
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-3 mb-1">
+                                      <h4 className="font-semibold text-gray-900 text-lg">{trainee.name || 'Unknown Trainee'}</h4>
+                                      <Badge className={trainee.isVerified ? "bg-green-100 text-green-800 border-green-200" : "bg-orange-100 text-orange-800 border-orange-200"}>
+                                        <Check className="h-3 w-3 mr-1" />
                                         {trainee.isVerified ? "Verified" : "Pending"}
                                       </Badge>
-                                      <span className="text-xs text-gray-500">
-                                        Joined: {new Date(trainee.createdAt).toLocaleDateString()}
-                                      </span>
                                     </div>
+                                    <p className="text-sm text-gray-600 flex items-center">
+                                      <Users className="h-4 w-4 mr-1" />
+                                      {trainee.email || 'No email'}
+                                    </p>
                                   </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="px-4 py-2 rounded-lg hover:bg-blue-50"
+                                    className="px-3 py-2 rounded-lg hover:bg-blue-50 text-blue-600 border-blue-200"
+                                    onClick={() => handleViewTrainee(trainee.id || 0)}
                                   >
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Progress
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View
                                   </Button>
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="px-4 py-2 rounded-lg hover:bg-red-50 text-red-600"
+                                    className="px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-600 border-gray-200"
+                                    onClick={() => handleEditTrainee(trainee.id || 0)}
                                   >
-                                    <Trash className="h-4 w-4" />
+                                    <Edit className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </div>
@@ -846,8 +1106,8 @@ const ManagerDashboard = () => {
                       )}
                     </div>
                   </div>
-                </>
-              )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         )}
@@ -956,6 +1216,182 @@ const ManagerDashboard = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Video Module Creation Dialog */}
+        {showVideoModuleDialog && selectedCompany && (
+          <Dialog open={showVideoModuleDialog} onOpenChange={setShowVideoModuleDialog}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center">
+                  <Video className="h-5 w-5 mr-2" />
+                  Create Video Module
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6">
+                {/* Module Name */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Module Name</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter module name..."
+                    value={moduleName}
+                    onChange={(e) => setModuleName(e.target.value)}
+                  />
+                </div>
+                
+                {/* Video Upload */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">Upload Video Tutorial</label>
+                  <div
+                    className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-blue-400 transition group bg-gray-50 hover:bg-blue-50"
+                    onClick={handleBoxClick}
+                  >
+                    <UploadIcon className="h-12 w-12 text-gray-400 group-hover:text-blue-500 mb-3" />
+                    <span className="text-gray-600 group-hover:text-blue-600 font-medium text-lg">Click to upload video</span>
+                    <span className="text-sm text-gray-400 mt-2">MP4, WebM, or Ogg (max 100MB)</span>
+                    <Input
+                      id="video-upload"
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={handleVideoChange}
+                    />
+                  </div>
+                  {videoPreview && (
+                    <div className="mt-4">
+                      <video src={videoPreview} controls className="w-full max-w-2xl rounded-lg shadow-md border" />
+                      <div className="mt-2 flex items-center space-x-2">
+                        {isCalculatingDuration ? (
+                          <div className="flex items-center space-x-2 text-blue-600">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-sm">Calculating duration...</span>
+                          </div>
+                        ) : videoDuration > 0 ? (
+                          <div className="flex items-center space-x-2 text-green-600">
+                            <Clock className="h-4 w-4" />
+                            <span className="text-sm">
+                              Duration: {Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2 text-red-600">
+                            <span className="text-sm">⚠️ Could not determine video duration</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* MCQ Section */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-900 flex items-center">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Add Multiple Choice Questions (Optional)
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    You can add assessment questions to test trainees' understanding. This is optional - modules can be created with just video content.
+                  </p>
+                  
+                  {/* Add MCQ Form */}
+                  <div className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Question</label>
+                        <Input
+                          type="text"
+                          placeholder="Enter your question here..."
+                          value={question}
+                          onChange={(e) => setQuestion(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {options.map((option, index) => (
+                          <div key={index}>
+                            <label className="block text-xs font-medium mb-1">Option {String.fromCharCode(65 + index)}</label>
+                            <Input
+                              type="text"
+                              placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                              value={option}
+                              onChange={(e) => {
+                                const newOptions = [...options];
+                                newOptions[index] = e.target.value;
+                                setOptions(newOptions);
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Correct Answer</label>
+                        <select
+                          value={correctAnswer}
+                          onChange={(e) => setCorrectAnswer(Number(e.target.value))}
+                          className="w-full p-2 border border-gray-300 rounded-md"
+                        >
+                          {options.map((_, index) => (
+                            <option key={index} value={index}>
+                              Option {String.fromCharCode(65 + index)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={addMCQ}
+                        className="w-full"
+                        disabled={!question.trim() || !options.every(opt => opt.trim())}
+                      >
+                        Add Question
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* MCQ List */}
+                  {mcqs.length > 0 && (
+                    <div className="space-y-2">
+                      <h5 className="font-medium text-gray-700">Added Questions ({mcqs.length})</h5>
+                      {mcqs.map((mcq, index) => (
+                        <div key={index} className="bg-white border rounded-lg p-3 flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{mcq.question}</p>
+                            <p className="text-xs text-gray-500 mt-1">Correct: {mcq.answer}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMCQ(index)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowVideoModuleDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateVideoModule}
+                    disabled={!moduleName.trim() || !videoFile}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Create Video Module
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </Layout>
   );

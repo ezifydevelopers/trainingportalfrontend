@@ -5,6 +5,8 @@
 // Check if debug mode is enabled
 const isDebugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
 const isDevelopment = import.meta.env.MODE === 'development';
+const isStaging = import.meta.env.MODE === 'staging';
+const isProduction = import.meta.env.MODE === 'production';
 
 // Logger class for conditional logging
 class Logger {
@@ -14,6 +16,11 @@ class Logger {
     
     // Log everything in development if debug mode is enabled
     if (isDevelopment && isDebugMode) return true;
+    
+    // Log warnings and errors in staging and production
+    if (isStaging || isProduction) {
+      return level === 'warn' || level === 'error';
+    }
     
     // Log warnings and errors in production
     if (level === 'warn' || level === 'error') return true;
@@ -80,7 +87,8 @@ export const { debug, info, warn, error, apiRequest, apiResponse, websocketEvent
 // Export environment info
 export const env = {
   isDevelopment,
-  isProduction: import.meta.env.MODE === 'production',
+  isStaging,
+  isProduction,
   isDebugMode,
   apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:7001',
   wsUrl: import.meta.env.VITE_WS_URL || 'ws://localhost:5000',

@@ -24,7 +24,7 @@ import AdminHelpRequests from "./pages/AdminHelpRequests";
 import AdminFeedback from "./pages/AdminFeedback";
 import PendingTrainees from "./pages/PendingTrainees";
 import ManagerDashboard from "./pages/ManagerDashboard";
-import ManagerCompanyModules from "./pages/ManagerCompanyModules";
+import ManagerCompanyModulesWrapper from "./pages/ManagerCompanyModulesWrapper";
 import ManagerTrainees from "./pages/ManagerTrainees";
 import ManagerProgress from "./pages/ManagerProgress";
 import Chat from "./pages/Chat";
@@ -180,7 +180,7 @@ const AppRoutes = () => (
       path="/manager/company/:companyId/modules" 
       element={
         <ProtectedRoute allowedRoles={["MANAGER"]}>
-          <ManagerCompanyModules />
+          <ManagerCompanyModulesWrapper />
         </ProtectedRoute>
       }
     />
@@ -205,6 +205,22 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute allowedRoles={["MANAGER"]}>
           <TrackTraineeDetail />
+        </ProtectedRoute>
+      }
+    />
+    <Route 
+      path="/manager/trainees" 
+      element={
+        <ProtectedRoute allowedRoles={["MANAGER"]}>
+          <ManagerTrainees />
+        </ProtectedRoute>
+      }
+    />
+    <Route 
+      path="/manager/progress" 
+      element={
+        <ProtectedRoute allowedRoles={["MANAGER"]}>
+          <ManagerProgress />
         </ProtectedRoute>
       }
     />

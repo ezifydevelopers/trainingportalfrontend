@@ -143,6 +143,16 @@ export const useTraineeProgress = (traineeId: number) => {
   });
 };
 
+export const useCompanyTraineesProgress = (companyId: number | null) => {
+  return useQuery({
+    queryKey: ['company-trainees-progress', companyId],
+    queryFn: () => apiClient.getCompanyTraineesProgress(companyId!),
+    enabled: !!companyId && companyId > 0,
+    staleTime: 30 * 1000, // 30 seconds for more real-time data
+    refetchInterval: 60 * 1000, // Refetch every minute for real-time updates
+  });
+};
+
 export const useAllCompanies = () => {
   return useQuery({
     queryKey: ['companies'],

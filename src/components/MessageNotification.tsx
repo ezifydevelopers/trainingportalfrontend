@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import websocketService from '@/services/websocketService';
 import { getApiBaseUrl } from '@/lib/api';
+import { useMarkAllAsRead } from '@/hooks/useApi';
 
 interface MessageNotification {
   id: string;
@@ -21,17 +22,19 @@ interface MessageNotificationProps {
   unreadCount: number;
   onNotificationClick: (chatRoomId: number) => void;
   onUnreadCountChange?: () => void;
+  enableClearAll?: boolean; // Option to disable clear all functionality
 }
 
-export default function MessageNotification({ unreadCount, onNotificationClick, onUnreadCountChange }: MessageNotificationProps) {
+export default function MessageNotification({ unreadCount, onNotificationClick, onUnreadCountChange, enableClearAll = true }: MessageNotificationProps) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<MessageNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [lastMessageTime, setLastMessageTime] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
 
   // Function to fetch all unread messages
-  const fetchRecentMessages = async () => {
+  const fetchRecentMessages = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -45,7 +48,7 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
       if (response.ok) {
         const data = await response.json();
         // Convert recent messages to notification format
-        const messageNotifications: MessageNotification[] = data.messages?.map((msg: any) => ({
+        const messageNotifications: MessageNotification[] = data.messages?.map((msg: { id: number; content: string; sender: { name: string }; chatRoomId: number; createdAt: string; isRead: boolean }) => ({
           id: `msg_${msg.id}`,
           message: msg.content,
           senderName: msg.sender.name,
@@ -56,28 +59,27 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
         })) || [];
         
         setNotifications(messageNotifications);
-        console.log(`Loaded ${data.showing} of ${data.totalUnread} unread messages`);
       }
     } catch (error) {
-      console.error('Error fetching recent messages:', error);
+      // Error fetching recent messages
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   // Fetch recent messages when component mounts or when dropdown opens
   useEffect(() => {
     if (showNotifications) {
       fetchRecentMessages();
     }
-  }, [showNotifications, user]);
+  }, [showNotifications, user, fetchRecentMessages]);
 
   // Listen for real-time notifications from WebSocket
   useEffect(() => {
     if (!user) return;
 
     // Listen for new messages
-    const handleNewMessage = (message: any) => {
+    const handleNewMessage = (message: { id: number; content: string; senderId: number; sender: { name: string }; chatRoomId: number }) => {
       if (message.senderId !== user.id) {
         const newNotification: MessageNotification = {
           id: `msg_${message.id}_${Date.now()}`,
@@ -95,7 +97,7 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
     };
 
     // Listen for module completion notifications
-    const handleModuleCompletion = (data: any) => {
+    const handleModuleCompletion = (data: { traineeId: number; traineeName: string }) => {
       const newNotification: MessageNotification = {
         id: `module_${data.traineeId}_${Date.now()}`,
         message: `${data.traineeName} has completed all training modules!`,
@@ -141,6 +143,7 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
           }
         }
       } catch (error) {
+        // Error polling unread count
       }
     }, 10000);
 
@@ -157,18 +160,6 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
       });
     }
 
-    // Show toast notification
-    toast.success(`New message from ${notification.senderName}!`, {
-      action: {
-        label: 'View',
-        onClick: () => {
-          if (notification.chatRoomId > 0) {
-            onNotificationClick(notification.chatRoomId);
-          }
-          setShowNotifications(true);
-        }
-      }
-    });
   };
 
   const showModuleCompletionNotification = (notification: MessageNotification) => {
@@ -181,13 +172,6 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
       });
     }
 
-    // Show toast notification
-    toast.success(notification.message, {
-      action: {
-        label: 'View',
-        onClick: () => setShowNotifications(true)
-      }
-    });
   };
 
   const markNotificationAsRead = (notificationId: string) => {
@@ -201,25 +185,54 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
   };
 
   const clearAllNotifications = async () => {
-    // Mark all notifications as read locally
-    setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
+    setIsClearingAll(true);
     
-    // Mark all as read on server
     try {
-      await fetch(`${getApiBaseUrl()}/chat/mark-all-read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Simple approach: just mark all as read locally and refresh
+      setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
+      
+      // Try to mark chat messages as read
+      try {
+        await fetch(`${getApiBaseUrl()}/chat/mark-all-read`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (chatError) {
+        console.warn('Chat clear failed:', chatError);
+      }
+      
+      // Try to mark system notifications as read
+      try {
+        await fetch(`${getApiBaseUrl()}/admin/notifications/read-all`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (notificationError) {
+        console.warn('Notification clear failed:', notificationError);
+      }
       
       // Refresh the unread count in the parent component
       if (onUnreadCountChange) {
         onUnreadCountChange();
       }
+      
+      // Refresh the notifications list
+      setTimeout(() => {
+        fetchRecentMessages();
+      }, 500);
+      
+      toast.success('All notifications cleared');
     } catch (error) {
-      console.error('Error marking all messages as read:', error);
+      console.error('Error clearing all notifications:', error);
+      toast.error('Failed to clear notifications');
+    } finally {
+      setIsClearingAll(false);
     }
   };
 
@@ -295,14 +308,25 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
               >
                 {isLoading ? '...' : 'Refresh'}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAllNotifications}
-                className="h-6 px-2 text-xs"
-              >
-                Clear all
-              </Button>
+              {enableClearAll && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllNotifications}
+                  disabled={isClearingAll || notifications.length === 0}
+                  className="h-6 px-2 text-xs"
+                  title={notifications.length === 0 ? "No notifications to clear" : "Clear all notifications"}
+                >
+                  {isClearingAll ? (
+                    <>
+                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-400 border-t-transparent mr-1" />
+                      Clearing...
+                    </>
+                  ) : (
+                    'Clear all'
+                  )}
+                </Button>
+              )}
             </div>
           </div>
 

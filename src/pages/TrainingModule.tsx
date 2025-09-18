@@ -60,17 +60,9 @@ export default function TrainingModule() {
     }
   }, [user, navigate]);
 
-  // Debug module data
+  // Reset video states when module changes
   useEffect(() => {
     if (module) {
-      console.log('Module data loaded:', {
-        id: module.id,
-        name: module.name,
-        videos: module.videos,
-        completed: module.completed,
-        videoUrl: module.videos?.[0]?.url
-      });
-      // Reset video states when module changes
       setIsVideoLoading(true);
       setVideoError(null);
       setIsVideoPlaying(false);
@@ -290,7 +282,6 @@ export default function TrainingModule() {
 
   const getVideoUrl = (videoUrl: string) => {
     if (!videoUrl) {
-      console.error('No video URL provided');
       return '';
     }
     
@@ -311,7 +302,6 @@ export default function TrainingModule() {
       fullUrl = `${baseUrl}/uploads/${videoUrl}`;
     }
     
-    console.log('Generated video URL:', fullUrl);
     return fullUrl;
   };
 
@@ -438,44 +428,25 @@ export default function TrainingModule() {
                           }}
                           onContextMenu={(e) => e.preventDefault()}
                           onLoadedMetadata={(e) => {
-                            const video = e.target as HTMLVideoElement;
-                            console.log('Video metadata loaded:', {
-                              duration: video.duration,
-                              videoWidth: video.videoWidth,
-                              videoHeight: video.videoHeight,
-                              readyState: video.readyState,
-                              src: video.src
-                            });
+                            // Video metadata loaded
                           }}
                           onLoadStart={() => {
-                            console.log('Video loading started');
                             setIsVideoLoading(true);
                             setVideoError(null);
                           }}
                           onCanPlay={() => {
-                            console.log('Video can play');
                             setIsVideoLoading(false);
                             setVideoError(null);
                           }}
                           onError={(e) => {
-                            console.error('Video error:', e);
-                            const video = e.target as HTMLVideoElement;
-                            console.error('Video error details:', {
-                              error: video.error,
-                              networkState: video.networkState,
-                              readyState: video.readyState,
-                              src: video.src
-                            });
                             setIsVideoLoading(false);
                             setVideoError('Failed to load video. Please check your internet connection and try again.');
                             toast.error('Failed to load video. Please try refreshing the page.');
                           }}
                           onPlay={() => {
-                            console.log('Video started playing');
                             setIsVideoPlaying(true);
                           }}
                           onPause={() => {
-                            console.log('Video paused');
                             setIsVideoPlaying(false);
                           }}
                           onSeeked={(e) => {
@@ -648,7 +619,6 @@ export default function TrainingModule() {
                 moduleId={Number(moduleId)}
                 onViewResource={(resource) => {
                   // Handle resource viewing if needed
-                  console.log('Viewing resource:', resource);
                 }}
               />
             </div>

@@ -294,13 +294,6 @@ export default function Chat() {
       });
     }
 
-    // Show toast notification
-    toast.success('New message received!', {
-      action: {
-        label: 'View',
-        onClick: () => setShowUserList(false)
-      }
-    });
   };
 
   const startChatWithUser = async (participantId: number) => {

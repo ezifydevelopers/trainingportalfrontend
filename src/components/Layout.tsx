@@ -4,72 +4,18 @@ import Sidebar from "./Sidebar";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import MessageNotification from "./MessageNotification";
 import NotificationBell from "./NotificationBell";
-import { getApiBaseUrl } from "@/lib/api";
-import websocketService from "@/services/websocketService";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/chat/unread-count`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Unread count updated:', data.unreadCount);
-        setUnreadCount(data.unreadCount);
-      }
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (!user) return;
-
-    fetchUnreadCount();
-    
-    // Poll for updates every 10 seconds
-    const interval = setInterval(fetchUnreadCount, 10000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Listen for WebSocket messages to update unread count
-  useEffect(() => {
-    if (!user) return;
-
-    const handleNewMessage = (message: any) => {
-      // Only update count if the message is not from the current user
-      if (message.senderId !== user.id) {
-        fetchUnreadCount();
-      }
-    };
-
-    websocketService.on('NEW_MESSAGE', handleNewMessage);
-
-    return () => {
-      websocketService.off('NEW_MESSAGE', handleNewMessage);
-    };
-  }, [user]);
 
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  const handleNotificationClick = (chatRoomId: number) => {
-    // Navigate to chat page with the specific chat room
-    navigate(`/chat?room=${chatRoomId}`);
-  };
 
   const getInitials = (name: string): string => {
     return name
@@ -84,18 +30,11 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {!hideSidebar && <Sidebar unreadCount={unreadCount} />}
+      {!hideSidebar && <Sidebar />}
       <div className="flex-1 flex flex-col">
         <header className="bg-white border-b border-gray-200 flex items-center justify-between px-6 py-4">
           <div className="flex-1"></div>
           <div className="flex items-center gap-2">
-            {/* Message Notification */}
-            <MessageNotification 
-              unreadCount={unreadCount}
-              onNotificationClick={handleNotificationClick}
-              onUnreadCountChange={fetchUnreadCount}
-            />
-            
             {/* System Notifications */}
             {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
               <NotificationBell />

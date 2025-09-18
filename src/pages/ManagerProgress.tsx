@@ -1,73 +1,84 @@
-import React, { useState } from 'react';
-import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  BarChart3, 
-  Users, 
-  BookOpen, 
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  Target,
-  Award,
-  Calendar,
-  Eye,
-  Download
-} from 'lucide-react';
-import { 
-  useGetManagerCompanies,
-  useCompanyModules,
-  useGetCompanyTrainees
-} from '@/hooks/useApi';
-import { useAuth } from '@/contexts/AuthContext';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from "react";
+import Layout from "@/components/Layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Users, Building2, Trophy, Eye, CheckCircle, Clock, BookOpen } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAllTrainees, useAllCompanies, useGetManagerCompanies } from "@/hooks/useApi";
 
-export default function ManagerProgress() {
-  const { companyId } = useParams<{ companyId: string }>();
+const ManagerProgress = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [selectedModule, setSelectedModule] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Get manager's assigned companies, modules, and trainees
-  const { data: companiesData } = useGetManagerCompanies(user?.id || 0);
-  const { data: modulesData, isLoading: modulesLoading } = useCompanyModules(parseInt(companyId || '0'));
-  const { data: traineesData, isLoading: traineesLoading } = useGetCompanyTrainees(parseInt(companyId || '0'));
+  // Get all trainees and companies (like admin does)
+  const { data: allTrainees = [], isLoading: traineesLoading } = useAllTrainees();
+  const { data: allCompaniesData, isLoading: companiesLoading } = useAllCompanies();
+  const allCompanies = allCompaniesData?.companies || [];
 
-  const companies = companiesData?.companies || [];
-  const currentCompany = companies.find(c => c.id === parseInt(companyId || '0'));
-  const modules = modulesData || [];
-  const trainees = traineesData?.trainees || [];
+  // Get manager's assigned companies
+  const { data: managerCompaniesData, isLoading: managerCompaniesLoading } = useGetManagerCompanies(user?.id || 0);
+  const managerCompanies = useMemo(() => managerCompaniesData?.companies || [], [managerCompaniesData?.companies]);
 
-  // Calculate real statistics
-  const totalTrainees = trainees.length;
-  const totalModules = modules.length;
-  const verifiedTrainees = trainees.filter(t => t.isVerified).length;
-  const completionRate = totalTrainees > 0 ? Math.round((verifiedTrainees / totalTrainees) * 100) : 0;
-  const totalCompletions = totalTrainees * totalModules; // Simplified calculation
-  const avgTimePerModule = 2.5; // This would need to come from actual progress data
+  // Filter trainees to only show those from manager's assigned companies
+  const managerCompanyIds = managerCompanies.map(assignment => assignment.companyId);
+  const filteredTrainees = useMemo(() => {
+    return allTrainees.filter(trainee => 
+      trainee.companyId && managerCompanyIds.includes(trainee.companyId)
+    );
+  }, [allTrainees, managerCompanyIds]);
 
-  const handleViewTrainee = (traineeId: number) => {
-    navigate(`/manager/company/${companyId}/trainee/${traineeId}`);
-  };
+  // Group trainees by company
+  const traineesByCompany = useMemo(() => {
+    const grouped: Record<number, { id: number; name: string; logo?: string; trainees: typeof filteredTrainees }> = {};
+    filteredTrainees.forEach(trainee => {
+      const companyId = trainee.companyId;
+      if (!grouped[companyId]) {
+        const company = allCompanies.find(c => c.id === companyId);
+        grouped[companyId] = {
+          id: companyId,
+          name: company?.name || 'Unknown Company',
+          logo: company?.logo,
+          trainees: []
+        };
+      }
+      grouped[companyId].trainees.push(trainee);
+    });
+    return Object.values(grouped);
+  }, [filteredTrainees, allCompanies]);
 
-  const handleViewModule = (moduleId: number) => {
-    navigate(`/manager/company/${companyId}/module/${moduleId}`);
-  };
+  // Calculate overall statistics
+  const overallStats = useMemo(() => {
+    const totalTrainees = filteredTrainees.length;
+    const totalCompanies = managerCompanies.length;
+    
+    // Calculate progress statistics
+    const completedModules = filteredTrainees.reduce((sum, t) => sum + (t.calculatedProgress?.modulesCompleted || 0), 0);
+    const totalModules = filteredTrainees.reduce((sum, t) => sum + (t.calculatedProgress?.totalModules || 0), 0);
+    const avgCompletionRate = filteredTrainees.length > 0 
+      ? Math.round(filteredTrainees.reduce((sum, t) => sum + (t.calculatedProgress?.overallProgress || 0), 0) / filteredTrainees.length)
+      : 0;
 
-  const handleExportReport = () => {
-    // Export progress report
-    console.log('Exporting progress report...');
-  };
+    return {
+      totalTrainees,
+      totalCompanies,
+      completedModules,
+      totalModules,
+      avgCompletionRate
+    };
+  }, [filteredTrainees, managerCompanies]);
 
-  if (modulesLoading || traineesLoading) {
+  useEffect(() => {
+    setLoading(traineesLoading || companiesLoading || managerCompaniesLoading);
+  }, [traineesLoading, companiesLoading, managerCompaniesLoading]);
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading progress data...</div>
+        <div className="container mx-auto py-8 px-4">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
         </div>
       </Layout>
     );
@@ -75,309 +86,166 @@ export default function ManagerProgress() {
 
   return (
     <Layout>
-      <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+      <div className="container mx-auto py-8 px-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/manager/company/${companyId}/modules`)}
-              >
-                ← Back to Modules
-              </Button>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {currentCompany?.name || 'Company'} - Progress Tracking
-            </h1>
-            <p className="text-gray-600">Monitor trainee progress and training effectiveness</p>
-          </div>
-          <Button onClick={handleExportReport}>
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Progress Overview</h1>
+          <p className="text-gray-600">Track progress across all your assigned companies</p>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Overall Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{overallStats.totalCompanies}</div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Trainees</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalTrainees}</div>
-              <p className="text-xs text-muted-foreground">Active trainees</p>
+              <div className="text-2xl font-bold">{overallStats.totalTrainees}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Completed Modules</CardTitle>
+              <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{completionRate}%</div>
-              <p className="text-xs text-muted-foreground">Verified trainees</p>
+              <div className="text-2xl font-bold">{overallStats.completedModules}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Modules</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Avg Completion Rate</CardTitle>
+              <Eye className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalModules}</div>
-              <p className="text-xs text-muted-foreground">Available modules</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg. Time</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{avgTimePerModule}h</div>
-              <p className="text-xs text-muted-foreground">Per module</p>
+              <div className="text-2xl font-bold">{overallStats.avgCompletionRate}%</div>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="trainees">Trainee Progress</TabsTrigger>
-            <TabsTrigger value="modules">Module Performance</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
+        {/* Company Progress Cards */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">Company Progress</h2>
+          
+          {traineesByCompany.map((company) => {
+            // Calculate company statistics
+            const completedModules = company.trainees.reduce((sum, t) => sum + (t.calculatedProgress?.modulesCompleted || 0), 0);
+            const totalModules = company.trainees.reduce((sum, t) => sum + (t.calculatedProgress?.totalModules || 0), 0);
+            const completionRate = company.trainees.length > 0 
+              ? Math.round(company.trainees.reduce((sum, t) => sum + (t.calculatedProgress?.overallProgress || 0), 0) / company.trainees.length)
+              : 0;
 
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Progress Chart Placeholder */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Progress Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 p-4">
-                    {trainees.length > 0 ? (
-                      <div className="space-y-4">
-                        <div className="text-center mb-4">
-                          <h4 className="text-lg font-semibold text-gray-900">Trainee Status Overview</h4>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Verified Trainees</span>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-green-500 h-2 rounded-full" 
-                                  style={{ width: `${completionRate}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-medium text-gray-900">{verifiedTrainees}/{totalTrainees}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Pending Trainees</span>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-orange-500 h-2 rounded-full" 
-                                  style={{ width: `${100 - completionRate}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-sm font-medium text-gray-900">{totalTrainees - verifiedTrainees}/{totalTrainees}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Total Modules</span>
-                            <span className="text-sm font-medium text-gray-900">{totalModules}</span>
-                          </div>
-                        </div>
+            return (
+              <Card key={company.id} className="overflow-hidden">
+                <CardHeader className="bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Building2 className="h-6 w-6 text-blue-600" />
                       </div>
-                    ) : (
-                      <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
-                        <div className="text-center">
-                          <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-500">No data available</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {trainees.length > 0 ? (
-                      trainees.slice(0, 4).map((trainee, index) => (
-                        <div key={trainee.id || index} className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Users className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{trainee.name || 'Unknown Trainee'}</p>
-                            <p className="text-xs text-gray-500">
-                              {trainee.isVerified ? 'Verified trainee' : 'Pending verification'}
-                            </p>
-                          </div>
-                          <span className="text-xs text-gray-400">
-                            {trainee.isVerified ? 'Active' : 'Pending'}
+                      <div>
+                        <CardTitle className="text-xl">{company.name}</CardTitle>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                          <span className="flex items-center space-x-1">
+                            <Users className="h-4 w-4" />
+                            <span>{company.trainees.length} trainees</span>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <BookOpen className="h-4 w-4" />
+                            <span>{totalModules} modules</span>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <Trophy className="h-4 w-4" />
+                            <span>{completionRate}% complete</span>
                           </span>
                         </div>
-                      ))
+                      </div>
+                    </div>
+                    <Badge variant={completionRate > 70 ? "default" : completionRate > 40 ? "secondary" : "outline"}>
+                      {completionRate}% Complete
+                    </Badge>
+                  </div>
+                  
+                  {/* Company Progress Bar */}
+                  <div className="mt-4">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Overall Progress</span>
+                      <span>{completedModules}/{totalModules} modules completed</span>
+                    </div>
+                    <Progress value={completionRate} className="h-2" />
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-6">
+                  {/* Trainee Progress Summary */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Trainee Progress Summary</h3>
+                    
+                    {company.trainees.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {company.trainees.map((trainee) => {
+                          const completedModules = trainee.calculatedProgress?.modulesCompleted || 0;
+                          const totalModules = trainee.calculatedProgress?.totalModules || 0;
+                          const traineeCompletionRate = trainee.calculatedProgress?.overallProgress || 0;
+                          
+                          return (
+                            <Card key={trainee.id} className="p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium text-gray-900">{trainee.name}</h4>
+                                <Badge variant={traineeCompletionRate > 70 ? "default" : traineeCompletionRate > 40 ? "secondary" : "outline"}>
+                                  {traineeCompletionRate}%
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-3">{trainee.email}</p>
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <span>Progress</span>
+                                  <span>{completedModules}/{totalModules} modules</span>
+                                </div>
+                                <Progress value={traineeCompletionRate} className="h-2" />
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
                     ) : (
-                      <div className="text-center py-4">
-                        <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">No trainees found</p>
+                      <div className="text-center py-8 bg-gray-50 rounded-lg">
+                        <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Trainees</h3>
+                        <p className="text-gray-600">No trainees are assigned to this company yet.</p>
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
+            );
+          })}
+        </div>
 
-          <TabsContent value="trainees" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              {trainees.map((trainee) => (
-                <Card key={trainee.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Users className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold">{trainee.name}</h3>
-                          <p className="text-sm text-gray-500">{trainee.email}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-green-600">85%</div>
-                          <div className="text-xs text-gray-500">Completion Rate</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">5/6</div>
-                          <div className="text-xs text-gray-500">Modules</div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewTrainee(trainee.id)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Progress Bar */}
-                    <div className="mt-4">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '85%' }}></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="modules" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              {modules.map((module) => (
-                <Card key={module.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                          <BookOpen className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold">{module.name}</h3>
-                          <p className="text-sm text-gray-500">{module.description}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-blue-600">92%</div>
-                          <div className="text-xs text-gray-500">Completion Rate</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">23/25</div>
-                          <div className="text-xs text-gray-500">Trainees</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">1.8h</div>
-                          <div className="text-xs text-gray-500">Avg. Time</div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewModule(module.id)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Progress Bar */}
-                    <div className="mt-4">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '92%' }}></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Completion Trends</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                    <div className="text-center">
-                      <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500">Completion trends chart</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Module Performance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                    <div className="text-center">
-                      <Award className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500">Module performance chart</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Empty State */}
+        {traineesByCompany.length === 0 && (
+          <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Companies Assigned</h3>
+            <p className="text-gray-600">You haven't been assigned to any companies yet.</p>
+          </div>
+        )}
       </div>
     </Layout>
   );
-}
+};
+
+export default ManagerProgress;

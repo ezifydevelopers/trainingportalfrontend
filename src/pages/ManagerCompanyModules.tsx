@@ -1,408 +1,521 @@
-import React, { useState } from 'react';
-import Layout from '@/components/Layout';
+import React, { memo, useCallback, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Building2, 
-  Users, 
-  BookOpen, 
-  Plus,
-  Eye,
-  Settings,
-  FileText,
-  Play,
-  UserPlus,
-  BarChart3,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Video,
-  File,
-  Image,
-  Music
-} from 'lucide-react';
-import { 
-  useGetManagerCompanies,
-  useCompanyModules,
-  useGetModuleResources,
-  useGetCompanyTrainees
-} from '@/hooks/useApi';
-import { useAuth } from '@/contexts/AuthContext';
-import { useParams, useNavigate } from 'react-router-dom';
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
+import { Plus, FileText, Video, Users, Upload, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { Module } from '@/shared/types/common.types';
 
-export default function ManagerCompanyModules() {
-  const { companyId } = useParams<{ companyId: string }>();
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [selectedModule, setSelectedModule] = useState<number | null>(null);
-  const [showAddModule, setShowAddModule] = useState(false);
-  const [showAddResource, setShowAddResource] = useState(false);
+// Custom hooks
+import { useManagerCompanyManagement } from '@/features/companies/hooks/useManagerCompanyManagement';
+import { useModuleManagement } from '@/features/modules/hooks/useModuleManagement';
 
-  // Get manager's assigned companies
-  const { data: companiesData } = useGetManagerCompanies(user?.id || 0);
-  const { data: modulesData, isLoading: modulesLoading } = useCompanyModules(parseInt(companyId || '0'));
-  const { data: resourcesData, isLoading: resourcesLoading } = useGetModuleResources(selectedModule || 0);
-  const { data: traineesData, isLoading: traineesLoading } = useGetCompanyTrainees(parseInt(companyId || '0'));
+// Components
+import CompanyHeader from '@/features/companies/components/CompanyHeader';
+import CompanyList from '@/features/companies/components/CompanyList';
+import ModuleList from '@/features/modules/components/ModuleList';
+import ModuleDetail from '@/features/modules/components/ModuleDetail';
+import ErrorBoundary from '@/shared/components/ErrorBoundary';
 
-  const companies = companiesData?.companies || [];
-  const currentCompany = companies.find(c => c.id === parseInt(companyId || '0'));
-  const modules = modulesData || [];
-  const resources = resourcesData?.resources || [];
-  const trainees = traineesData?.trainees || [];
+// Form Components
+import AddModuleForm from '@/features/modules/components/AddModuleForm';
+import EditModuleForm from '@/features/modules/components/EditModuleForm';
+import ResourceUploadForm from '@/features/modules/components/ResourceUploadForm';
 
-  const handleViewTrainees = () => {
-    navigate(`/manager/company/${companyId}/trainees`);
-  };
+// Dialog Components
+import NewCompanyDialog from '@/components/NewCompanyDialog';
+import CompanyEditDialog from '@/features/companies/components/CompanyEditDialog';
+import ConfirmationDialog from '@/shared/components/ConfirmationDialog';
 
-  const handleAddModule = () => {
-    setShowAddModule(true);
-  };
+interface ManagerCompanyModulesProps {
+  selectedCompanyId?: number;
+  managerId: number;
+}
 
-  const handleAddResource = () => {
-    setShowAddResource(true);
-  };
+const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({ 
+  selectedCompanyId, 
+  managerId 
+}) => {
+  const queryClient = useQueryClient();
+  
+  // Company management
+  const {
+    selectedCompany,
+    searchTerm,
+    showNewCompany,
+    showEditCompany,
+    companyToEdit,
+    companyToDelete,
+    companies,
+    isLoading: companiesLoading,
+    isError: companiesError,
+    handleCompanySelect,
+    handleBackToCompanies,
+    handleCreateCompany,
+    handleEditCompany,
+    handleUpdateCompany,
+    handleDeleteCompany,
+    confirmDeleteCompany,
+    handleSearchChange,
+    handleShowNewCompany,
+    handleCloseNewCompany,
+    handleCloseEditCompany,
+    handleCloseDeleteDialog,
+    isCreating,
+    isUpdating,
+    isDeleting,
+  } = useManagerCompanyManagement(managerId, selectedCompanyId);
 
-  const handleManageModule = (moduleId: number) => {
-    setSelectedModule(moduleId);
-  };
+  // Module management
+  const {
+    selectedModule,
+    activeTab,
+    showAddModule,
+    showEditModule,
+    showModuleDetail,
+    moduleToEdit,
+    videoModules,
+    resourceModules,
+    isLoading: modulesLoading,
+    isError: modulesError,
+    handleTabChange,
+    handleModuleSelect,
+    handleShowAddModule,
+    handleCloseAddModule,
+    handleCreateModule,
+    handleEditModule,
+    handleUpdateModule,
+    handleDeleteModule,
+    handleCloseModuleDetail,
+    handleUploadResource,
+    isCreating: isCreatingModule,
+    isUpdating: isUpdatingModule,
+    isDeleting: isDeletingModule,
+  } = useModuleManagement(selectedCompany?.id || null);
 
-  const handleViewProgress = () => {
-    navigate(`/manager/company/${companyId}/progress`);
-  };
+  // Debug: Log module data to see if resources are included
+  React.useEffect(() => {
+    if (resourceModules.length > 0) {
+      console.log('Resource modules data:', resourceModules);
+      resourceModules.forEach(module => {
+        console.log(`Module ${module.name} (ID: ${module.id}):`, {
+          resources: module.resources,
+          resourcesCount: module.resources?.length || 0,
+          isResourceModule: module.isResourceModule
+        });
+      });
+    }
+  }, [resourceModules]);
 
-  if (modulesLoading) {
+  // Resource module dialog state
+  const [showResourceModuleDialog, setShowResourceModuleDialog] = useState(false);
+  const [resourceModuleName, setResourceModuleName] = useState("");
+  const [resourceFiles, setResourceFiles] = useState<File[]>([]);
+
+  // Memoized utility functions
+  const capitalizeModuleName = useCallback((name: string) => {
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  }, []);
+
+  // Handler for Add Resource Module button
+  const handleAddResourceModule = useCallback(() => {
+    handleTabChange('resource');
+    setShowResourceModuleDialog(true);
+  }, [handleTabChange]);
+
+  const handleRefreshModules = useCallback(() => {
+    console.log('Manual refresh triggered');
+    queryClient.invalidateQueries({ queryKey: ['company-modules', selectedCompany?.id] });
+    queryClient.refetchQueries({ queryKey: ['company-modules', selectedCompany?.id] });
+  }, [queryClient, selectedCompany?.id]);
+
+  // Handler for creating resource module with files
+  const handleCreateResourceModuleWithFiles = useCallback(async () => {
+    if (!resourceModuleName.trim() || !selectedCompany) return;
+    
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        toast.error('You are not logged in. Please log in again.');
+        return;
+      }
+
+      // First create the module
+      const moduleResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:7001/api'}/admin/companies/${selectedCompany.id}/modules`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          name: resourceModuleName,
+          isResourceModule: true
+        })
+      });
+
+      if (!moduleResponse.ok) {
+        throw new Error('Failed to create resource module');
+      }
+
+      const moduleData = await moduleResponse.json();
+      const moduleId = moduleData.module.id;
+      console.log('Created module with ID:', moduleId);
+
+      // Upload files if any
+      if (resourceFiles.length > 0) {
+        console.log('Uploading', resourceFiles.length, 'files to module', moduleId);
+        for (const file of resourceFiles) {
+          console.log('Uploading file:', file.name, 'Type:', file.type);
+          const formData = new FormData();
+          formData.append('moduleId', moduleId.toString());
+          formData.append('resourceFile', file);
+          
+          // Map file MIME types to valid ResourceType enum values
+          let resourceType = 'DOCUMENT'; // default
+          if (file.type.startsWith('video/')) {
+            resourceType = 'VIDEO';
+          } else if (file.type === 'application/pdf') {
+            resourceType = 'PDF';
+          } else if (file.type.startsWith('image/')) {
+            resourceType = 'IMAGE';
+          } else if (file.type.startsWith('audio/')) {
+            resourceType = 'AUDIO';
+          } else if (file.type.startsWith('text/') || 
+                     file.type.includes('document') || 
+                     file.type.includes('word') ||
+                     file.type.includes('excel') ||
+                     file.type.includes('powerpoint')) {
+            resourceType = 'DOCUMENT';
+          }
+          
+          formData.append('type', resourceType);
+          console.log('Mapped file type:', file.type, 'to resource type:', resourceType);
+
+          const resourceResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:7001/api'}/admin/resources`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: formData
+          });
+
+          if (!resourceResponse.ok) {
+            const errorData = await resourceResponse.json();
+            console.error('Resource upload failed:', errorData);
+            throw new Error(`Failed to upload resource: ${errorData.message || 'Unknown error'}`);
+          }
+
+          const resourceData = await resourceResponse.json();
+          console.log('Resource uploaded successfully:', resourceData);
+        }
+      }
+
+      toast.success('Resource module created successfully');
+      setShowResourceModuleDialog(false);
+      setResourceModuleName('');
+      setResourceFiles([]);
+      
+      // Refresh modules by invalidating the query cache
+      console.log('Invalidating queries for company:', selectedCompany.id);
+      queryClient.invalidateQueries({ queryKey: ['company-modules', selectedCompany.id] });
+      
+      // Also invalidate all modules queries to ensure data consistency
+      queryClient.invalidateQueries({ queryKey: ['admin-modules'] });
+      queryClient.invalidateQueries({ queryKey: ['modules'] });
+      
+      // Force a refetch after a short delay to ensure backend has processed the uploads
+      setTimeout(() => {
+        console.log('Force refetching modules...');
+        queryClient.refetchQueries({ queryKey: ['company-modules', selectedCompany.id] });
+      }, 1000);
+    } catch (error) {
+      console.error('Error creating resource module:', error);
+      toast.error('Failed to create resource module');
+    }
+  }, [resourceModuleName, selectedCompany, resourceFiles, queryClient]);
+
+  // Error handling
+  if (companiesError) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading modules...</div>
-        </div>
-      </Layout>
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-red-500 text-lg mb-4">Error loading companies</div>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+    <ErrorBoundary>
+      <div className="w-full">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/manager/dashboard')}
-              >
-                ← Back to Dashboard
-              </Button>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {currentCompany?.name || 'Company'} Management
-            </h1>
-            <p className="text-gray-600">Manage training modules, resources, and trainees</p>
+        <CompanyHeader
+          selectedCompany={selectedCompany}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          onBackToCompanies={handleBackToCompanies}
+          onShowNewCompany={undefined} // Managers can't create companies
+          onShowAddModule={handleShowAddModule}
+          onShowAddResource={handleAddResourceModule}
+          isManagerView={true}
+        />
+
+        {/* Main Content */}
+        {!selectedCompany ? (
+          // Companies List View
+          <div className="max-w-7xl mx-auto pb-16">
+            <CompanyList
+              companies={companies}
+              onCompanySelect={handleCompanySelect}
+              onCompanyEdit={handleEditCompany}
+              onCompanyDelete={handleDeleteCompany}
+              isLoading={companiesLoading}
+              searchTerm={searchTerm}
+            />
           </div>
-        </div>
+        ) : selectedCompany ? (
+          // Modules Management View
+          <div className="max-w-7xl mx-auto pb-16">
+            {/* Modules Tabs */}
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="video" className="flex items-center space-x-2">
+                  <Video className="h-4 w-4" />
+                  <span>Video Modules ({videoModules.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="resource" className="flex items-center space-x-2">
+                  <FileText className="h-4 w-4" />
+                  <span>Resource Modules ({resourceModules.length})</span>
+                </TabsTrigger>
+              </TabsList>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Training Modules</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{modules.length}</div>
-              <p className="text-xs text-muted-foreground">Active modules</p>
-            </CardContent>
-          </Card>
+              <TabsContent value="video" className="space-y-6">
+                <ModuleList
+                  modules={videoModules as unknown as Module[]}
+                  onModuleSelect={handleModuleSelect}
+                  onEditModule={handleEditModule}
+                  onDeleteModule={handleDeleteModule}
+                  onUploadResource={handleUploadResource}
+                  deletingModuleId={null}
+                  capitalizeModuleName={capitalizeModuleName}
+                  isLoading={modulesLoading}
+                  viewMode="list"
+                />
+              </TabsContent>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Trainees</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{trainees.length}</div>
-              <p className="text-xs text-muted-foreground">Registered trainees</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Resources</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {modules.reduce((total, module) => total + (module.resources?.length || 0), 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">Total resources</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">85%</div>
-              <p className="text-xs text-muted-foreground">Average completion</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="modules" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="modules">Modules</TabsTrigger>
-            <TabsTrigger value="trainees">Trainees</TabsTrigger>
-            <TabsTrigger value="resources">Resources</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="modules" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Training Modules</h3>
-              <div className="space-x-2">
-                <Button variant="outline" onClick={handleAddModule}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Video Module
-                </Button>
-                <Button onClick={handleAddResource}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Add Resource Module
-                </Button>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {modules.map((module) => (
-                <Card key={module.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <BookOpen className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">{module.name}</CardTitle>
-                          <p className="text-sm text-gray-500">{module.description}</p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">Active</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Videos:</span>
-                        <span className="font-medium">{module.videos?.length || 0}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Resources:</span>
-                        <span className="font-medium">{module.resources?.length || 0}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">MCQs:</span>
-                        <span className="font-medium">{module.mcqs?.length || 0}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-2 mt-4">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleManageModule(module.id)}
-                        className="flex-1"
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        className="flex-1"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Manage
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {modules.length === 0 && (
-              <div className="text-center py-12">
-                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No modules found</h3>
-                <p className="text-gray-600 mb-4">Create your first training module to get started.</p>
-                <div className="space-x-2">
-                  <Button onClick={handleAddModule}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Video Module
-                  </Button>
-                  <Button variant="outline" onClick={handleAddResource}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Add Resource Module
+              <TabsContent value="resource" className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    {resourceModules.length} resource module{resourceModules.length !== 1 ? 's' : ''} found
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefreshModules}
+                    className="flex items-center space-x-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Refresh</span>
                   </Button>
                 </div>
-              </div>
-            )}
-          </TabsContent>
+                <ModuleList
+                  modules={resourceModules as unknown as Module[]}
+                  onModuleSelect={handleModuleSelect}
+                  onEditModule={handleEditModule}
+                  onDeleteModule={handleDeleteModule}
+                  onUploadResource={handleUploadResource}
+                  deletingModuleId={null}
+                  capitalizeModuleName={capitalizeModuleName}
+                  isLoading={modulesLoading}
+                  viewMode="list"
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        ) : null}
 
-          <TabsContent value="trainees" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Trainees</h3>
-              <Button onClick={handleViewTrainees}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Manage Trainees
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4">
-              {trainees.map((trainee) => (
-                <Card key={trainee.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Users className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{trainee.name}</p>
-                          <p className="text-sm text-gray-500">{trainee.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={trainee.isVerified ? "default" : "secondary"}>
-                          {trainee.isVerified ? "Verified" : "Pending"}
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
+        {/* Dialogs */}
+        <AddModuleForm
+          isOpen={showAddModule}
+          onClose={handleCloseAddModule}
+          onSubmit={handleCreateModule}
+          isLoading={isCreatingModule}
+        />
+
+        <EditModuleForm
+          module={moduleToEdit}
+          isOpen={showEditModule}
+          onClose={() => {}}
+          onSubmit={handleUpdateModule}
+          isLoading={isUpdatingModule}
+        />
+
+        <ResourceUploadForm
+          moduleId={selectedModule?.id || 0}
+          moduleName={selectedModule?.name || ''}
+          isOpen={false}
+          onClose={() => {}}
+          onSubmit={async (moduleId: number, files: File[]) => {
+            // Handle resource upload
+            console.log('Uploading resources to module:', moduleId, files);
+          }}
+          isLoading={false}
+        />
+
+        <ModuleDetail
+          module={selectedModule}
+          isOpen={showModuleDetail}
+          onClose={handleCloseModuleDetail}
+          onAddAnother={handleShowAddModule}
+          capitalizeModuleName={capitalizeModuleName}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmationDialog
+          isOpen={false}
+          onClose={() => {}}
+          onConfirm={() => {}}
+          title="Delete Module"
+          description="Are you sure you want to delete this module?"
+          confirmText="Delete Module"
+          type="delete"
+          isLoading={isDeletingModule}
+          destructive={true}
+          details={[
+            'All videos and resources in this module',
+            'All trainee progress for this module',
+            'All assessment data and results'
+          ]}
+          warning="This action cannot be undone."
+        />
+
+        {/* Resource Module Dialog */}
+        <Dialog open={showResourceModuleDialog} onOpenChange={setShowResourceModuleDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <FileText className="h-5 w-5 mr-2 text-green-600" />
+                Create Resource Module
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Module Name
+                </label>
+                <Input
+                  placeholder="Enter resource module name..."
+                  value={resourceModuleName}
+                  onChange={(e) => setResourceModuleName(e.target.value)}
+                />
+              </div>
+              
+              {/* Resource Upload Section */}
+              <div className="border-2 border-dashed border-green-200 rounded-lg p-6">
+                <div className="text-center">
+                  <FileText className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Resources</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Upload documents, PDFs, images, and other learning resources for this module
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.wav"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setResourceFiles(files);
+                        }}
+                        className="hidden"
+                        id="resource-upload"
+                      />
+                      <label
+                        htmlFor="resource-upload"
+                        className="inline-flex items-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 cursor-pointer"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose Files
+                      </label>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {trainees.length === 0 && (
-              <div className="text-center py-12">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No trainees found</h3>
-                <p className="text-gray-600">No trainees are registered for this company yet.</p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="resources" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">All Resources</h3>
-              <Button onClick={handleAddResource}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Resource
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4">
-              {modules.map((module) => (
-                <Card key={module.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <BookOpen className="w-5 h-5" />
-                      <span>{module.name}</span>
-                      <Badge variant="outline">{module.resources?.length || 0} resources</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {module.resources && module.resources.length > 0 ? (
-                      <div className="space-y-2">
-                        {module.resources.map((resource) => (
-                          <div key={resource.id} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                                {resource.type === 'VIDEO' && <Video className="w-4 h-4 text-purple-600" />}
-                                {resource.type === 'PDF' && <File className="w-4 h-4 text-purple-600" />}
-                                {resource.type === 'IMAGE' && <Image className="w-4 h-4 text-purple-600" />}
-                                {resource.type === 'AUDIO' && <Music className="w-4 h-4 text-purple-600" />}
-                                {resource.type === 'DOCUMENT' && <FileText className="w-4 h-4 text-purple-600" />}
-                              </div>
-                              <div>
-                                <p className="font-medium">{resource.title}</p>
-                                <p className="text-sm text-gray-500">{resource.type}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Badge variant="outline">{resource.type}</Badge>
-                              <Button variant="outline" size="sm">
-                                <Eye className="w-4 h-4" />
+                    
+                    {resourceFiles.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files:</h4>
+                        <div className="space-y-2">
+                          {resourceFiles.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                              <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setResourceFiles(files => files.filter((_, i) => i !== index))}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-gray-500 text-center py-4">No resources in this module</p>
                     )}
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowResourceModuleDialog(false);
+                    setResourceModuleName('');
+                    setResourceFiles([]);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateResourceModuleWithFiles}
+                  disabled={!resourceModuleName.trim()}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Create Module & Upload Files
+                </Button>
+              </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="progress" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Training Progress</h3>
-              <Button onClick={handleViewProgress}>
-                <BarChart3 className="w-4 h-4 mr-2" />
-                View Detailed Progress
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4">
-              {modules.map((module) => (
-                <Card key={module.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <BookOpen className="w-5 h-5" />
-                      <span>{module.name}</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Overall Progress</span>
-                        <span className="text-sm text-gray-500">75%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '75%' }}></div>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                          <div className="text-2xl font-bold text-green-600">12</div>
-                          <div className="text-xs text-gray-500">Completed</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-yellow-600">3</div>
-                          <div className="text-xs text-gray-500">In Progress</div>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-gray-600">5</div>
-                          <div className="text-xs text-gray-500">Not Started</div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+          </DialogContent>
+        </Dialog>
       </div>
-    </Layout>
+    </ErrorBoundary>
   );
-}
+});
+
+ManagerCompanyModules.displayName = 'ManagerCompanyModules';
+
+export default ManagerCompanyModules;

@@ -111,6 +111,7 @@ export interface ModuleProgress {
   completed: boolean;
   videoDuration: number;
   unlocked: boolean;
+  isResourceModule?: boolean;
 }
 
 export interface DashboardData {
@@ -436,6 +437,41 @@ class ApiClient {
 
   async getTraineeProgress(traineeId: number): Promise<TraineeProgress> {
     return this.request<TraineeProgress>(`/admin/trainees/${traineeId}/progress`);
+  }
+
+  async getCompanyTraineesProgress(companyId: number): Promise<{
+    trainees: Array<{
+      id: number;
+      name: string;
+      email: string;
+      companyId: number;
+      progress: Array<{
+        id: number;
+        userId: number;
+        moduleId: number;
+        completed: boolean;
+        score: number | null;
+        timeSpent: number | null;
+        pass: boolean;
+        createdAt: string;
+        updatedAt: string;
+        module: {
+          id: number;
+          name: string;
+          companyId: number;
+        };
+      }>;
+      calculatedProgress: {
+        overallProgress: number;
+        modulesCompleted: number;
+        totalModules: number;
+        averageScore: number;
+        totalTimeSpent: number;
+      };
+    }>;
+    totalTrainees: number;
+  }> {
+    return this.request(`/admin/companies/${companyId}/trainees-progress`);
   }
 
   async getTimeTrackingStats(params?: {
@@ -780,18 +816,7 @@ class ApiClient {
     return this.request<{ success: boolean; trainees: User[] }>(`/admin/companies/${companyId}/trainees`);
   }
 
-  // Trainee management methods
-  async getAllTrainees() {
-    return this.request<{ success: boolean; trainees: User[] }>('/admin/trainees');
-  }
-
-  async updateTrainee(id: number, updates: { companyId?: number; status?: string }) {
-    return this.request<{ success: boolean; trainee: User; message: string }>(`/admin/trainees/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
-  }
-
+  // Trainee management methods - duplicates removed
 
   // Notification methods
   async getNotifications(limit = 50, offset = 0) {

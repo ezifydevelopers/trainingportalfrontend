@@ -199,7 +199,7 @@ export default function TraineeDashboard() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div className="p-6 space-y-6 bg-gray-50 min-h-screen pb-16">
         <div className="flex items-center space-x-3">
           <BookOpen className="h-8 w-8 text-blue-600" />
           <div>
@@ -313,9 +313,21 @@ export default function TraineeDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {dashboardData?.moduleProgress && dashboardData.moduleProgress.length > 0 ? (
-                dashboardData.moduleProgress.map((module) => {
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="videos" className="flex items-center space-x-2">
+                  <Video className="h-4 w-4" />
+                  <span>Video Modules ({videoModules.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="resources" className="flex items-center space-x-2">
+                  <FileText className="h-4 w-4" />
+                  <span>Resource Modules ({resourceModules.length})</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="videos" className="space-y-4">
+                {videoModules.length > 0 ? (
+                  videoModules.map((module) => {
                   const isCompleted = module.completed;
                   const isAvailable = module.unlocked;
                   const isLocked = !module.unlocked;
@@ -395,23 +407,115 @@ export default function TraineeDashboard() {
                     </div>
                   );
                 })
-              ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Training Modules Available</h3>
-                  <p className="text-gray-600 mb-4">
-                    You haven't been assigned any training modules yet. Please contact your administrator.
-                  </p>
-                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-                    <Clock className="h-4 w-4" />
-                    <span>Modules will appear here once assigned</span>
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <Video className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Video Modules Available</h3>
+                    <p className="text-gray-600 mb-4">
+                      You haven't been assigned any video modules yet.
+                    </p>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="resources" className="space-y-4">
+                {resourceModules.length > 0 ? (
+                  resourceModules.map((module) => {
+                    const isCompleted = module.completed;
+                    const isAvailable = module.unlocked;
+                    const isLocked = !module.unlocked;
+                    const isCurrent = !isCompleted && isAvailable;
+                    
+                    return (
+                      <div
+                        key={module.moduleId}
+                        className={`rounded-lg border p-4 transition-colors ${
+                          isCompleted ? 'bg-green-50 border-green-200' :
+                          isCurrent ? 'bg-blue-50 border-blue-200' :
+                          isAvailable ? 'bg-white border-gray-200' :
+                          'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
+                              isCompleted ? 'bg-green-100' :
+                              isCurrent ? 'bg-blue-100' :
+                              isAvailable ? 'bg-gray-100' :
+                              'bg-gray-100'
+                            }`}>
+                              {isCompleted ? (
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              ) : isLocked ? (
+                                <Lock className="h-5 w-5 text-gray-400" />
+                              ) : (
+                                <FileText className="h-5 w-5 text-blue-600" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-lg font-medium text-gray-900">{module.moduleName}</h3>
+                              <div className="flex items-center space-x-4 mt-1">
+                                <span className="text-sm text-gray-500">
+                                  {isCompleted ? 'Completed' : isCurrent ? 'Current Module' : isLocked ? 'Locked' : 'Available'}
+                                </span>
+                                {module.timeSpentOnVideo > 0 && (
+                                  <span className="text-sm text-gray-500">
+                                    {formatTime(module.timeSpentOnVideo)} spent
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            {isCompleted && (
+                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Completed
+                              </Badge>
+                            )}
+                            {isCurrent && (
+                              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+                                <FileText className="h-3 w-3 mr-1" />
+                                Current
+                              </Badge>
+                            )}
+                            {isLocked && (
+                              <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">
+                                <Lock className="h-3 w-3 mr-1" />
+                                Locked
+                              </Badge>
+                            )}
+                            {!isLocked && (
+                              <Button
+                                size="sm"
+                                disabled={isLocked}
+                                onClick={() => handleStartModule(module.moduleId)}
+                              >
+                                {isCompleted ? "Review" : isLocked ? "Locked" : "View Resources"}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Resource Modules Available</h3>
+                    <p className="text-gray-600 mb-4">
+                      You haven't been assigned any resource modules yet.
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
+      
+      {/* Bottom spacing */}
+      <div className="h-8"></div>
       
       {/* Floating Help Button */}
       <HelpRequestButton />

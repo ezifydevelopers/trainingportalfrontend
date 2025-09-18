@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGetHelpRequests, useAllCompanies, useGetManagerCompanies } from "@/hooks/useApi";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import ChatNotification from "./ChatNotification";
 import { 
   BookOpen, 
   GraduationCap, 
@@ -27,11 +26,7 @@ interface NavItem {
   children?: NavItem[];
 }
 
-interface SidebarProps {
-  unreadCount?: number;
-}
-
-export default function Sidebar({ unreadCount = 0 }: SidebarProps) {
+export default function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
   const { data: helpRequests = [] } = useGetHelpRequests();
@@ -66,42 +61,30 @@ export default function Sidebar({ unreadCount = 0 }: SidebarProps) {
       name: "Chat", 
       path: "/chat", 
       icon: <MessageCircle className="w-5 h-5 mr-2" />,
-      badge: unreadCount > 0 ? unreadCount : undefined
     }
   ];
 
-  // Manager navigation with company-specific items
+  // Manager navigation - simplified with single Trainees and Progress
   const managerNavItems: NavItem[] = [
     { 
       name: "Manager Dashboard", 
       path: "/manager", 
       icon: <UserCog className="w-5 h-5 mr-2" /> 
     },
-    ...(managerCompaniesLoading ? [] : managerCompanies.flatMap(company => [
-      // Company header (non-clickable)
-      {
-        name: company.name,
-        path: "#",
-        icon: <Building2 className="w-5 h-5 mr-2" />,
-        roles: ["MANAGER"]
-      },
-      // Company-specific navigation items
-      {
-        name: "Trainees",
-        path: `/manager/company/${company.id}/trainees`,
-        icon: <Users className="w-4 h-4 mr-2" />
-      },
-      {
-        name: "Progress",
-        path: `/manager/company/${company.id}/progress`,
-        icon: <Trophy className="w-4 h-4 mr-2" />
-      }
-    ])),
+    { 
+      name: "Trainees", 
+      path: "/manager/trainees", 
+      icon: <Users className="w-5 h-5 mr-2" /> 
+    },
+    { 
+      name: "Progress", 
+      path: "/manager/progress", 
+      icon: <Trophy className="w-5 h-5 mr-2" /> 
+    },
     { 
       name: "Chat", 
       path: "/chat", 
       icon: <MessageCircle className="w-5 h-5 mr-2" />,
-      badge: unreadCount > 0 ? unreadCount : undefined
     }
   ];
 
@@ -142,7 +125,6 @@ export default function Sidebar({ unreadCount = 0 }: SidebarProps) {
       name: "Chat", 
       path: "/chat", 
       icon: <MessageCircle className="w-5 h-5 mr-2" />,
-      badge: unreadCount > 0 ? unreadCount : undefined
     }
   ];
 

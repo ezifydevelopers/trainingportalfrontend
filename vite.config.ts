@@ -19,4 +19,35 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    // Environment variables for different modes
+    __APP_MODE__: JSON.stringify(mode),
+    __IS_DEV__: mode === 'development',
+    __IS_STAGING__: mode === 'staging',
+    __IS_PROD__: mode === 'production',
+  },
+  build: {
+    // Production optimizations
+    minify: mode === 'production' ? 'terser' : 'esbuild',
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production', // Remove console.log statements in production
+        drop_debugger: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-toast'],
+          utils: ['date-fns', 'clsx', 'tailwind-merge'],
+        },
+      },
+    },
+    sourcemap: mode !== 'production',
+    chunkSizeWarningLimit: 1000,
+  },
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
 }));
