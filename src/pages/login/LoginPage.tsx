@@ -68,7 +68,7 @@ export default function LoginPage() {
       case "MANAGER":
         return "Manager Login";
       case "TRAINEE":
-        return "Trainee Login | RDT Training Portal";
+        return "Trainee Login";
       default:
         return "Login";
     }
@@ -83,7 +83,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <Database className="h-10 w-10" />
           </div>
-          <h1 className="mt-4 text-2xl font-bold">Training Portal</h1>
+          <h1 className="mt-4 text-2xl font-bold">Training Portal Test</h1>
           <div className="mt-6 inline-flex items-center justify-center p-4 bg-gray-100 rounded-full">
             {getRoleIcon()}
           </div>
