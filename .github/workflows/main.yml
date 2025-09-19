@@ -23,5 +23,6 @@ jobs:
             git reset --hard HEAD
             git pull origin main
             npm install
+            chmod +x node_modules/.bin/vite
             npx vite build --mode production
             pm2 restart frontend || pm2 serve dist 8080 --name frontend --spa --no-cache
