@@ -20,10 +20,20 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /apps/staging/trainingportalfrontend
-            git reset --hard HEAD
-            git pull origin main
+
+            # Reset repo to avoid conflicts
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Show latest commit deployed
+            echo "Latest deployed commit:"
             git log -1 --oneline
+
+            # Install & build
+            rm -rf node_modules
             npm install
-            chmod +x node_modules/.bin/vite
             npx vite build --mode production
-            pm2 restart frontend || pm2 serve dist 8080 --name frontend --spa --no-cache
+
+            # Restart frontend
+            pm2 delete frontend || true
+            pm2 start "npx serve -s dist -l 8080" --name frontend
