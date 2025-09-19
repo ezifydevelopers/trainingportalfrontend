@@ -93,7 +93,7 @@ export default function LoginPage() {
         <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
+              Email Test
             </label>
             <Input
               id="email"
@@ -109,13 +109,13 @@ export default function LoginPage() {
           <div>
             <div className="flex justify-between items-center">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Password Test
               </label>
               <Link
                 to={`/forgot-password/${role}`}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Forgot password?
+                Forgot password? Test
               </Link>
             </div>
             <Input
@@ -140,12 +140,12 @@ export default function LoginPage() {
 
         {role === "TRAINEE" && (
           <div className="mt-4 text-center">
-            <span className="text-sm text-gray-600">Don't have an account?</span>
+            <span className="text-sm text-gray-600">Don't have an account? Test</span>
             <Link
               to="/signup-trainee"
               className="ml-2 text-sm text-orange-600 hover:text-orange-800 font-medium"
             >
-              Sign up as Trainee
+              Sign up as Trainee Test
             </Link>
           </div>
         )}
