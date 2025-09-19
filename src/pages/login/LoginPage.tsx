@@ -68,7 +68,7 @@ export default function LoginPage() {
       case "MANAGER":
         return "Manager Login";
       case "TRAINEE":
-        return "Trainee Login";
+        return "Trainee Login | RDT Training Portal";
       default:
         return "Login";
     }

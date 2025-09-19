@@ -8,7 +8,7 @@ import {
   Download, 
   Clock, 
   CheckCircle, 
-  Play, 
+  Play,
   Image as ImageIcon,
   File,
   Music
