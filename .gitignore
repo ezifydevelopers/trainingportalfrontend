@@ -36,3 +36,4 @@ dist/
 
 # Environment example files (keep these in version control)
 !.env.exampledist/
+dist/
