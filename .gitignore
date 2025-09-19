@@ -35,4 +35,4 @@ dist/
 .env.production.local
 
 # Environment example files (keep these in version control)
-!.env.example
+!.env.exampledist/
