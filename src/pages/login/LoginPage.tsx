@@ -83,7 +83,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <Database className="h-10 w-10" />
           </div>
-          <h1 className="mt-4 text-2xl font-bold">Training Portal Login</h1>
+          <h1 className="mt-4 text-2xl font-bold">Training Portal</h1>
           <div className="mt-6 inline-flex items-center justify-center p-4 bg-gray-100 rounded-full">
             {getRoleIcon()}
           </div>
@@ -93,7 +93,7 @@ export default function LoginPage() {
         <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email Test
+              Email
             </label>
             <Input
               id="email"
@@ -109,13 +109,13 @@ export default function LoginPage() {
           <div>
             <div className="flex justify-between items-center">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password Test
+                Password
               </label>
               <Link
                 to={`/forgot-password/${role}`}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Forgot password? Test
+                Forgot password?
               </Link>
             </div>
             <Input
@@ -140,12 +140,12 @@ export default function LoginPage() {
 
         {role === "TRAINEE" && (
           <div className="mt-4 text-center">
-            <span className="text-sm text-gray-600">Don't have an account? Test</span>
+            <span className="text-sm text-gray-600">Don't have an account?</span>
             <Link
               to="/signup-trainee"
               className="ml-2 text-sm text-orange-600 hover:text-orange-800 font-medium"
             >
-              Sign up as Trainee Test
+              Sign up as Trainee
             </Link>
           </div>
         )}
