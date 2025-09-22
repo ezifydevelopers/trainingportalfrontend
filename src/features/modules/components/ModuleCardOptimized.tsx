@@ -71,8 +71,8 @@ const ModuleCardOptimized = memo<ModuleCardOptimizedProps>(({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:shadow-md">
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="p-3 sm:p-4 lg:p-6">
+        <div className="flex items-start justify-between mb-3 sm:mb-4">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             {!isDragDisabled && (
               <div className="flex-shrink-0 cursor-move">

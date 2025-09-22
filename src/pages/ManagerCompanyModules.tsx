@@ -284,7 +284,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
         {/* Main Content */}
         {!selectedCompany ? (
           // Companies List View (Manager)
-          <div className="max-w-7xl mx-auto pb-16">
+          <div className="max-w-7xl mx-auto pb-8 sm:pb-12 lg:pb-16 px-2 sm:px-4">
             <CompanyList
               companies={companies}
               onCompanySelect={handleCompanySelect}
@@ -296,21 +296,23 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
           </div> 
         ) : selectedCompany ? (
           // Modules Management View (Manager) 
-          <div className="max-w-7xl mx-auto pb-16">
+          <div className="max-w-7xl mx-auto pb-8 sm:pb-12 lg:pb-16 px-2 sm:px-4 overflow-x-hidden">
             {/* Modules Tabs */}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="video" className="flex items-center space-x-2">
-                  <Video className="h-4 w-4" />
-                  <span>Video Modules ({videoModules.length})</span>
+              <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+                <TabsTrigger value="video" className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
+                  <Video className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Video Modules ({videoModules.length})</span>
+                  <span className="sm:hidden">Video ({videoModules.length})</span>
                 </TabsTrigger>
-                <TabsTrigger value="resource" className="flex items-center space-x-2">
-                  <FileText className="h-4 w-4" />
-                  <span>Resource Modules ({resourceModules.length})</span>
+                <TabsTrigger value="resource" className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Resource Modules ({resourceModules.length})</span>
+                  <span className="sm:hidden">Resource ({resourceModules.length})</span>
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="video" className="space-y-6">
+              <TabsContent value="video" className="space-y-2 sm:space-y-3">
                 <ModuleList
                   modules={videoModules as unknown as Module[]}
                   onModuleSelect={handleModuleSelect}
@@ -324,18 +326,18 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
                 />
               </TabsContent>
 
-              <TabsContent value="resource" className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
+              <TabsContent value="resource" className="space-y-2 sm:space-y-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
+                  <div className="text-xs sm:text-sm text-gray-600">
                     {resourceModules.length} resource module{resourceModules.length !== 1 ? 's' : ''} found
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleRefreshModules}
-                    className="flex items-center space-x-2"
+                    className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
                   >
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Refresh</span>
                   </Button>
                 </div>
@@ -412,35 +414,36 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
 
         {/* Resource Module Dialog */}
         <Dialog open={showResourceModuleDialog} onOpenChange={setShowResourceModuleDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] sm:w-[1024px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-green-600" />
+              <DialogTitle className="flex items-center text-base sm:text-lg">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-green-600" />
                 Create Resource Module
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Module Name
                 </label>
                 <Input
                   placeholder="Enter resource module name..."
                   value={resourceModuleName}
                   onChange={(e) => setResourceModuleName(e.target.value)}
+                  className="text-sm sm:text-base h-9 sm:h-10"
                 />
               </div>
               
               {/* Resource Upload Section */}
-              <div className="border-2 border-dashed border-green-200 rounded-lg p-6">
+              <div className="border-2 border-dashed border-green-200 rounded-lg p-4 sm:p-6">
                 <div className="text-center">
-                  <FileText className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Resources</h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <FileText className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-green-400 mx-auto mb-3 sm:mb-4" />
+                  <h3 className="text-sm sm:text-base lg:text-lg font-medium text-gray-900 mb-1 sm:mb-2">Upload Resources</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                     Upload documents, PDFs, images, and other learning resources for this module
                   </p>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
                       <input
                         type="file"
@@ -455,28 +458,28 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
                       />
                       <label
                         htmlFor="resource-upload"
-                        className="inline-flex items-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 cursor-pointer"
+                        className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 border border-green-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 cursor-pointer"
                       >
-                        <Upload className="h-4 w-4 mr-2" />
+                        <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Choose Files
                       </label>
                     </div>
                     
                     {resourceFiles.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files:</h4>
-                        <div className="space-y-2">
+                      <div className="mt-3 sm:mt-4">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Selected Files:</h4>
+                        <div className="space-y-1 sm:space-y-2">
                           {resourceFiles.map((file, index) => (
                             <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                              <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                              <span className="text-xs sm:text-sm text-gray-700 truncate">{file.name}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setResourceFiles(files => files.filter((_, i) => i !== index))}
-                                className="text-red-500 hover:text-red-700"
+                                className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
                               >
-                                <X className="h-4 w-4" />
+                                <X className="h-3 w-3 sm:h-4 sm:w-4" />
                               </Button>
                             </div>
                           ))}
@@ -487,7 +490,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
                 </div>
               </div>
               
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -496,16 +499,17 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
                     setResourceModuleName('');
                     setResourceFiles([]);
                   }}
-                  className="flex-1"
+                  className="flex-1 text-sm sm:text-base h-9 sm:h-10"
                 >
                   Cancel
                 </Button>
                 <Button 
                   onClick={handleCreateResourceModuleWithFiles}
                   disabled={!resourceModuleName.trim()}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-sm sm:text-base h-9 sm:h-10"
                 >
-                  Create Module & Upload Files
+                  <span className="hidden sm:inline">Create Module & Upload Files</span>
+                  <span className="sm:hidden">Create Module</span>
                 </Button>
               </div>
             </div>

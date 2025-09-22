@@ -69,8 +69,8 @@ const ModuleCard = memo<ModuleCardProps>(({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 transition-all duration-200 hover:shadow-md">
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="p-3 sm:p-4 lg:p-6">
+        <div className="flex items-start justify-between mb-3 sm:mb-4">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             {!isDragDisabled && (
               <div className="flex-shrink-0 cursor-move">
@@ -100,7 +100,7 @@ const ModuleCard = memo<ModuleCardProps>(({
 
         {/* Video Preview */}
         {module.videos && module.videos.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-3 sm:mb-4">
             <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video">
               <video
                 src={getVideoUrl(module.videos[0].url)}
@@ -118,18 +118,18 @@ const ModuleCard = memo<ModuleCardProps>(({
         )}
 
         {/* Module Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+          <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
               {module.mcqs?.length || 0}
             </div>
-            <div className="text-sm text-gray-600">Questions</div>
+            <div className="text-xs sm:text-sm text-gray-600">Questions</div>
           </div>
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
               {module.resources?.length || 0}
             </div>
-            <div className="text-sm text-gray-600">Resources</div>
+            <div className="text-xs sm:text-sm text-gray-600">Resources</div>
           </div>
         </div>
 

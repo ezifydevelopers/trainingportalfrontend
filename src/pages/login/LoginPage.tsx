@@ -77,20 +77,20 @@ export default function LoginPage() {
   const isFormDisabled = isLoading || authLoading;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md p-6 sm:p-8 space-y-6 sm:space-y-8 bg-white rounded-lg shadow-md">
         <div className="text-center">
           <div className="flex justify-center">
-            <Database className="h-10 w-10" />
+            <Database className="h-8 w-8 sm:h-10 sm:w-10" />
           </div>
-          <h1 className="mt-4 text-2xl font-bold">Training Portal</h1>
-          <div className="mt-6 inline-flex items-center justify-center p-4 bg-gray-100 rounded-full">
+          <h1 className="mt-4 text-lg sm:text-xl lg:text-2xl font-bold">Training Portal</h1>
+          <div className="mt-4 sm:mt-6 inline-flex items-center justify-center p-3 sm:p-4 bg-gray-100 rounded-full">
             {getRoleIcon()}
           </div>
-          <h2 className="mt-4 text-xl font-semibold">{getRoleTitle()}</h2>
+          <h2 className="mt-3 sm:mt-4 text-base sm:text-lg lg:text-xl font-semibold">{getRoleTitle()}</h2>
         </div>
 
-        <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-4 sm:mt-6 space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
@@ -107,13 +107,13 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
               <Link
                 to={`/forgot-password/${role}`}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-blue-600 hover:text-blue-800 self-start sm:self-auto"
               >
                 Forgot password?
               </Link>

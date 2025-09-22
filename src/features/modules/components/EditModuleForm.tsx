@@ -246,7 +246,7 @@ const EditModuleForm = memo<EditModuleFormProps>(({
       title={`Edit Module: ${module?.name || ''}`}
       icon={Edit}
       badge={{ text: "Edit Mode" }}
-      size="4xl"
+      size="wide"
     >
       <div className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">

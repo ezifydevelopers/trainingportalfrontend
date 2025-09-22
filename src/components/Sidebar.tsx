@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGetHelpRequests, useAllCompanies, useGetManagerCompanies } from "@/hooks/useApi";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
   BookOpen, 
@@ -14,7 +15,8 @@ import {
   MessageCircle,
   UserCog,
   Building2,
-  Award
+  Award,
+  X
 } from "lucide-react";
 
 interface NavItem {
@@ -26,7 +28,11 @@ interface NavItem {
   children?: NavItem[];
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export default function Sidebar({ onClose }: SidebarProps) {
   const { user } = useAuth();
   const location = useLocation();
   const { data: helpRequests = [] } = useGetHelpRequests();
@@ -151,9 +157,21 @@ export default function Sidebar() {
   return (
     <div className="w-56 bg-white border-r border-gray-200 h-screen flex flex-col overflow-y-auto">
       <div className="p-4 border-b">
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-blue-600" />
-          <h1 className="text-lg font-bold text-blue-600">{getTitle()}</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-6 w-6 text-blue-600" />
+            <h1 className="text-lg font-bold text-blue-600">{getTitle()}</h1>
+          </div>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="md:hidden"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
       <div className="flex-1">
@@ -183,6 +201,7 @@ export default function Sidebar() {
                   // Regular clickable item
                   <Link
                     to={item.path}
+                    onClick={onClose}
                     className={cn(
                       "flex items-center px-4 py-3 rounded-md hover:bg-blue-50 transition-colors",
                       location.pathname === item.path ? "bg-blue-100 font-medium text-blue-700" : "text-gray-700"

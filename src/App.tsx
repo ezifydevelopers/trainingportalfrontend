@@ -28,6 +28,7 @@ import ManagerCompanyModulesWrapper from "./pages/ManagerCompanyModulesWrapper";
 import ManagerTrainees from "./pages/ManagerTrainees";
 import ManagerProgress from "./pages/ManagerProgress";
 import Chat from "./pages/Chat";
+import MobileTest from "./pages/MobileTest";
 
 const queryClient = new QueryClient();
 
@@ -231,6 +232,16 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute allowedRoles={["TRAINEE", "MANAGER", "ADMIN"]}>
           <Chat />
+        </ProtectedRoute>
+      }
+    />
+    
+    {/* Mobile Test Route - Available for all roles */}
+    <Route 
+      path="/mobile-test"
+      element={
+        <ProtectedRoute allowedRoles={["TRAINEE", "MANAGER", "ADMIN"]}>
+          <MobileTest />
         </ProtectedRoute>
       }
     />

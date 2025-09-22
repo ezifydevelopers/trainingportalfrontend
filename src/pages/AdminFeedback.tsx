@@ -69,74 +69,74 @@ export default function AdminFeedback() {
 
   return (
     <Layout>
-      <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8 bg-gray-50 min-h-screen">
         {/* Enhanced Header Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-              <MessageSquare className="h-8 w-8 text-white" />
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+              <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Trainee Feedback</h1>
-              <p className="text-blue-100 text-lg">View and analyze trainee feedback for training modules</p>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2">Trainee Feedback</h1>
+              <p className="text-blue-100 text-sm sm:text-base lg:text-lg">View and analyze trainee feedback for training modules</p>
             </div>
           </div>
         </div>
 
         {/* Enhanced Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-2">Total Feedback</p>
-                <p className="text-3xl font-bold text-gray-900">{stats?.totalFeedback || 0}</p>
-                <p className="text-sm text-gray-500 mt-1">responses received</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Total Feedback</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.totalFeedback || 0}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">responses received</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-2">Average Rating</p>
-                <p className="text-3xl font-bold text-gray-900">{stats?.averageRating?.toFixed(1) || '0.0'}</p>
-                <p className="text-sm text-gray-500 mt-1">out of 5 stars</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Average Rating</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats?.averageRating?.toFixed(1) || '0.0'}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">out of 5 stars</p>
               </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Star className="h-6 w-6 text-yellow-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-2">Active Trainees</p>
-                <p className="text-3xl font-bold text-gray-900">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Active Trainees</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {Array.from(new Set(feedback.map(f => f.trainee.id))).length}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">provided feedback</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">provided feedback</p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-green-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+          <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-2">Modules Rated</p>
-                <p className="text-3xl font-bold text-gray-900">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Modules Rated</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {Array.from(new Set(feedback.map(f => f.module.id))).length}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">unique modules</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">unique modules</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
               </div>
             </div>
           </div>

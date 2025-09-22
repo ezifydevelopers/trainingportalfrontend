@@ -153,42 +153,42 @@ export default function PendingTrainees() {
 
   return (
     <Layout>
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-2 sm:p-4 lg:p-6 max-w-7xl mx-auto overflow-x-hidden">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Users className="h-6 w-6 text-blue-600" />
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 mb-3 sm:mb-4">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Pending Trainees</h1>
-              <p className="text-gray-600">Review and approve trainee registrations</p>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">Pending Trainees</h1>
+              <p className="text-xs sm:text-sm lg:text-base text-gray-600">Review and approve trainee registrations</p>
             </div>
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
                 <Input
                   placeholder="Search trainees by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 sm:pl-10 h-9 sm:h-10 text-sm sm:text-base"
                 />
               </div>
             </div>
-            <div className="sm:w-48">
+            <div className="w-full sm:w-48">
               <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 sm:h-10 text-sm sm:text-base">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Status</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="APPROVED">Approved</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                  <SelectItem value="ALL" className="text-sm sm:text-base">All Status</SelectItem>
+                  <SelectItem value="PENDING" className="text-sm sm:text-base">Pending</SelectItem>
+                  <SelectItem value="APPROVED" className="text-sm sm:text-base">Approved</SelectItem>
+                  <SelectItem value="REJECTED" className="text-sm sm:text-base">Rejected</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -196,13 +196,13 @@ export default function PendingTrainees() {
         </div>
 
         {/* Trainees List */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredTrainees.length === 0 ? (
             <Card>
-              <CardContent className="text-center py-12">
-                <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No trainees found</h3>
-                <p className="text-gray-600">
+              <CardContent className="text-center py-6 sm:py-8 lg:py-12">
+                <Users className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto text-gray-400 mb-2 sm:mb-3 lg:mb-4" />
+                <h3 className="text-sm sm:text-base lg:text-lg font-medium text-gray-900 mb-1 sm:mb-2">No trainees found</h3>
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600">
                   {searchTerm || filterStatus !== 'ALL' 
                     ? 'No trainees match your current filters' 
                     : 'No trainees have registered yet'}
@@ -212,56 +212,60 @@ export default function PendingTrainees() {
           ) : (
             filteredTrainees.map((trainee: PendingTrainee) => (
               <Card key={trainee.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <UserPlus className="h-6 w-6 text-gray-600" />
+                <CardContent className="p-3 sm:p-4 lg:p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 min-w-0">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-gray-600" />
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{trainee.name}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <Mail className="h-4 w-4" />
-                            <span>{trainee.email}</span>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate">{trainee.name}</h3>
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 lg:space-x-4 text-xs sm:text-sm text-gray-600 mt-1">
+                          <div className="flex items-center space-x-1 min-w-0">
+                            <Mail className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span className="truncate">{trainee.email}</span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock className="h-4 w-4" />
-                            <span>Registered {formatDate(trainee.createdAt)}</span>
+                          <div className="flex items-center space-x-1 min-w-0">
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span className="truncate">Registered {formatDate(trainee.createdAt)}</span>
                           </div>
                         </div>
                         {trainee.company && (
-                          <div className="flex items-center space-x-1 mt-1">
-                            <Building2 className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm text-gray-600">{trainee.company.name}</span>
+                          <div className="flex items-center space-x-1 mt-1 min-w-0">
+                            <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-xs sm:text-sm text-gray-600 truncate">{trainee.company.name}</span>
                           </div>
                         )}
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-3">
-                      {getStatusBadge(trainee.status)}
+                    <div className="flex flex-col lg:flex-row lg:items-center space-y-2 lg:space-y-0 lg:space-x-3">
+                      <div className="flex justify-center lg:justify-start">
+                        {getStatusBadge(trainee.status)}
+                      </div>
                       
                       {trainee.status === 'PENDING' && (
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                           <Button
                             onClick={() => handleApprove(trainee)}
                             disabled={isProcessing}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-green-600 hover:bg-green-700 h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-auto"
                             size="sm"
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Approve
+                            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden sm:inline">Approve</span>
+                            <span className="sm:hidden">✓</span>
                           </Button>
                           <Button
                             onClick={() => handleReject(trainee)}
                             disabled={isProcessing}
                             variant="outline"
-                            className="text-red-600 border-red-300 hover:bg-red-50"
+                            className="text-red-600 border-red-300 hover:bg-red-50 h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-auto"
                             size="sm"
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Reject
+                            <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden sm:inline">Reject</span>
+                            <span className="sm:hidden">✗</span>
                           </Button>
                         </div>
                       )}
@@ -275,27 +279,27 @@ export default function PendingTrainees() {
 
         {/* Assign Company Dialog */}
         <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="w-[95vw] sm:w-full max-w-md mx-auto">
             <DialogHeader>
-              <DialogTitle>Assign Company to Trainee</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg lg:text-xl">Assign Company to Trainee</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {selectedTrainee && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900">{selectedTrainee.name}</h4>
-                  <p className="text-sm text-gray-600">{selectedTrainee.email}</p>
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                  <h4 className="font-medium text-gray-900 text-sm sm:text-base">{selectedTrainee.name}</h4>
+                  <p className="text-xs sm:text-sm text-gray-600">{selectedTrainee.email}</p>
                 </div>
               )}
               
               <div>
-                <Label htmlFor="company-select">Select Company</Label>
+                <Label htmlFor="company-select" className="text-xs sm:text-sm lg:text-base">Select Company</Label>
                 <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm sm:text-base">
                     <SelectValue placeholder="Choose a company..." />
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map((company) => (
-                      <SelectItem key={company.id} value={company.id.toString()}>
+                      <SelectItem key={company.id} value={company.id.toString()} className="text-sm sm:text-base">
                         {company.name}
                       </SelectItem>
                     ))}
@@ -303,11 +307,11 @@ export default function PendingTrainees() {
                 </Select>
               </div>
               
-              <div className="flex space-x-3 pt-4">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4">
                 <Button
                   variant="outline"
                   onClick={() => setShowAssignDialog(false)}
-                  className="flex-1"
+                  className="flex-1 h-9 sm:h-10 text-sm sm:text-base"
                   disabled={isProcessing}
                 >
                   Cancel
@@ -315,7 +319,7 @@ export default function PendingTrainees() {
                 <Button
                   onClick={handleAssignCompany}
                   disabled={isProcessing || !selectedCompanyId}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 h-9 sm:h-10 text-sm sm:text-base"
                 >
                   {isProcessing ? 'Assigning...' : 'Assign & Approve'}
                 </Button>

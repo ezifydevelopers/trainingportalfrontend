@@ -161,8 +161,8 @@ const ResourceUploadForm = memo<ResourceUploadFormProps>(({
       onOpenChange={onClose}
       title={`Upload Resources to ${moduleName}`}
       icon={Upload}
-      badge={{ text: `${files.length} files selected`, className: "bg-purple-100 text-purple-700 border-purple-300" }}
-      size="4xl"
+      badge={{ text: `${files.length} files selected`, className: "bg-purple-100 text-purple-700 border-purple-300 " }}
+      size="wide"
     >
       <div className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">

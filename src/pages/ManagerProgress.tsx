@@ -86,15 +86,15 @@ const ManagerProgress = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Progress Overview</h1>
-          <p className="text-gray-600">Track progress across all your assigned companies</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">Progress Overview</h1>
+          <p className="text-xs sm:text-sm lg:text-base text-gray-600">Track progress across all your assigned companies</p>
         </div>
 
         {/* Overall Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Companies</CardTitle>

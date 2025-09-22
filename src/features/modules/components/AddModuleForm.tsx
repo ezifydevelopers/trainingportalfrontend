@@ -178,7 +178,7 @@ const AddModuleForm = memo<AddModuleFormProps>(({
       title="Add New Training Module"
       icon={Plus}
       badge={{ text: "Active Form" }}
-      size="4xl"
+      size="wide"
     >
       <div className="space-y-6">
         <form onSubmit={handleSubmit} className="space-y-6">

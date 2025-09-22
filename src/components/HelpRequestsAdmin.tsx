@@ -82,19 +82,19 @@ export default function HelpRequestsAdmin() {
   return (
     <div className="space-y-8">
       {/* Enhanced Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-              <HelpCircle className="h-8 w-8 text-white" />
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+              <HelpCircle className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Help Requests</h1>
-              <p className="text-blue-100 text-lg">Manage trainee support requests and provide assistance</p>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2">Help Requests</h1>
+              <p className="text-blue-100 text-sm sm:text-base lg:text-lg">Manage trainee support requests and provide assistance</p>
             </div>
           </div>
           {pendingCount > 0 && (
-            <div className="bg-red-500 text-white px-6 py-3 rounded-xl font-semibold text-lg shadow-lg">
+            <div className="bg-red-500 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base lg:text-lg shadow-lg">
               {pendingCount} Pending
             </div>
           )}
@@ -102,51 +102,51 @@ export default function HelpRequestsAdmin() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Total Requests</p>
-              <p className="text-3xl font-bold text-gray-900">{helpRequests.length}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Total Requests</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{helpRequests.length}</p>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <HelpCircle className="h-6 w-6 text-blue-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <HelpCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Pending</p>
-              <p className="text-3xl font-bold text-yellow-600">{helpRequests.filter(r => r.status === 'PENDING').length}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Pending</p>
+              <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{helpRequests.filter(r => r.status === 'PENDING').length}</p>
             </div>
-            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-yellow-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">In Progress</p>
-              <p className="text-3xl font-bold text-blue-600">{helpRequests.filter(r => r.status === 'IN_PROGRESS').length}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">In Progress</p>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600">{helpRequests.filter(r => r.status === 'IN_PROGRESS').length}</p>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Clock className="h-6 w-6 text-blue-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-6 shadow-lg border-0">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Resolved</p>
-              <p className="text-3xl font-bold text-green-600">{helpRequests.filter(r => r.status === 'RESOLVED').length}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Resolved</p>
+              <p className="text-2xl sm:text-3xl font-bold text-green-600">{helpRequests.filter(r => r.status === 'RESOLVED').length}</p>
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </div>
           </div>
         </div>
@@ -154,122 +154,127 @@ export default function HelpRequestsAdmin() {
 
       {/* Help Requests List */}
       {helpRequests.length === 0 ? (
-        <div className="bg-white rounded-2xl p-16 shadow-xl border-0 text-center">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <HelpCircle className="h-10 w-10 text-gray-400" />
+        <div className="bg-white rounded-xl sm:rounded-2xl p-8 sm:p-12 lg:p-16 shadow-lg border-0 text-center">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+            <HelpCircle className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">No Help Requests</h3>
-          <p className="text-gray-600 text-lg">All trainees are doing well! No support requests at the moment.</p>
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">No Help Requests</h3>
+          <p className="text-gray-600 text-sm sm:text-base lg:text-lg">All trainees are doing well! No support requests at the moment.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {helpRequests.map((request) => {
             const StatusIcon = statusIcons[request.status];
             return (
-              <div key={request.id} className="bg-white rounded-2xl shadow-xl border-0 overflow-hidden hover:shadow-2xl transition-all duration-300">
-                <div className="p-8">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-6">
-                      {/* Header with Status */}
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                          <StatusIcon className="h-6 w-6 text-gray-600" />
-                        </div>
+              <div key={request.id} className="bg-white rounded-xl sm:rounded-2xl shadow-lg border-0 overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
+                    <div className="flex-1 space-y-4 sm:space-y-6">
+                      {/* Header with Status - Mobile Optimized */}
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
                         <div className="flex items-center space-x-3">
-                          <Badge className={`${statusColors[request.status]} px-4 py-2 text-sm font-semibold`}>
-                            {request.status.replace('_', ' ')}
-                          </Badge>
-                          <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
-                            {new Date(request.createdAt).toLocaleDateString()}
-                          </span>
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                            <StatusIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                              <Badge className={`${statusColors[request.status]} px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold w-fit`}>
+                                {request.status.replace('_', ' ')}
+                              </Badge>
+                              <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-lg w-fit">
+                                {new Date(request.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Trainee Info */}
-                      <div className="bg-gray-50 rounded-xl p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                              <User className="h-4 w-4 text-blue-600" />
+                      {/* Trainee Info - Compact Grid */}
+                      <div className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                             </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Trainee</p>
-                              <p className="font-semibold text-gray-900">{request.trainee.name}</p>
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm text-gray-500">Trainee</p>
+                              <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{request.trainee.name}</p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                              <Mail className="h-4 w-4 text-green-600" />
+                          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                             </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Email</p>
-                              <p className="font-semibold text-gray-900 break-words">{request.trainee.email}</p>
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm text-gray-500">Email</p>
+                              <p className="font-semibold text-gray-900 text-xs sm:text-sm break-words">{request.trainee.email}</p>
                             </div>
                           </div>
                           {request.trainee.company && (
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                                <Building className="h-4 w-4 text-purple-600" />
+                            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 sm:col-span-2 lg:col-span-1">
+                              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Building className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-500">Company</p>
-                                <p className="font-semibold text-gray-900">{request.trainee.company.name}</p>
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-500">Company</p>
+                                <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{request.trainee.company.name}</p>
                               </div>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Module Info */}
+                      {/* Module Info - Compact */}
                       {request.module && (
-                        <div className="bg-blue-50 rounded-xl p-6 border-l-4 border-blue-300">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                              <FileText className="h-4 w-4 text-blue-600" />
+                        <div className="bg-blue-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border-l-4 border-blue-300">
+                          <div className="flex items-center space-x-2 sm:space-x-3">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                             </div>
-                            <div>
-                              <p className="text-sm text-blue-600 font-medium">Related Module</p>
-                              <p className="font-semibold text-blue-900 break-words">{request.module.name}</p>
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm text-blue-600 font-medium">Related Module</p>
+                              <p className="font-semibold text-blue-900 text-sm sm:text-base break-words">{request.module.name}</p>
                             </div>
                           </div>
                         </div>
                       )}
 
-                      {/* Message */}
+                      {/* Message - Compact */}
                       {request.message && (
-                        <div className="bg-gray-50 rounded-xl p-6">
-                          <div className="flex items-start space-x-3">
-                            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <MessageSquare className="h-4 w-4 text-orange-600" />
+                        <div className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+                          <div className="flex items-start space-x-2 sm:space-x-3">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-gray-500 font-medium mb-2">Trainee Message</p>
-                              <p className="text-gray-700 break-words">{request.message}</p>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm text-gray-500 font-medium mb-1 sm:mb-2">Trainee Message</p>
+                              <p className="text-gray-700 text-sm sm:text-base break-words line-clamp-3">{request.message}</p>
                             </div>
                           </div>
                         </div>
                       )}
 
-                      {/* Admin Notes */}
+                      {/* Admin Notes - Compact */}
                       {request.adminNotes && (
-                        <div className="bg-green-50 rounded-xl p-6 border-l-4 border-green-300">
-                          <div className="flex items-start space-x-3">
-                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <CheckCircle className="h-4 w-4 text-green-600" />
+                        <div className="bg-green-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border-l-4 border-green-300">
+                          <div className="flex items-start space-x-2 sm:space-x-3">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-green-600 font-medium mb-2">Admin Notes</p>
-                              <p className="text-green-800 break-words">{request.adminNotes}</p>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm text-green-600 font-medium mb-1 sm:mb-2">Admin Notes</p>
+                              <p className="text-green-800 text-sm sm:text-base break-words line-clamp-3">{request.adminNotes}</p>
                             </div>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div className="ml-6 flex-shrink-0">
+                    {/* Action Button - Responsive */}
+                    <div className="flex-shrink-0 lg:ml-6">
                       <Button
                         onClick={() => openUpdateDialog(request)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium shadow-lg"
+                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium shadow-lg text-sm sm:text-base"
                       >
                         Update Request
                       </Button>

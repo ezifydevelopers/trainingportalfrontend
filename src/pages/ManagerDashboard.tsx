@@ -151,58 +151,58 @@ const ManagerDashboard = () => {
 
     return (
       <Layout>
-        <div className="container mx-auto py-8 px-4">
+        <div className="container mx-auto py-2 sm:py-4 lg:py-6 xl:py-8 px-2 sm:px-4">
           {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-          <p className="text-gray-600">Manage all your assigned companies, trainees, and their progress</p>
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">Manager Dashboard</h1>
+          <p className="text-xs sm:text-sm lg:text-base text-gray-600">Manage all your assigned companies, trainees, and their progress</p>
           </div>
 
         {/* Overall Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium">Total Companies</CardTitle>
+              <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{overallStats.totalCompanies}</div>
+            <CardContent className="p-3 sm:p-6 pt-0">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold">{overallStats.totalCompanies}</div>
             </CardContent>
           </Card>
 
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Trainees</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium">Total Trainees</CardTitle>
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   </CardHeader>
-                  <CardContent>
-              <div className="text-2xl font-bold">{overallStats.totalTrainees}</div>
+                  <CardContent className="p-3 sm:p-6 pt-0">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold">{overallStats.totalTrainees}</div>
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Completed Modules</CardTitle>
-                    <Trophy className="h-4 w-4 text-muted-foreground" />
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium">Completed Modules</CardTitle>
+                    <Trophy className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   </CardHeader>
-                  <CardContent>
-              <div className="text-2xl font-bold">{overallStats.completedModules}</div>
+                  <CardContent className="p-3 sm:p-6 pt-0">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold">{overallStats.completedModules}</div>
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Completion Rate</CardTitle>
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium">Avg Completion Rate</CardTitle>
+                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   </CardHeader>
-                  <CardContent>
-              <div className="text-2xl font-bold">{overallStats.avgCompletionRate}%</div>
+                  <CardContent className="p-3 sm:p-6 pt-0">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold">{overallStats.avgCompletionRate}%</div>
                   </CardContent>
                 </Card>
               </div>
 
         {/* ALL COMPANIES WITH TRAINEES AND PROGRESS IN ONE UNIFIED VIEW */}
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
           {traineesByCompany.map((company) => {
             // Calculate company statistics
             const completedModules = company.trainees.reduce((sum, t) => sum + (t.calculatedProgress?.modulesCompleted || 0), 0);
@@ -213,68 +213,69 @@ const ManagerDashboard = () => {
 
             return (
               <Card key={company.id} className="overflow-hidden">
-                <CardHeader className="bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Building2 className="h-6 w-6 text-blue-600" />
+                <CardHeader className="bg-gray-50 p-3 sm:p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+                    <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 min-w-0">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
                       </div>
-                      <div>
-                        <CardTitle className="text-xl">{company.name}</CardTitle>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base sm:text-lg lg:text-xl truncate">{company.name}</CardTitle>
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 lg:space-x-4 text-xs sm:text-sm text-gray-600 mt-1">
                           <span className="flex items-center space-x-1">
-                            <Users className="h-4 w-4" />
+                            <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                             <span>{company.trainees.length} trainees</span>
                           </span>
                           <span className="flex items-center space-x-1">
-                            <BookOpen className="h-4 w-4" />
+                            <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                             <span>{totalModules} modules</span>
                           </span>
                           <span className="flex items-center space-x-1">
-                            <Trophy className="h-4 w-4" />
+                            <Trophy className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                             <span>{completionRate}% complete</span>
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={completionRate > 70 ? "default" : completionRate > 40 ? "secondary" : "outline"}>
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 lg:space-x-2">
+                      <Badge variant={completionRate > 70 ? "default" : completionRate > 40 ? "secondary" : "outline"} className="text-xs sm:text-sm w-fit">
                         {completionRate}% Complete
                       </Badge>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => navigate(`/manager/company/${company.id}/modules`)}
-                        className="flex items-center space-x-1"
+                        className="flex items-center space-x-1 text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto"
                       >
-                        <span>Manage</span>
-                        <ArrowRight className="h-4 w-4" />
+                        <span className="hidden sm:inline">Manage</span>
+                        <span className="sm:hidden">Manage</span>
+                        <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     </div>
               </div>
                   
                   {/* Company Progress Bar */}
-                  <div className="mt-4">
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <div className="mt-3 sm:mt-4">
+                    <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-2">
                       <span>Overall Progress</span>
-                      <span>{completedModules}/{totalModules} modules completed</span>
+                      <span className="truncate ml-2">{completedModules}/{totalModules} modules completed</span>
                     </div>
-                    <Progress value={completionRate} className="h-2" />
+                    <Progress value={completionRate} className="h-1.5 sm:h-2" />
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-6">
+                <CardContent className="p-3 sm:p-4 lg:p-6">
                   {/* Trainees Section - SHOWING ALL TRAINEES AND PROGRESS COMBINED */}
-                  <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">Trainees & Progress</h3>
-                  <div className="text-sm text-gray-600">
+                  <div className="space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
+                      <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">Trainees & Progress</h3>
+                  <div className="text-xs sm:text-sm text-gray-600">
                         {company.trainees.length} trainees
                   </div>
                 </div>
                 
                     {company.trainees.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {company.trainees.map((trainee) => (
                           <ManagerTraineeCard
                           key={trainee.id}
@@ -293,10 +294,10 @@ const ManagerDashboard = () => {
                       ))}
                     </div>
                     ) : (
-                      <div className="text-center py-8 bg-gray-50 rounded-lg">
-                        <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Trainees</h3>
-                        <p className="text-gray-600">No trainees are assigned to this company yet.</p>
+                      <div className="text-center py-6 sm:py-8 bg-gray-50 rounded-lg">
+                        <Users className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto mb-3 sm:mb-4 text-gray-400" />
+                        <h3 className="text-sm sm:text-base lg:text-lg font-medium text-gray-900 mb-1 sm:mb-2">No Trainees</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">No trainees are assigned to this company yet.</p>
                       </div>
                     )}
                     </div>
@@ -308,30 +309,30 @@ const ManagerDashboard = () => {
 
         {/* Empty State */}
         {traineesByCompany.length === 0 && (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Companies Assigned</h3>
-            <p className="text-gray-600">You haven't been assigned to any companies yet.</p>
+          <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg">
+            <Building2 className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 mx-auto mb-3 sm:mb-4 text-gray-400" />
+            <h3 className="text-sm sm:text-base lg:text-lg font-medium text-gray-900 mb-1 sm:mb-2">No Companies Assigned</h3>
+            <p className="text-xs sm:text-sm text-gray-600">You haven't been assigned to any companies yet.</p>
           </div>
         )}
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={!!traineeToDelete} onOpenChange={cancelDeleteTrainee}>
-          <AlertDialogContent>
+          <AlertDialogContent className="w-[95vw] sm:w-full max-w-md mx-auto">
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Trainee</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogTitle className="text-base sm:text-lg">Delete Trainee</AlertDialogTitle>
+              <AlertDialogDescription className="text-sm sm:text-base">
                 Are you sure you want to delete <strong>{traineeToDelete?.name}</strong>? 
                 This action cannot be undone and will permanently remove the trainee and all their progress data.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={cancelDeleteTrainee}>
+            <AlertDialogFooter className="flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <AlertDialogCancel onClick={cancelDeleteTrainee} className="w-full sm:w-auto text-sm">
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction 
                 onClick={confirmDeleteTrainee}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto text-sm"
                 disabled={deleteTraineeMutation.isPending}
               >
                 {deleteTraineeMutation.isPending ? "Deleting..." : "Delete"}

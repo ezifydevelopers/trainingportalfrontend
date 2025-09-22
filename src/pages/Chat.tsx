@@ -424,56 +424,56 @@ export default function Chat() {
 
     return (
     <Layout>
-      <div className="flex h-[calc(100vh-4rem)] bg-gray-50">
+      <div className="flex flex-col sm:flex-row h-[calc(100vh-4rem)] bg-gray-50">
         {/* Enhanced Chat Rooms Sidebar */}
-        <div className="w-96 border-r border-gray-200 bg-white flex flex-col shadow-xl">
-          <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold mb-3">Cross-Company Chat</h2>
-              <p className="text-blue-100 text-lg">Connect with trainees and managers from any company</p>
+        <div className={`w-full sm:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col shadow-xl ${selectedChatRoom ? 'hidden sm:flex' : 'flex'}`}>
+          <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+            <div className="mb-3 sm:mb-4 lg:mb-6">
+              <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold mb-1 sm:mb-2 lg:mb-3">Cross-Company Chat</h2>
+              <p className="text-blue-100 text-xs sm:text-sm lg:text-base xl:text-lg">Connect with trainees and managers from any company</p>
             </div>
             
             <Button
               onClick={() => setShowUserList(!showUserList)}
-              className={`w-full h-12 font-semibold text-base rounded-xl shadow-lg ${
+              className={`w-full h-9 sm:h-10 lg:h-12 font-semibold text-xs sm:text-sm lg:text-base rounded-lg sm:rounded-xl shadow-lg ${
                 showUserList 
                   ? 'bg-white text-blue-600 hover:bg-blue-50' 
                   : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'
               }`}
             >
-              <Users className="h-5 w-5 mr-3" />
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 mr-1 sm:mr-2 lg:mr-3" />
               {showUserList ? 'Show Chats' : 'New Chat'}
             </Button>
             
             {showUserList && (
-              <div className="mt-6 space-y-4">
+              <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                   <Input
-                    placeholder="Search users by name or email..."
+                    placeholder="Search users..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-12 h-12 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl bg-white/90"
+                    className="pl-10 sm:pl-12 h-9 sm:h-10 lg:h-12 text-sm sm:text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg sm:rounded-xl bg-white/90"
                   />
                 </div>
-                <ScrollArea className="h-96">
-                  <div className="space-y-3 pr-3">
+                <ScrollArea className="h-64 sm:h-80 lg:h-96">
+                  <div className="space-y-2 sm:space-y-3 pr-2 sm:pr-3">
                     {filteredUsers.map((user) => (
                       <div
                         key={user.id}
-                        className="flex items-center p-5 hover:bg-white/20 rounded-2xl cursor-pointer transition-all duration-300 border border-transparent hover:border-white/30 hover:shadow-lg transform hover:-translate-y-1"
+                        className="flex items-center p-3 sm:p-4 lg:p-5 hover:bg-white/20 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 border border-transparent hover:border-white/30 hover:shadow-lg transform hover:-translate-y-1"
                         onClick={() => startChatWithUser(user.id)}
                       >
-                        <Avatar className="h-14 w-14 mr-4 ring-4 ring-white/20">
-                          <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-white to-blue-100 text-blue-600">
+                        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 mr-3 sm:mr-4 ring-2 sm:ring-4 ring-white/20">
+                          <AvatarFallback className="text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-br from-white to-blue-100 text-blue-600">
                             {user.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <p className="text-base font-bold text-white truncate">{user.name}</p>
+                          <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                            <p className="text-sm sm:text-base font-bold text-white truncate">{user.name}</p>
                             <Badge 
-                              className={`text-xs px-3 py-1 font-semibold ${
+                              className={`text-xs px-2 sm:px-3 py-0.5 sm:py-1 font-semibold ${
                                 user.role === 'ADMIN' 
                                   ? 'bg-yellow-500 text-white' 
                                   : 'bg-green-500 text-white'
@@ -482,9 +482,9 @@ export default function Chat() {
                               {user.role}
                             </Badge>
                           </div>
-                          <p className="text-sm text-blue-100 truncate mb-2">{user.email}</p>
+                          <p className="text-xs sm:text-sm text-blue-100 truncate mb-1 sm:mb-2">{user.email}</p>
                           {user.company && (
-                            <Badge className="text-xs px-3 py-1 bg-white/20 text-white border border-white/30">
+                            <Badge className="text-xs px-2 sm:px-3 py-0.5 sm:py-1 bg-white/20 text-white border border-white/30">
                               {user.company.name}
                             </Badge>
                           )}
@@ -500,19 +500,19 @@ export default function Chat() {
           {!showUserList && (
             <div className="flex-1 overflow-hidden bg-white">
               <ScrollArea className="h-full">
-                <div className="p-3 space-y-2">
+                <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
                   {chatRooms.length === 0 ? (
-                    <div className="text-center py-16">
-                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <MessageCircle className="h-10 w-10 text-gray-400" />
+                    <div className="text-center py-8 sm:py-12 lg:py-16">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                        <MessageCircle className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-3">No Chats Yet</h3>
-                      <p className="text-gray-600 mb-6">Start a new conversation to connect with others</p>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">No Chats Yet</h3>
+                      <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Start a new conversation to connect with others</p>
                       <Button 
                         onClick={() => setShowUserList(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base"
                       >
-                        <Users className="h-4 w-4 mr-2" />
+                        <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Start New Chat
                       </Button>
                     </div>
@@ -524,21 +524,21 @@ export default function Chat() {
                       return (
                         <div
                           key={chatRoom.id}
-                          className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                          className={`flex items-center p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                             selectedChatRoom?.id === chatRoom.id 
                               ? 'bg-blue-50 border border-blue-300' 
                               : 'hover:bg-gray-50 border border-transparent hover:border-gray-200'
                           }`}
                           onClick={() => setSelectedChatRoom(chatRoom)}
                         >
-                          <Avatar className="h-10 w-10 mr-3">
-                            <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 mr-2 sm:mr-3">
+                            <AvatarFallback className="text-xs sm:text-sm font-semibold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                               {otherUser?.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <p className="text-sm font-semibold text-gray-900 truncate">{otherUser?.name}</p>
+                              <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">{otherUser?.name}</p>
                               {lastMessage && (
                                 <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
                                   {formatTime(lastMessage.createdAt)}
@@ -547,7 +547,7 @@ export default function Chat() {
                             </div>
                             {lastMessage && (
                               <div className="space-y-1">
-                                <p className="text-xs text-gray-600 truncate">
+                                <p className="text-xs sm:text-sm text-gray-600 truncate">
                                   <span className="font-medium text-blue-600">
                                     {lastMessage.sender.id === user.id ? 'You: ' : `${otherUser?.name}: `}
                                   </span>
@@ -555,7 +555,7 @@ export default function Chat() {
                                 </p>
                                 <div className="flex items-center gap-1">
                                   <Badge 
-                                    className={`text-xs px-2 py-0.5 ${
+                                    className={`text-xs px-1.5 sm:px-2 py-0.5 ${
                                       otherUser?.role === 'ADMIN' 
                                         ? 'bg-yellow-100 text-yellow-800' 
                                         : 'bg-green-100 text-green-800'
@@ -564,7 +564,7 @@ export default function Chat() {
                                     {otherUser?.role}
                                   </Badge>
                                   {otherUser?.company && (
-                                    <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                    <Badge variant="outline" className="text-xs px-1.5 sm:px-2 py-0.5">
                                       {otherUser.company.name}
                                     </Badge>
                                   )}
@@ -586,22 +586,42 @@ export default function Chat() {
         <div className="flex-1 flex flex-col bg-gray-50">
           {selectedChatRoom ? (
             <>
-              {/* Enhanced Chat Header */}
-              <div className="p-8 border-b border-gray-200 bg-white shadow-lg">
+              {/* Mobile Chat Header - WhatsApp Style - Sticky */}
+              <div className="sticky top-0 z-10 p-3 sm:p-4 lg:p-6 border-b border-gray-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-6">
-                    <Avatar className="h-16 w-16 ring-4 ring-gray-100">
-                      <AvatarFallback className="text-xl font-bold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                  <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 min-w-0 flex-1">
+                    {/* Back button for mobile */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedChatRoom(null)}
+                      className="sm:hidden h-8 w-8 p-0 hover:bg-gray-100 rounded-full mr-2"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </Button>
+                    
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 ring-1 sm:ring-2 ring-gray-100">
+                      <AvatarFallback className="text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                         {getOtherParticipant(selectedChatRoom)?.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
                         {getOtherParticipant(selectedChatRoom)?.name}
                       </h3>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1 sm:gap-2 mt-1">
+                        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
+                          onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) 
+                            ? 'bg-green-500' 
+                            : 'bg-gray-400'
+                        }`} />
+                        <span className="text-xs sm:text-sm text-gray-600">
+                          {onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) ? 'Online' : 'Offline'}
+                        </span>
                         <Badge 
-                          className={`text-sm px-4 py-2 font-semibold ${
+                          className={`text-xs px-1.5 sm:px-2 py-0.5 font-semibold ${
                             getOtherParticipant(selectedChatRoom)?.role === 'ADMIN' 
                               ? 'bg-yellow-500 text-white' 
                               : 'bg-green-500 text-white'
@@ -609,37 +629,21 @@ export default function Chat() {
                         >
                           {getOtherParticipant(selectedChatRoom)?.role}
                         </Badge>
-                        {getOtherParticipant(selectedChatRoom)?.company && (
-                          <Badge className="text-sm px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300">
-                            {getOtherParticipant(selectedChatRoom)?.company?.name}
-                          </Badge>
-                        )}
-                        {getOtherParticipant(selectedChatRoom) && (
-                          <div className="flex items-center gap-2">
-                            <div className={`w-4 h-4 rounded-full ${
-                              onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) 
-                                ? 'bg-green-500' 
-                                : 'bg-gray-400'
-                            }`} />
-                            <span className="text-sm font-semibold text-gray-600">
-                              {onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) ? 'Online' : 'Offline'}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    {/* Connection Status */}
-                    <div className={`flex items-center gap-3 text-sm px-4 py-3 rounded-xl font-semibold ${
+                  
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    {/* Connection Status - Hidden on mobile */}
+                    <div className={`hidden sm:flex items-center gap-2 text-xs px-2 py-1 rounded-lg font-semibold ${
                       isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
                       {isConnected ? (
-                        <Wifi className="h-5 w-5" />
+                        <Wifi className="h-3 w-3" />
                       ) : (
-                        <WifiOff className="h-5 w-5" />
+                        <WifiOff className="h-3 w-3" />
                       )}
-                      <span>
+                      <span className="hidden lg:inline">
                         {isConnected ? 'Connected' : 'Disconnected'}
                       </span>
                     </div>
@@ -649,28 +653,28 @@ export default function Chat() {
                       size="sm"
                       onClick={() => setShowNotificationSettings(true)}
                       title="Notification Settings"
-                      className="h-12 w-12 p-0 hover:bg-gray-100 rounded-xl"
+                      className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-gray-100 rounded-full"
                     >
-                      <Settings className="h-5 w-5" />
+                      <Settings className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-12 w-12 p-0 hover:bg-gray-100 rounded-xl">
-                      <MoreVertical className="h-5 w-5" />
+                    <Button variant="ghost" size="sm" className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-gray-100 rounded-full">
+                      <MoreVertical className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </div>
 
-              {/* Messages */}
+              {/* Messages - WhatsApp Style */}
               <div className="flex-1 overflow-hidden bg-gradient-to-b from-gray-50 to-white">
                 <ScrollArea className="h-full">
-                  <div className="p-4 space-y-3">
+                  <div className="p-2 sm:p-4 space-y-2 sm:space-y-3">
                     {messages.length === 0 ? (
-                      <div className="text-center py-20">
-                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
-                          <MessageCircle className="h-12 w-12 text-gray-400" />
+                      <div className="text-center py-8 sm:py-12 lg:py-16">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                          <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-gray-400" />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-4">No Messages Yet</h3>
-                        <p className="text-gray-600 text-lg">Start the conversation by sending your first message!</p>
+                        <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-2 sm:mb-3">No Messages Yet</h3>
+                        <p className="text-gray-600 text-xs sm:text-sm lg:text-base">Start the conversation by sending your first message!</p>
                       </div>
                     ) : (
                       <>
@@ -680,10 +684,10 @@ export default function Chat() {
                             className={`flex ${message.senderId === user.id ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-md px-3 py-2 rounded-lg ${
+                              className={`max-w-xs sm:max-w-sm lg:max-w-md px-3 py-2 rounded-2xl ${
                                 message.senderId === user.id
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-white text-gray-900 border border-gray-200'
+                                  ? 'bg-blue-500 text-white rounded-br-md'
+                                  : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md'
                               }`}
                             >
                               <p className="text-sm leading-relaxed break-words">{message.content}</p>
@@ -699,12 +703,12 @@ export default function Chat() {
                         {/* Typing Indicator */}
                         {typingUsers.size > 0 && (
                           <div className="flex justify-start">
-                            <div className="bg-white text-gray-900 px-3 py-2 rounded-lg border border-gray-200">
+                            <div className="bg-white text-gray-900 px-3 py-2 rounded-2xl border border-gray-200 rounded-bl-md">
                               <div className="flex items-center gap-2">
                                 <div className="flex space-x-1">
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
+                                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                                 </div>
                                 <span className="text-xs text-gray-600">
                                   {Array.from(typingUsers).map(userId => {
@@ -724,66 +728,30 @@ export default function Chat() {
                 </ScrollArea>
               </div>
 
-              {/* Enhanced Message Input */}
-              <div className="p-8 border-t border-gray-200 bg-white shadow-lg">
-                <div className="flex space-x-4">
+              {/* Mobile Message Input - WhatsApp Style - Sticky */}
+              <div className="sticky bottom-0 z-10 p-2 sm:p-4 lg:p-6 border-t border-gray-200 bg-white shadow-sm">
+                <div className="flex space-x-2 sm:space-x-3">
                   <div className="flex-1 relative">
                     <Input
-                      placeholder="Type your message here..."
+                      placeholder="Type a message..."
                       value={newMessage}
                       onChange={handleInputChange}
                       onKeyPress={handleKeyPress}
-                      className="pr-16 h-14 text-base border-2 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-2xl shadow-lg"
+                      className="pr-10 sm:pr-12 h-9 sm:h-10 lg:h-12 text-sm sm:text-base border border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-full sm:rounded-2xl shadow-sm"
                     />
                     <Button 
                       onClick={sendMessage} 
                       disabled={!newMessage.trim()}
                       size="sm"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 rounded-xl shadow-lg"
+                      className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 sm:h-8 sm:w-8 p-0 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 rounded-full shadow-sm"
                     >
-                      <Send className="h-5 w-5" />
+                      <Send className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </div>
               </div>
             </>
-          ) : (
-            /* Enhanced Welcome Screen */
-            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-              <div className="text-center max-w-2xl mx-auto px-12">
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-12 shadow-2xl">
-                  <MessageCircle className="h-16 w-16 text-white" />
-                </div>
-                <h3 className="text-4xl font-bold text-gray-900 mb-6">
-                  Welcome to Cross-Company Chat
-                </h3>
-                <p className="text-gray-600 mb-12 leading-relaxed text-xl">
-                  Connect with trainees and managers from any company. Start meaningful conversations and build professional relationships across organizations.
-                </p>
-                <div className="space-y-4">
-                  <Button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Start New Chat button clicked');
-                      toast.success('Button clicked! Opening user list...');
-                      setShowUserList(true);
-                    }}
-                    size="lg"
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-12 py-6 rounded-2xl shadow-2xl text-white font-bold text-lg cursor-pointer relative z-10"
-                    disabled={false}
-                    type="button"
-                  >
-                    <Users className="h-6 w-6 mr-4" />
-                    Start New Chat
-                  </Button>
-                  <div className="text-sm text-gray-500">
-                    Select a user from the sidebar to begin chatting
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
 

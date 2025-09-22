@@ -130,31 +130,31 @@ function SortableModule({
   return (
     <div ref={setNodeRef} style={style} className="relative">
       <div 
-        className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-300 group ${
+        className={`bg-white border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-300 group ${
           isDragging ? 'shadow-lg border-blue-400 scale-105 bg-blue-50' : ''
         }`}
         onClick={() => onModuleSelect(module)}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:justify-between">
           {/* Left side - Drag handle and module info */}
-          <div className="flex items-center space-x-3 flex-1">
+          <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
             <div
               {...attributes}
               {...listeners}
-              className="cursor-grab active:cursor-grabbing p-2 hover:bg-gray-100 rounded transition-colors"
+              className="cursor-grab active:cursor-grabbing p-1 sm:p-2 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
               title="Drag to reorder"
             >
-              <GripVertical className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              <GripVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 hover:text-gray-600" />
             </div>
             
             {/* Order number */}
-            <span className="text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-full min-w-[2rem] text-center">
+            <span className="text-xs sm:text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-full min-w-[1.5rem] sm:min-w-[2rem] text-center flex-shrink-0">
               #{index + 1}
             </span>
             
             {/* Module name */}
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors text-sm sm:text-base break-words" title={capitalizeModuleName(module.name) || `Module ${index + 1}`}>
                 {capitalizeModuleName(module.name) || `Module ${index + 1}`}
               </h3>
               <p className="text-xs text-gray-500 mt-1">
@@ -164,34 +164,38 @@ function SortableModule({
           </div>
           
           {/* Right side - Stats and actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-1 sm:space-x-3 overflow-x-auto">
             {/* Module stats */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
               {module.isResourceModule ? (
                 <>
-                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 px-2 py-1 whitespace-nowrap">
                     <FileText className="h-3 w-3 mr-1" />
-                    Resource Module
+                    <span className="hidden sm:inline">Resource Module</span>
+                    <span className="sm:hidden">Resource</span>
                   </Badge>
                   {module.mcqs && module.mcqs.length > 0 && (
-                    <Badge variant="outline" className="text-xs bg-gray-50">
-                      {module.mcqs.length} MCQs
+                    <Badge variant="outline" className="text-xs bg-gray-50 px-2 py-1 whitespace-nowrap">
+                      <span className="hidden sm:inline">{module.mcqs.length} MCQs</span>
+                      <span className="sm:hidden">{module.mcqs.length}</span>
                     </Badge>
                   )}
                 </>
               ) : (
                 <>
-                  <Badge variant="outline" className="text-xs bg-gray-50">
-                    {module.mcqs?.length || 0} MCQs
+                  <Badge variant="outline" className="text-xs bg-gray-50 px-2 py-1 whitespace-nowrap">
+                    <span className="hidden sm:inline">{module.mcqs?.length || 0} MCQs</span>
+                    <span className="sm:hidden">{module.mcqs?.length || 0}</span>
                   </Badge>
                   {module.videos && module.videos.length > 0 && (
-                    <Badge variant="outline" className="text-xs bg-gray-50">
+                    <Badge variant="outline" className="text-xs bg-gray-50 px-2 py-1 whitespace-nowrap">
                       <Play className="h-3 w-3 mr-1" />
-                      {module.videos.length}
+                      <span className="hidden sm:inline">{module.videos.length} Videos</span>
+                      <span className="sm:hidden">{module.videos.length}</span>
                     </Badge>
                   )}
                   {module.videos?.[0]?.url && (
-                    <Badge variant="outline" className="text-xs bg-gray-50">
+                    <Badge variant="outline" className="text-xs bg-gray-50 px-2 py-1 whitespace-nowrap">
                       <Clock className="h-3 w-3 mr-1" />
                       {Math.floor((module.videos?.[0]?.duration || 0) / 60)}:{(module.videos?.[0]?.duration || 0) % 60 < 10 ? '0' : ''}{(module.videos?.[0]?.duration || 0) % 60}
                     </Badge>
@@ -206,32 +210,32 @@ function SortableModule({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
+                  className="h-7 w-7 sm:h-8 sm:w-8 text-purple-500 hover:text-purple-700 hover:bg-purple-50"
                   onClick={(e) => {
                     e.stopPropagation();
                     onUploadResource(module);
                   }}
                   title="Upload resources"
                 >
-                  <Upload className="h-4 w-4" />
+                  <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               )}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                className="h-7 w-7 sm:h-8 sm:w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                 onClick={(e) => {
                   e.stopPropagation();
                   onEditModule(module);
                 }}
                 title="Edit module"
               >
-                <Edit className="h-4 w-4" />
+                <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                className="h-7 w-7 sm:h-8 sm:w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                 disabled={deletingModuleId === module.id}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -240,9 +244,9 @@ function SortableModule({
                 title="Delete module"
               >
                 {deletingModuleId === module.id ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-red-500"></div>
                 ) : (
-                  <Trash className="h-4 w-4" />
+                  <Trash className="h-3 w-3 sm:h-4 sm:w-4" />
                 )}
               </Button>
             </div>
@@ -1222,20 +1226,20 @@ export default function AdminCompanyModules() {
 
   return (
     <Layout>
-      <div className="p-6 max-w-7xl mx-auto" style={{ scrollBehavior: 'smooth' }}>
+      <div className="p-2 sm:p-4 lg:p-6 max-w-7xl mx-auto overflow-x-hidden" style={{ scrollBehavior: 'smooth' }}>
         
         {!selectedCompany ? (
-          <div className="space-y-8" style={{ scrollBehavior: 'smooth' }}>
+          <div className="space-y-6 sm:space-y-8" style={{ scrollBehavior: 'smooth' }}>
             {/* Enhanced Header Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <Users className="h-8 w-8 text-white" />
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-4 sm:p-6 lg:p-8 text-white">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                    <Users className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <div>
-                    <h2 className="text-4xl font-bold mb-2">Company Training Modules</h2>
-                    <p className="text-blue-100 text-lg">Manage training content and assessments for your companies</p>
+                  <div className="min-w-0">
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2">Company Training Modules</h2>
+                    <p className="text-blue-100 text-sm sm:text-base lg:text-lg">Manage training content and assessments for your companies</p>
                   </div>
                 </div>
                 <Button 
@@ -1249,10 +1253,10 @@ export default function AdminCompanyModules() {
             </div>
 
             {/* Company Selection Section */}
-            <div className="bg-white rounded-2xl p-8 shadow-xl border-0">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Select a Company</h3>
-                <p className="text-gray-600 text-lg">Choose a company to manage their training modules and resources</p>
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-xl border-0">
+              <div className="text-center mb-6 sm:mb-8">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">Select a Company</h3>
+                <p className="text-gray-600 text-sm sm:text-base lg:text-lg">Choose a company to manage their training modules and resources</p>
               </div>
             <NewCompanyDialog
               open={showNewCompany}
@@ -1315,7 +1319,7 @@ export default function AdminCompanyModules() {
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" style={{ scrollBehavior: 'smooth' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8" style={{ scrollBehavior: 'smooth' }}>
                   {companies.map((company) => (
                     <div key={company.id} className="relative">
                       <div
@@ -1407,30 +1411,32 @@ export default function AdminCompanyModules() {
         ) : (
           <div>
             {/* Enhanced Header Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white mb-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white mb-6 sm:mb-8">
+              <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                   <Button 
                     variant="ghost" 
                     onClick={() => setSelectedCompany(null)} 
-                    className="text-white hover:bg-white/20 p-2 rounded-xl"
+                    className="text-white hover:bg-white/20 p-2 rounded-xl flex-shrink-0"
                   >
-                    <ArrowLeft className="h-5 w-5 mr-2" />
-                    Back to Companies
+                    <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Back to Companies</span>
+                    <span className="sm:hidden">Back</span>
                   </Button>
-                  <div className="w-px h-8 bg-white/30"></div>
-                  <div>
-                    <h2 className="text-4xl font-bold mb-2">{selectedCompany.name}</h2>
-                    <p className="text-blue-100 text-lg">Training modules and assessments</p>
+                  <div className="w-px h-6 sm:h-8 bg-white/30 hidden sm:block"></div>
+                  <div className="min-w-0">
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2 truncate">{selectedCompany.name}</h2>
+                    <p className="text-blue-100 text-sm sm:text-base lg:text-lg">Training modules and assessments</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                   <Button 
                     onClick={handleShowAddModule}
-                    className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-6 py-3 rounded-xl shadow-lg"
+                    className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl shadow-lg text-sm sm:text-base"
                   >
-                    <Plus className="h-5 w-5 mr-2" /> 
-                    Add Training Module
+                    <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" /> 
+                    <span className="hidden sm:inline">Add Training Module</span>
+                    <span className="sm:hidden">Add Module</span>
                   </Button>
                   <Button 
                     type="button"
@@ -1440,10 +1446,11 @@ export default function AdminCompanyModules() {
                       console.log('Add Resource Module button clicked');
                       setShowResourceModuleDialog(true);
                     }}
-                    className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-xl shadow-lg"
+                    className="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl shadow-lg text-sm sm:text-base"
                   >
-                    <FileText className="h-5 w-5 mr-2" /> 
-                    Add Resource Module
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" /> 
+                    <span className="hidden sm:inline">Add Resource Module</span>
+                    <span className="sm:hidden">Add Resource</span>
                   </Button>
                 </div>
               </div>
@@ -1789,38 +1796,42 @@ export default function AdminCompanyModules() {
                 <div className="space-y-6">
                   <div className="bg-white rounded-2xl p-6 shadow-lg border-0 mb-6">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                          <GripVertical className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-gray-900">Modules</h3>
-                          <p className="text-gray-600">Manage your training modules and assessments</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Modules</h3>
+                            <p className="text-sm sm:text-base text-gray-600">Manage your training modules and assessments</p>
+                          </div>
                         </div>
                         {isReordering && (
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 px-3 py-1">
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 px-3 py-1 self-start sm:self-auto">
                             Order Changed
                           </Badge>
                         )}
                       </div>
                       {!isReordering ? (
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2 sm:space-x-3">
                           {activeTab === 'video' && (
                             <Button
                               onClick={() => setIsReordering(true)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium"
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-medium text-sm sm:text-base whitespace-nowrap"
                             >
-                              <GripVertical className="h-5 w-5 mr-2" />
-                              Reorder Video Modules
+                              <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">Reorder Video Modules</span>
+                              <span className="sm:hidden">Reorder</span>
                             </Button>
                           )}
                           {activeTab === 'resource' && (
                             <Button
                               onClick={() => setShowResourceModuleDialog(true)}
-                              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-medium"
+                              className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-medium text-sm sm:text-base whitespace-nowrap"
                             >
-                              <FileText className="h-5 w-5 mr-2" />
-                              Add Resource Module
+                              <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">Add Resource Module</span>
+                              <span className="sm:hidden">Add Resource</span>
                             </Button>
                           )}
                         </div>
@@ -1845,36 +1856,38 @@ export default function AdminCompanyModules() {
                     </div>
                     
                     {/* Tab Navigation */}
-                    <div className="mt-6 border-b border-gray-200">
-                      <nav className="-mb-px flex space-x-8">
+                    <div className="mt-4 sm:mt-6 border-b border-gray-200">
+                      <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto">
                         <button
                           onClick={() => setActiveTab('video')}
-                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                          className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                             activeTab === 'video'
                               ? 'border-blue-500 text-blue-600'
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center space-x-2">
-                            <Play className="h-4 w-4" />
-                            <span>Video Modules</span>
-                            <Badge variant="secondary" className="ml-2">
+                          <div className="flex items-center space-x-1 sm:space-x-2">
+                            <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Video Modules</span>
+                            <span className="sm:hidden">Video</span>
+                            <Badge variant="secondary" className="ml-1 sm:ml-2 text-xs">
                               {modules.filter(module => !module.isResourceModule).length}
                             </Badge>
                           </div>
                         </button>
                         <button
                           onClick={() => setActiveTab('resource')}
-                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                          className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                             activeTab === 'resource'
                               ? 'border-purple-500 text-purple-600'
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center space-x-2">
-                            <FileText className="h-4 w-4" />
-                            <span>Resource Modules</span>
-                            <Badge variant="secondary" className="ml-2">
+                          <div className="flex items-center space-x-1 sm:space-x-2">
+                            <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Resource Modules</span>
+                            <span className="sm:hidden">Resource</span>
+                            <Badge variant="secondary" className="ml-1 sm:ml-2 text-xs">
                               {modules.filter(module => module.isResourceModule).length}
                             </Badge>
                           </div>
@@ -1943,50 +1956,54 @@ export default function AdminCompanyModules() {
                         {modules.filter(module => !module.isResourceModule).map((module, index) => (
                       <div key={module.id}>
                         <div 
-                          className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-blue-300 group transform hover:-translate-y-1"
+                          className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-blue-300 group transform hover:-translate-y-1"
                           onClick={() => handleModuleSelect(module)}
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:justify-between">
                             {/* Left side - Module info */}
-                            <div className="flex items-center space-x-4 flex-1 min-w-0">
-                              <span className="text-lg font-bold text-gray-600 bg-gray-100 px-3 py-2 rounded-full min-w-[3rem] text-center flex-shrink-0">
+                            <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                              <span className="text-sm sm:text-lg font-bold text-gray-600 bg-gray-100 px-2 py-1 sm:px-3 sm:py-2 rounded-full min-w-[2.5rem] sm:min-w-[3rem] text-center flex-shrink-0">
                                 #{index + 1}
                               </span>
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-lg mb-1 truncate" title={capitalizeModuleName(module.name) || `Module ${index + 1}`}>
+                                <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-base sm:text-lg mb-1 truncate" title={capitalizeModuleName(module.name) || `Module ${index + 1}`}>
                                   {capitalizeModuleName(module.name) || `Module ${index + 1}`}
                                 </h3>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-xs sm:text-sm text-gray-500">
                                   Click to view full details
                                 </p>
                               </div>
                             </div>
                             
                             {/* Right side - Stats and actions */}
-                            <div className="flex items-center space-x-4 flex-shrink-0">
+                            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0 overflow-x-auto">
                               {/* Module stats */}
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
                                 {module.isResourceModule ? (
                                   <>
-                                    <Badge variant="outline" className="text-sm bg-purple-50 text-purple-700 border-purple-200 px-3 py-1">
+                                    <Badge variant="outline" className="text-xs sm:text-sm bg-purple-50 text-purple-700 border-purple-200 px-2 py-1 sm:px-3 whitespace-nowrap">
                                       <FileText className="h-3 w-3 mr-1" />
-                                      {module.resources?.length || 0} Resources
+                                      <span className="hidden sm:inline">{module.resources?.length || 0} Resources</span>
+                                      <span className="sm:hidden">{module.resources?.length || 0}</span>
                                     </Badge>
                                     {module.mcqs && module.mcqs.length > 0 && (
-                                      <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
-                                        {module.mcqs.length} MCQs
+                                      <Badge variant="outline" className="text-xs sm:text-sm bg-blue-50 text-blue-700 border-blue-200 px-2 py-1 sm:px-3 whitespace-nowrap">
+                                        <span className="hidden sm:inline">{module.mcqs.length} MCQs</span>
+                                        <span className="sm:hidden">{module.mcqs.length}</span>
                                       </Badge>
                                     )}
                                   </>
                                 ) : (
                                   <>
-                                    <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
-                                      {module.mcqs?.length || 0} MCQs
+                                    <Badge variant="outline" className="text-xs sm:text-sm bg-blue-50 text-blue-700 border-blue-200 px-2 py-1 sm:px-3 whitespace-nowrap">
+                                      <span className="hidden sm:inline">{module.mcqs?.length || 0} MCQs</span>
+                                      <span className="sm:hidden">{module.mcqs?.length || 0}</span>
                                     </Badge>
                                     {module.videos && module.videos.length > 0 && (
-                                      <Badge variant="outline" className="text-sm bg-green-50 text-green-700 border-green-200 px-3 py-1">
+                                      <Badge variant="outline" className="text-xs sm:text-sm bg-green-50 text-green-700 border-green-200 px-2 py-1 sm:px-3 whitespace-nowrap">
                                         <Play className="h-3 w-3 mr-1" />
-                                        {module.videos.length} Videos
+                                        <span className="hidden sm:inline">{module.videos.length} Videos</span>
+                                        <span className="sm:hidden">{module.videos.length}</span>
                                       </Badge>
                                     )}
                                   </>
@@ -1994,12 +2011,12 @@ export default function AdminCompanyModules() {
                               </div>
                               
                               {/* Action buttons */}
-                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <div className="flex items-center space-x-1 sm:space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 {module.isResourceModule && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-9 w-9 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg"
+                                    className="h-8 w-8 sm:h-9 sm:w-9 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedModuleForResource({ id: module.id, name: module.name });
@@ -2007,25 +2024,25 @@ export default function AdminCompanyModules() {
                                     }}
                                     title="Upload resources"
                                   >
-                                    <Upload className="h-4 w-4" />
+                                    <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
                                   </Button>
                                 )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-9 w-9 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+                                  className="h-8 w-8 sm:h-9 sm:w-9 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEditModule(module);
                                   }}
                                   title="Edit module"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                                  className="h-8 w-8 sm:h-9 sm:w-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDeleteModule(module.id, module.name);
@@ -2034,9 +2051,9 @@ export default function AdminCompanyModules() {
                                   title="Delete module"
                                 >
                                   {deletingModuleId === module.id ? (
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                                    <div className="h-3 w-3 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
                                   ) : (
-                                    <Trash className="h-4 w-4" />
+                                    <Trash className="h-3 w-3 sm:h-4 sm:w-4" />
                                   )}
                                 </Button>
                               </div>
@@ -2068,7 +2085,7 @@ export default function AdminCompanyModules() {
                             </Button>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                             {modules
                               .filter(module => module.isResourceModule)
                               .map((module) => (
@@ -2144,7 +2161,7 @@ export default function AdminCompanyModules() {
               </div>
               
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {modules
                     .filter(module => module.isResourceModule)
                     .map((module) => (
@@ -2194,43 +2211,43 @@ export default function AdminCompanyModules() {
         
         {/* Module Detail Modal */}
         <Dialog open={showModuleDetail && !!selectedModule} onOpenChange={setShowModuleDetail}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] sm:w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <FileText className="h-6 w-6 text-blue-600" />
+              <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                    <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 break-words">
                       {capitalizeModuleName(selectedModule?.name) || 'Module Details'}
                     </h2>
-                    <p className="text-sm text-gray-500">Training module overview and content</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Training module overview and content</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   {selectedModule && !isEditMode && selectedModule.isResourceModule && (
                     <>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-green-500 hover:text-green-700 hover:bg-green-50"
+                        className="h-8 w-8 sm:h-9 sm:w-9 text-green-500 hover:text-green-700 hover:bg-green-50"
                         onClick={() => {
                           setSelectedModuleForResource({ id: selectedModule.id, name: selectedModule.name });
                           setShowResourceUpload(true);
                         }}
                         title="Add Resources"
                       >
-                        <FileText className="h-5 w-5" />
+                        <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        className="h-8 w-8 sm:h-9 sm:w-9 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                         onClick={() => handleEditModule(selectedModule)}
                         title="Edit Module"
                       >
-                        <Edit className="h-5 w-5" />
+                        <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
                     </>
                   )}
@@ -2238,7 +2255,7 @@ export default function AdminCompanyModules() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="h-8 w-8 sm:h-9 sm:w-9 text-red-500 hover:text-red-700 hover:bg-red-50"
                       disabled={deletingModuleId === selectedModule.id}
                       onClick={() => {
                         handleCloseModuleDetail();
@@ -2246,9 +2263,9 @@ export default function AdminCompanyModules() {
                       }}
                     >
                       {deletingModuleId === selectedModule.id ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-red-500"></div>
                       ) : (
-                        <Trash className="h-5 w-5" />
+                        <Trash className="h-4 w-4 sm:h-5 sm:w-5" />
                       )}
                     </Button>
                   )}
@@ -2651,38 +2668,38 @@ export default function AdminCompanyModules() {
                 ) : (
                   // Read-only View
                   <>
-                    {/* Module Overview */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Module Overview - Mobile Optimized */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 sm:p-6 border border-blue-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {selectedModule && selectedModule.isResourceModule ? (
                           <>
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-purple-100 rounded-lg">
-                                <FileText className="h-5 w-5 text-purple-600" />
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                              <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Type</p>
-                                <p className="font-semibold text-gray-900">Resource Module</p>
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-600">Type</p>
+                                <p className="font-semibold text-gray-900 text-sm sm:text-base">Resource Module</p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-green-100 rounded-lg">
-                                <FileText className="h-5 w-5 text-green-600" />
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                              <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Questions</p>
-                                <p className="font-semibold text-gray-900">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-600">Questions</p>
+                                <p className="font-semibold text-gray-900 text-sm sm:text-base">
                                   {selectedModule.mcqs?.length || 0} MCQs
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-purple-100 rounded-lg">
-                                <Users className="h-5 w-5 text-purple-600" />
+                            <div className="flex items-center space-x-2 sm:space-x-3 sm:col-span-2 lg:col-span-1">
+                              <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Company</p>
-                                <p className="font-semibold text-gray-900">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-600">Company</p>
+                                <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                                   {selectedCompany?.name || 'Unknown'}
                                 </p>
                               </div>
@@ -2690,13 +2707,13 @@ export default function AdminCompanyModules() {
                           </>
                         ) : (
                           <>
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-blue-100 rounded-lg">
-                                <Clock className="h-5 w-5 text-blue-600" />
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Duration</p>
-                                <p className="font-semibold text-gray-900">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-600">Duration</p>
+                                <p className="font-semibold text-gray-900 text-sm sm:text-base">
                                   {selectedModule.videos?.[0]?.duration 
                                     ? `${Math.floor(selectedModule.videos?.[0].duration / 60)}:${(selectedModule.videos?.[0].duration % 60).toString().padStart(2, '0')}`
                                     : 'Not specified'
@@ -2704,24 +2721,24 @@ export default function AdminCompanyModules() {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-green-100 rounded-lg">
-                                <FileText className="h-5 w-5 text-green-600" />
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                              <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Questions</p>
-                                <p className="font-semibold text-gray-900">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-600">Questions</p>
+                                <p className="font-semibold text-gray-900 text-sm sm:text-base">
                                   {selectedModule.mcqs?.length || 0} MCQs
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-purple-100 rounded-lg">
-                                <Users className="h-5 w-5 text-purple-600" />
+                            <div className="flex items-center space-x-2 sm:space-x-3 sm:col-span-2 lg:col-span-1">
+                              <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Company</p>
-                                <p className="font-semibold text-gray-900">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm text-gray-600">Company</p>
+                                <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                                   {selectedCompany?.name || 'Unknown'}
                                 </p>
                               </div>
@@ -2733,12 +2750,12 @@ export default function AdminCompanyModules() {
 
                     {/* Video Section - Only show for non-resource modules */}
                     {selectedModule && !selectedModule.isResourceModule && (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div className="flex items-center space-x-2">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <Play className="h-5 w-5 text-blue-600" />
+                          <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                            <Play className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900">Video Tutorial</h3>
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900">Video Tutorial</h3>
                         </div>
                         
                         {selectedModule.videos?.[0]?.url ? (
@@ -2746,7 +2763,7 @@ export default function AdminCompanyModules() {
                             <video 
                               src={getVideoUrl(selectedModule.videos[0].url)} 
                               controls 
-                              className="w-full h-auto"
+                              className="w-full h-auto max-h-[50vh] sm:max-h-[60vh]"
                               preload="metadata"
                               onError={(e) => {
                                 console.error('Video loading error:', e);
@@ -2761,10 +2778,10 @@ export default function AdminCompanyModules() {
                             />
                           </div>
                         ) : (
-                          <div className="bg-gray-100 rounded-lg p-8 text-center">
-                            <Play className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-gray-600 font-medium">No video uploaded</p>
-                            <p className="text-sm text-gray-500">Upload a video to get started</p>
+                          <div className="bg-gray-100 rounded-lg p-6 sm:p-8 text-center">
+                            <Play className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2 sm:mb-3" />
+                            <p className="text-gray-600 font-medium text-sm sm:text-base">No video uploaded</p>
+                            <p className="text-xs sm:text-sm text-gray-500">Upload a video to get started</p>
                           </div>
                         )}
                       </div>
@@ -2798,16 +2815,16 @@ export default function AdminCompanyModules() {
                     {/* MCQs Section - Only show for video modules */}
                     {selectedModule && !selectedModule.isResourceModule && (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                         <div className="flex items-center space-x-2">
-                          <div className="p-2 bg-green-100 rounded-lg">
-                            <FileText className="h-5 w-5 text-green-600" />
+                          <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                             Multiple Choice Questions ({selectedModule?.mcqs?.length || 0})
                           </h3>
                         </div>
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs sm:text-sm w-fit">
                           Assessment
                         </Badge>
                       </div>
@@ -2816,49 +2833,50 @@ export default function AdminCompanyModules() {
                         <div className="space-y-6">
                           {selectedModule.mcqs.map((mcq, qidx) => (
                             <div key={qidx} className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="p-6">
-                                <div className="flex items-start justify-between mb-4">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
-                                      <span className="text-sm font-semibold text-blue-600">{qidx + 1}</span>
+                              <div className="p-4 sm:p-6">
+                                <div className="flex items-start justify-between mb-3 sm:mb-4">
+                                  <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                                    <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex-shrink-0">
+                                      <span className="text-xs sm:text-sm font-semibold text-blue-600">{qidx + 1}</span>
                                     </div>
-                                    <h4 className="text-lg font-medium text-gray-900">
+                                    <h4 className="text-sm sm:text-lg font-medium text-gray-900 break-words">
                                       {mcq.question}
                                     </h4>
                                   </div>
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0 ml-2">
                                     {mcq.options?.length || 0} options
                                   </Badge>
                                 </div>
                                 
                                 {mcq.options && mcq.options.length > 0 && (
-                                  <div className="space-y-3">
+                                  <div className="space-y-2 sm:space-y-3">
                                     {mcq.options.map((option, oidx) => (
                                       <div 
                                         key={oidx} 
-                                        className={`flex items-center p-4 rounded-lg border-2 transition-all ${
+                                        className={`flex items-center p-3 sm:p-4 rounded-lg border-2 transition-all ${
                                           option === mcq.answer 
                                             ? 'bg-green-50 border-green-300 shadow-sm' 
                                             : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                                         }`}
                                       >
-                                        <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center ${
+                                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 mr-3 sm:mr-4 flex items-center justify-center flex-shrink-0 ${
                                           option === mcq.answer 
                                             ? 'border-green-500 bg-green-500' 
                                             : 'border-gray-400'
                                         }`}>
                                           {option === mcq.answer && (
-                                            <Check className="h-3 w-3 text-white" />
+                                            <Check className="h-2 w-2 sm:h-3 sm:w-3 text-white" />
                                           )}
                                         </div>
-                                        <span className={`flex-1 text-base ${
+                                        <span className={`flex-1 text-sm sm:text-base break-words ${
                                           option === mcq.answer ? 'font-medium text-green-800' : 'text-gray-700'
                                         }`}>
                                           {option}
                                         </span>
                                         {option === mcq.answer && (
-                                          <Badge className="ml-3 bg-green-100 text-green-800 border-green-200">
-                                            Correct Answer
+                                          <Badge className="ml-2 sm:ml-3 bg-green-100 text-green-800 border-green-200 text-xs flex-shrink-0">
+                                            <span className="hidden sm:inline">Correct Answer</span>
+                                            <span className="sm:hidden">Correct</span>
                                           </Badge>
                                         )}
                                       </div>
@@ -2867,14 +2885,14 @@ export default function AdminCompanyModules() {
                                 )}
                                 
                                 {mcq.explanation && (
-                                  <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-300">
+                                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg border-l-4 border-blue-300">
                                     <div className="flex items-start space-x-2">
-                                      <div className="p-1 bg-blue-100 rounded">
-                                        <Eye className="h-4 w-4 text-blue-600" />
+                                      <div className="p-1 bg-blue-100 rounded flex-shrink-0">
+                                        <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                                       </div>
-                                      <div>
-                                        <p className="text-sm font-medium text-blue-900 mb-1">Explanation</p>
-                                        <p className="text-sm text-blue-800">{mcq.explanation}</p>
+                                      <div className="min-w-0">
+                                        <p className="text-xs sm:text-sm font-medium text-blue-900 mb-1">Explanation</p>
+                                        <p className="text-xs sm:text-sm text-blue-800 break-words">{mcq.explanation}</p>
                                       </div>
                                     </div>
                                   </div>
@@ -2884,32 +2902,34 @@ export default function AdminCompanyModules() {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                          <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                          <h4 className="text-lg font-medium text-gray-900 mb-2">No Questions Added</h4>
-                          <p className="text-gray-600">This module doesn't have any assessment questions yet.</p>
+                        <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                          <FileText className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-gray-400" />
+                          <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No Questions Added</h4>
+                          <p className="text-sm sm:text-base text-gray-600">This module doesn't have any assessment questions yet.</p>
                         </div>
                       )}
                     </div>
                     )}
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    {/* Action Buttons - Mobile Optimized */}
+                    <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 sm:pt-6 border-t border-gray-200">
                       <Button 
                         variant="outline" 
                         onClick={handleCloseModuleDetail}
+                        className="w-full sm:w-auto text-sm sm:text-base"
                       >
                         Close
                       </Button>
                       <Button 
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 text-sm sm:text-base w-full sm:w-auto"
                         onClick={() => {
                           handleCloseModuleDetail();
                           handleShowAddModule();
                         }}
                       >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Another Module
+                        <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Add Another Module</span>
+                        <span className="sm:hidden">Add Module</span>
                       </Button>
                     </div>
                   </>

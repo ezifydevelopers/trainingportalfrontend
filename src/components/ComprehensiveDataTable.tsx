@@ -102,11 +102,11 @@ const ComprehensiveDataTable = ({ contacts, companies }: ComprehensiveDataTableP
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-6">
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">All Company Data</h3>
+      <div className="p-3 sm:p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h3 className="text-base sm:text-lg font-semibold">All Company Data</h3>
         <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <Share className="h-4 w-4 mr-2" />
               Share
             </Button>
@@ -156,20 +156,20 @@ const ComprehensiveDataTable = ({ contacts, companies }: ComprehensiveDataTableP
       </div>
 
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="min-w-full">
           <TableHeader>
             <TableRow>
               {columns.map((column) => (
-                <TableHead key={column.key} className="relative">
-                  <div className="flex items-center gap-2">
-                    <span>{column.label}</span>
+                <TableHead key={column.key} className="relative whitespace-nowrap">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <span className="text-xs sm:text-sm">{column.label}</span>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <Button variant="ghost" size="sm" className="h-5 w-5 sm:h-6 sm:w-6 p-0">
                           <Filter className="h-3 w-3" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-64 p-3">
+                      <DropdownMenuContent align="start" className="w-56 sm:w-64 p-3">
                         <div className="space-y-2">
                           <Label className="text-xs font-medium">Filter by {column.label}</Label>
                           <Input
@@ -211,23 +211,23 @@ const ComprehensiveDataTable = ({ contacts, companies }: ComprehensiveDataTableP
             {filteredContacts.length > 0 ? (
               filteredContacts.map((contact, index) => (
                 <TableRow key={contact.id}>
-                  <TableCell>{contacts.indexOf(contact) + 1}</TableCell>
-                  <TableCell className="font-medium">{contact.name}</TableCell>
-                  <TableCell>{contact.company}</TableCell>
-                  <TableCell>{contact.email}</TableCell>
-                  <TableCell>{contact.contactNumber || "-"}</TableCell>
-                  <TableCell>{contact.address || "-"}</TableCell>
-                  <TableCell>{contact.designation || "-"}</TableCell>
-                  <TableCell>{contact.dataCategory || "-"}</TableCell>
-                  <TableCell>{contact.created}</TableCell>
-                  <TableCell>{contact.contactAttempt || "-"}</TableCell>
-                  <TableCell>{contact.resultOfEfforts || "-"}</TableCell>
-                  <TableCell>{contact.comments || "-"}</TableCell>
-                  <TableCell>{contact.emailBlastDate || "-"}</TableCell>
-                  <TableCell>{contact.bulkEmailFollowup || "-"}</TableCell>
-                  <TableCell>{contact.bulkEmailFollowupDate || "-"}</TableCell>
-                  <TableCell>{contact.customizedEmailData || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-xs sm:text-sm">{contacts.indexOf(contact) + 1}</TableCell>
+                  <TableCell className="font-medium text-xs sm:text-sm whitespace-nowrap">{contact.name}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.company}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.email}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.contactNumber || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm max-w-32 truncate">{contact.address || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.designation || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.dataCategory || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.created}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.contactAttempt || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm max-w-32 truncate">{contact.resultOfEfforts || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm max-w-32 truncate">{contact.comments || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.emailBlastDate || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.bulkEmailFollowup || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">{contact.bulkEmailFollowupDate || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm max-w-32 truncate">{contact.customizedEmailData || "-"}</TableCell>
+                  <TableCell className="text-xs sm:text-sm whitespace-nowrap">
                     {contact.followupOverdue ? (
                       <span className="text-red-600 font-medium">Yes</span>
                     ) : (
@@ -238,7 +238,7 @@ const ComprehensiveDataTable = ({ contacts, companies }: ComprehensiveDataTableP
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-6 text-gray-500">
+                <TableCell colSpan={columns.length} className="text-center py-6 text-gray-500 text-sm">
                   No data matches the current filters
                 </TableCell>
               </TableRow>

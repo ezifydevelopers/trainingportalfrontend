@@ -191,65 +191,65 @@ const AdminManagerManagement = () => {
 
   return (
     <Layout>
-      <div className="space-y-8 p-6">
+      <div className="space-y-4 sm:space-y-6 lg:space-y-8 p-4 sm:p-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Manager Management</h1>
-              <p className="text-blue-100">Manage managers and their company assignments</p>
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-4 sm:p-6 text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Manager Management</h1>
+              <p className="text-blue-100 text-sm sm:text-base">Manage managers and their company assignments</p>
             </div>
             <Button 
               onClick={() => setShowCreateDialog(true)}
-              className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-6 py-2.5 rounded-lg shadow-lg"
+              className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg shadow-lg w-full sm:w-auto"
             >
-              <UserPlus className="h-5 w-5 mr-2" />
-              Add Manager
+              <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+              <span className="text-sm sm:text-base">Add Manager</span>
             </Button>
           </div>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-8">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Total Managers</p>
-                  <p className="text-3xl font-bold text-gray-900">{managers.length}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Total Managers</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{managers.length}</p>
                 </div>
-                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Users className="h-8 w-8 text-blue-600" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-8">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Active Managers</p>
-                  <p className="text-3xl font-bold text-gray-900">{managers.length}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Active Managers</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{managers.length}</p>
                 </div>
-                <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Users className="h-8 w-8 text-green-600" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Users className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-8">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Total Assignments</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2">Total Assignments</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                     {managers.reduce((total, manager) => total + (manager.managedCompanies?.length || 0), 0)}
                   </p>
                 </div>
-                <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <Building className="h-8 w-8 text-purple-600" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Building className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -257,47 +257,47 @@ const AdminManagerManagement = () => {
         </div>
 
         {/* Managers List */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 lg:gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {managers.map((manager) => (
             <Card key={manager.id} className="hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white">
-              <CardHeader className="pb-6">
+              <CardHeader className="pb-4 sm:pb-6">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                        <Users className="h-7 w-7 text-white" />
+                  <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
+                    <div className="relative flex-shrink-0">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                        <Users className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full border-2 border-white"></div>
                     </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-xl font-semibold text-gray-900 mb-2">{manager.name}</CardTitle>
-                      <p className="text-sm text-gray-500 mb-3">{manager.email}</p>
-                      <div className="flex items-center space-x-2">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 truncate">{manager.name}</CardTitle>
+                      <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3 truncate">{manager.email}</p>
+                      <div className="flex items-center space-x-1 sm:space-x-2 flex-wrap">
+                        <span className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           Manager
                         </span>
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <span className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Active
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => openEditDialog(manager)}
-                      className="h-9 w-9 p-0 hover:bg-blue-50 hover:text-blue-600"
+                      className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-blue-50 hover:text-blue-600"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => handleDeleteManager(manager)}
-                      className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600"
+                      className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-red-50 hover:text-red-600"
                     >
-                      <Trash className="h-4 w-4" />
+                      <Trash className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </div>
@@ -387,13 +387,13 @@ const AdminManagerManagement = () => {
 
       {/* Create Manager Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] sm:w-full max-w-md">
           <DialogHeader className="pb-4">
-            <DialogTitle className="flex items-center text-xl font-semibold">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <UserPlus className="h-5 w-5 text-blue-600" />
+            <DialogTitle className="flex items-center text-lg sm:text-xl font-semibold">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+                <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </div>
-              Create New Manager
+              <span className="text-sm sm:text-base">Create New Manager</span>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
@@ -405,7 +405,7 @@ const AdminManagerManagement = () => {
                 placeholder="Enter manager's full name..."
                 value={managerName}
                 onChange={(e) => setManagerName(e.target.value)}
-                className="h-11"
+                className="h-10 sm:h-11 text-sm sm:text-base"
               />
             </div>
             <div>
@@ -417,7 +417,7 @@ const AdminManagerManagement = () => {
                 placeholder="Enter manager's email address..."
                 value={managerEmail}
                 onChange={(e) => setManagerEmail(e.target.value)}
-                className="h-11"
+                className="h-10 sm:h-11 text-sm sm:text-base"
               />
             </div>
             <div>
@@ -429,20 +429,20 @@ const AdminManagerManagement = () => {
                 placeholder="Enter a secure password..."
                 value={managerPassword}
                 onChange={(e) => setManagerPassword(e.target.value)}
-                className="h-11"
+                className="h-10 sm:h-11 text-sm sm:text-base"
               />
             </div>
-            <div className="flex space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
               <Button 
                 variant="outline" 
                 onClick={() => setShowCreateDialog(false)}
-                className="flex-1 h-11"
+                className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleCreateManager}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 h-11 font-medium"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 h-10 sm:h-11 font-medium text-sm sm:text-base"
                 disabled={createManagerMutation.isPending}
               >
                 {createManagerMutation.isPending ? "Creating..." : "Create Manager"}
@@ -454,10 +454,10 @@ const AdminManagerManagement = () => {
 
       {/* Edit Manager Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] sm:w-full max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <Edit className="h-5 w-5 mr-2 text-blue-600" />
+            <DialogTitle className="flex items-center text-sm sm:text-base">
+              <Edit className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600" />
               Edit Manager
             </DialogTitle>
           </DialogHeader>
@@ -494,17 +494,17 @@ const AdminManagerManagement = () => {
                 onChange={(e) => setManagerPassword(e.target.value)}
               />
             </div>
-            <div className="flex space-x-2 pt-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
               <Button 
                 variant="outline" 
                 onClick={() => setShowEditDialog(false)}
-                className="flex-1"
+                className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleEditManager}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 h-10 sm:h-11 text-sm sm:text-base"
                 disabled={updateManagerMutation.isPending}
               >
                 {updateManagerMutation.isPending ? "Updating..." : "Update Manager"}
@@ -516,11 +516,11 @@ const AdminManagerManagement = () => {
 
       {/* Assign Company Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] sm:w-full max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <Settings className="h-5 w-5 mr-2 text-green-600" />
-              Assign Company to {selectedManager?.name}
+            <DialogTitle className="flex items-center text-sm sm:text-base">
+              <Settings className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600" />
+              <span className="truncate">Assign Company to {selectedManager?.name}</span>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -557,17 +557,17 @@ const AdminManagerManagement = () => {
                 </select>
               )}
             </div>
-            <div className="flex space-x-2 pt-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
               <Button 
                 variant="outline" 
                 onClick={() => setShowAssignDialog(false)}
-                className="flex-1"
+                className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleAssignCompany}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="flex-1 bg-green-600 hover:bg-green-700 h-10 sm:h-11 text-sm sm:text-base"
                 disabled={assignCompanyMutation.isPending}
               >
                 {assignCompanyMutation.isPending ? "Assigning..." : "Assign Company"}

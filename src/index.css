@@ -14,6 +14,11 @@
   body {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+  
+  html {
+    overflow-x: hidden;
   }
   
   :root {

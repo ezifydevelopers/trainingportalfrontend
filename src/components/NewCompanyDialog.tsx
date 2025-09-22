@@ -50,7 +50,7 @@ const NewCompanyDialog = ({ open, onOpenChange, onAddCompany }: NewCompanyDialog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="w-[95vw] max-w-[425px] mx-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add New Company</DialogTitle>
@@ -59,23 +59,23 @@ const NewCompanyDialog = ({ open, onOpenChange, onAddCompany }: NewCompanyDialog
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="name" className="text-left sm:text-right">
                 Name
               </Label>
               <Input
                 id="name"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                className="col-span-3"
+                className="col-span-1 sm:col-span-3"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="logo-upload" className="text-right">
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="logo-upload" className="text-left sm:text-right">
                 Upload Logo
               </Label>
-              <div className="col-span-3">
+              <div className="col-span-1 sm:col-span-3">
                 <Input
                   id="logo-upload"
                   type="file"
@@ -88,8 +88,8 @@ const NewCompanyDialog = ({ open, onOpenChange, onAddCompany }: NewCompanyDialog
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button type="submit">Save Company</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button type="submit" className="w-full sm:w-auto">Save Company</Button>
           </DialogFooter>
         </form>
       </DialogContent>

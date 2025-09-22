@@ -52,7 +52,7 @@ export default function TraineeDashboard() {
       return (
         <div
           key={module.moduleId}
-          className={`rounded-lg border p-4 transition-colors ${
+          className={`rounded-lg border p-0.5 sm:p-4 transition-colors ${
             isCompleted ? 'bg-green-50 border-green-200' :
             isCurrent ? 'bg-blue-50 border-blue-200' :
             isAvailable ? 'bg-white border-gray-200' :
@@ -60,69 +60,73 @@ export default function TraineeDashboard() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
+            <div className="flex items-center space-x-1 sm:space-x-4">
+              <div className={`flex-shrink-0 h-4 w-4 sm:h-10 sm:w-10 rounded-full flex items-center justify-center ${
                 isCompleted ? 'bg-green-100' :
                 isCurrent ? 'bg-blue-100' :
                 isAvailable ? 'bg-gray-100' :
                 'bg-gray-100'
               }`}>
                 {isCompleted ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-2 w-2 sm:h-5 sm:w-5 text-green-600" />
                 ) : isLocked ? (
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-2 w-2 sm:h-5 sm:w-5 text-gray-400" />
                 ) : module.isResourceModule ? (
-                  <FileText className="h-5 w-5 text-purple-600" />
+                  <FileText className="h-2 w-2 sm:h-5 sm:w-5 text-purple-600" />
                 ) : (
-                  <Play className="h-5 w-5 text-blue-600" />
+                  <Play className="h-2 w-2 sm:h-5 sm:w-5 text-blue-600" />
                 )}
               </div>
               <div className="flex-1">
                 <h3 
-                  className={`font-semibold text-gray-900 ${!isLocked ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''}`}
+                  className={`font-semibold text-xs sm:text-base text-gray-900 break-words leading-tight ${!isLocked ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''}`}
                   onClick={!isLocked ? () => handleStartModule(module.moduleId) : undefined}
                 >
                   {module.moduleName}
                 </h3>
-                <div className="flex items-center space-x-4 mt-2">
+                <div className="flex items-center space-x-1 sm:space-x-4 mt-1 sm:mt-2">
                   <span className="text-xs text-gray-500 flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
+                    <Clock className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
                     {formatTime(module.videoDuration)}
                   </span>
                   {module.marksObtained > 0 && (
                     <span className="text-xs text-gray-500">
-                      Score: {module.marksObtained}%
+                      <span className="hidden sm:inline">Score: </span>{module.marksObtained}%
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-0.5 sm:space-x-3">
               {isCompleted && (
-                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Completed
+                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs px-0.5 py-0.5 h-3 sm:h-auto sm:px-2 sm:py-1">
+                  <CheckCircle className="h-1.5 w-1.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Completed</span>
+                  <span className="sm:hidden">✓</span>
                 </Badge>
               )}
               {isCurrent && (
-                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
-                  <Play className="h-3 w-3 mr-1" />
-                  Current
+                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 text-xs px-0.5 py-0.5 h-3 sm:h-auto sm:px-2 sm:py-1">
+                  <Play className="h-1.5 w-1.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Current</span>
+                  <span className="sm:hidden">▶</span>
                 </Badge>
               )}
               {isLocked && (
-                <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">
-                  <Lock className="h-3 w-3 mr-1" />
-                  Locked
+                <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200 text-xs px-0.5 py-0.5 h-3 sm:h-auto sm:px-2 sm:py-1">
+                  <Lock className="h-1.5 w-1.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Locked</span>
+                  <span className="sm:hidden">🔒</span>
                 </Badge>
               )}
               {!isLocked && (
                 <Button
                   size="sm"
                   onClick={() => handleStartModule(module.moduleId)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-3 px-0.5 sm:h-auto sm:px-3 sm:py-2"
                 >
-                  {isCompleted ? 'Review' : 'Start'}
+                  <span className="hidden sm:inline">{isCompleted ? 'Review' : 'Start'}</span>
+                  <span className="sm:hidden">{isCompleted ? 'R' : 'S'}</span>
                 </Button>
               )}
             </div>
@@ -199,40 +203,40 @@ export default function TraineeDashboard() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6 bg-gray-50 min-h-screen pb-16">
-        <div className="flex items-center space-x-3">
-          <BookOpen className="h-8 w-8 text-blue-600" />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-            <p className="text-gray-600">Continue your learning journey</p>
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50 min-h-screen pb-16">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 truncate">Welcome back, {user.name}!</h1>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-600">Continue your learning journey</p>
           </div>
         </div>
 
         {/* Congratulations Banner - Show when all modules are completed */}
         {dashboardData?.overallProgress === 100 && dashboardData?.modulesCompleted > 0 && (
           <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-lg">
-            <CardContent className="p-8">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
               <div className="text-center">
-                <div className="flex justify-center mb-6">
+                <div className="flex justify-center mb-4 sm:mb-6">
                   <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                      <Award className="h-10 w-10 text-white" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Award className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                      <Star className="h-5 w-5 text-white" />
+                    <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                      <Star className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
                     </div>
                   </div>
                 </div>
-                <h2 className="text-3xl font-bold text-green-900 mb-4">
+                <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-3 sm:mb-4">
                   🎉 Congratulations! 🎉
                 </h2>
-                <p className="text-xl text-green-800 mb-2 font-semibold">
+                <p className="text-lg sm:text-xl text-green-800 mb-2 font-semibold">
                   You have successfully completed all your training modules!
                 </p>
-                <p className="text-green-700 mb-6">
+                <p className="text-sm sm:text-base text-green-700 mb-4 sm:mb-6">
                   You watched all videos and passed all assessments. Well done on your dedication and hard work!
                 </p>
-                <div className="flex items-center justify-center space-x-4 text-green-700">
+                <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4 text-green-700">
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="h-5 w-5" />
                     <span className="font-medium">{dashboardData.modulesCompleted} Modules Completed</span>
@@ -249,20 +253,20 @@ export default function TraineeDashboard() {
         
         {/* Quick Progress Overview */}
         <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-medium text-blue-900">Overall Progress</span>
-              <span className="text-2xl font-bold text-blue-900">{dashboardData?.overallProgress || 0}%</span>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <span className="text-base sm:text-lg font-medium text-blue-900">Overall Progress</span>
+              <span className="text-xl sm:text-2xl font-bold text-blue-900">{dashboardData?.overallProgress || 0}%</span>
             </div>
-            <Progress value={dashboardData?.overallProgress || 0} className="h-3" />
-            <p className="text-blue-700 text-sm mt-2">
+            <Progress value={dashboardData?.overallProgress || 0} className="h-2 sm:h-3" />
+            <p className="text-blue-700 text-xs sm:text-sm mt-2">
               {dashboardData?.modulesCompleted || 0} modules completed
             </p>
           </CardContent>
         </Card>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Current Module</CardTitle>
@@ -303,29 +307,31 @@ export default function TraineeDashboard() {
 
         {/* Course Modules */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center space-x-3">
-              <Target className="h-5 w-5 text-blue-600" />
-              <div>
-                <CardTitle>Training Modules</CardTitle>
-                <CardDescription>Complete each module to progress through your training</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <CardTitle className="text-lg sm:text-xl">Training Modules</CardTitle>
+                <CardDescription className="text-sm">Complete each module to progress through your training</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="videos" className="flex items-center space-x-2">
-                  <Video className="h-4 w-4" />
-                  <span>Video Modules ({videoModules.length})</span>
+              <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+                <TabsTrigger value="videos" className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
+                  <Video className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Video Modules ({videoModules.length})</span>
+                  <span className="sm:hidden">Videos ({videoModules.length})</span>
                 </TabsTrigger>
-                <TabsTrigger value="resources" className="flex items-center space-x-2">
-                  <FileText className="h-4 w-4" />
-                  <span>Resource Modules ({resourceModules.length})</span>
+                <TabsTrigger value="resources" className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Resource Modules ({resourceModules.length})</span>
+                  <span className="sm:hidden">Resources ({resourceModules.length})</span>
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="videos" className="space-y-4">
+              <TabsContent value="videos" className="space-y-1 sm:space-y-4">
                 {videoModules.length > 0 ? (
                   videoModules.map((module) => {
                   const isCompleted = module.completed;
@@ -336,7 +342,7 @@ export default function TraineeDashboard() {
                   return (
                     <div
                       key={module.moduleId}
-                      className={`rounded-lg border p-4 transition-colors ${
+                      className={`rounded-lg border p-3 sm:p-4 transition-colors ${
                         isCompleted ? 'bg-green-50 border-green-200' :
                         isCurrent ? 'bg-blue-50 border-blue-200' :
                         isAvailable ? 'bg-white border-gray-200' :
@@ -418,7 +424,7 @@ export default function TraineeDashboard() {
                 )}
               </TabsContent>
 
-              <TabsContent value="resources" className="space-y-4">
+              <TabsContent value="resources" className="space-y-1 sm:space-y-4">
                 {resourceModules.length > 0 ? (
                   resourceModules.map((module) => {
                     const isCompleted = module.completed;
@@ -429,7 +435,7 @@ export default function TraineeDashboard() {
                     return (
                       <div
                         key={module.moduleId}
-                        className={`rounded-lg border p-4 transition-colors ${
+                        className={`rounded-lg border p-0.5 sm:p-4 transition-colors ${
                           isCompleted ? 'bg-green-50 border-green-200' :
                           isCurrent ? 'bg-blue-50 border-blue-200' :
                           isAvailable ? 'bg-white border-gray-200' :
@@ -437,52 +443,55 @@ export default function TraineeDashboard() {
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
+                          <div className="flex items-center space-x-1 sm:space-x-4">
+                            <div className={`flex-shrink-0 h-4 w-4 sm:h-10 sm:w-10 rounded-full flex items-center justify-center ${
                               isCompleted ? 'bg-green-100' :
                               isCurrent ? 'bg-blue-100' :
                               isAvailable ? 'bg-gray-100' :
                               'bg-gray-100'
                             }`}>
                               {isCompleted ? (
-                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                <CheckCircle className="h-2 w-2 sm:h-5 sm:w-5 text-green-600" />
                               ) : isLocked ? (
-                                <Lock className="h-5 w-5 text-gray-400" />
+                                <Lock className="h-2 w-2 sm:h-5 sm:w-5 text-gray-400" />
                               ) : (
-                                <FileText className="h-5 w-5 text-blue-600" />
+                                <FileText className="h-2 w-2 sm:h-5 sm:w-5 text-blue-600" />
                               )}
                             </div>
                             <div className="flex-1">
-                              <h3 className="text-lg font-medium text-gray-900">{module.moduleName}</h3>
-                              <div className="flex items-center space-x-4 mt-1">
-                                <span className="text-sm text-gray-500">
-                                  {isCompleted ? 'Completed' : isCurrent ? 'Current Module' : isLocked ? 'Locked' : 'Available'}
+                              <h3 className="text-xs sm:text-lg font-medium text-gray-900 break-words leading-tight">{module.moduleName}</h3>
+                              <div className="flex items-center space-x-1 sm:space-x-4 mt-0.5 sm:mt-1">
+                                <span className="text-xs text-gray-500">
+                                  {isCompleted ? 'Completed' : isCurrent ? 'Current' : isLocked ? 'Locked' : 'Available'}
                                 </span>
                                 {module.timeSpentOnVideo > 0 && (
-                                  <span className="text-sm text-gray-500">
-                                    {formatTime(module.timeSpentOnVideo)} spent
+                                  <span className="text-xs text-gray-500">
+                                    {formatTime(module.timeSpentOnVideo)}<span className="hidden sm:inline"> spent</span>
                                   </span>
                                 )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-0.5 sm:space-x-3">
                             {isCompleted && (
-                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Completed
+                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs px-0.5 py-0.5 h-3 sm:h-auto sm:px-2 sm:py-1">
+                                <CheckCircle className="h-1.5 w-1.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                                <span className="hidden sm:inline">Completed</span>
+                                <span className="sm:hidden">✓</span>
                               </Badge>
                             )}
                             {isCurrent && (
-                              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
-                                <FileText className="h-3 w-3 mr-1" />
-                                Current
+                              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 text-xs px-0.5 py-0.5 h-3 sm:h-auto sm:px-2 sm:py-1">
+                                <FileText className="h-1.5 w-1.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                                <span className="hidden sm:inline">Current</span>
+                                <span className="sm:hidden">▶</span>
                               </Badge>
                             )}
                             {isLocked && (
-                              <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">
-                                <Lock className="h-3 w-3 mr-1" />
-                                Locked
+                              <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200 text-xs px-0.5 py-0.5 h-3 sm:h-auto sm:px-2 sm:py-1">
+                                <Lock className="h-1.5 w-1.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                                <span className="hidden sm:inline">Locked</span>
+                                <span className="sm:hidden">🔒</span>
                               </Badge>
                             )}
                             {!isLocked && (
@@ -490,8 +499,10 @@ export default function TraineeDashboard() {
                                 size="sm"
                                 disabled={isLocked}
                                 onClick={() => handleStartModule(module.moduleId)}
+                                className="text-xs h-3 px-0.5 sm:h-auto sm:px-3 sm:py-2"
                               >
-                                {isCompleted ? "Review" : isLocked ? "Locked" : "View Resources"}
+                                <span className="hidden sm:inline">{isCompleted ? "Review" : isLocked ? "Locked" : "View Resources"}</span>
+                                <span className="sm:hidden">{isCompleted ? "R" : "V"}</span>
                               </Button>
                             )}
                           </div>
