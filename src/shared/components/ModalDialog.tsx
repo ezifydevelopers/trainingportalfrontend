@@ -29,7 +29,7 @@ const sizeClasses: Record<ModalSize, string> = {
   '3xl': 'max-w-3xl',
   '4xl': 'max-w-4xl',
   '6xl': 'max-w-6xl',
-  wide: 'w-[90vw] sm:w-[1024px]',
+  wide: 'w-[95vw] sm:!w-[1024px]',
 };
 
 const ModalDialog: React.FC<ModalDialogProps> = ({
@@ -44,7 +44,7 @@ const ModalDialog: React.FC<ModalDialogProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`w-[95vw] sm:w-full ${sizeClasses[size]} max-h-[90vh] sm:max-h-[85vh] overflow-y-auto ${className}`}>
+      <DialogContent className={`w-[95vw] ${sizeClasses[size]} max-h-[90vh] sm:max-h-[85vh] overflow-y-auto !max-w-none ${className}`}>
         <DialogHeader className="p-3 sm:p-4">
           <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
             <div className="flex items-center min-w-0">

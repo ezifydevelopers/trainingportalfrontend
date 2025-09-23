@@ -414,7 +414,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
 
         {/* Resource Module Dialog */}
         <Dialog open={showResourceModuleDialog} onOpenChange={setShowResourceModuleDialog}>
-          <DialogContent className="w-[95vw] sm:w-[1024px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] sm:!w-[1024px] max-h-[90vh] overflow-y-auto !max-w-none">
             <DialogHeader>
               <DialogTitle className="flex items-center text-base sm:text-lg">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-green-600" />

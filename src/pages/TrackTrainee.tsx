@@ -124,7 +124,7 @@ export default function TrackTrainee() {
                 <div className="text-xs sm:text-sm text-blue-100">Last updated</div>
                 <div className="text-sm sm:text-base lg:text-lg font-semibold">{lastRefresh.toLocaleTimeString()}</div>
               </div>
-              <Button 
+              <Button
                 onClick={handleRefresh}
                 className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl shadow-lg w-full sm:w-auto"
               >
@@ -160,7 +160,7 @@ export default function TrackTrainee() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg border-0">
             <div className="flex items-center justify-between">
               <div className="min-w-0">

@@ -81,7 +81,7 @@ const ModuleDetail = memo<ModuleDetailProps>(({
                 </Badge>
               </div>
               
-              <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video min-h-[200px] max-h-[280px] sm:max-h-[350px]">
+              <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video min-h-[250px] max-h-[400px] sm:max-h-[450px] lg:max-h-[500px]">
                 {isVideoLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                     <div className="text-center">
