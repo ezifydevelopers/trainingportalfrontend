@@ -24,3 +24,18 @@ jobs:
             npm install
             npm run build
             sudo systemctl restart nginx
+
+      # Production deployment
+      - name: Deploy to Production VPS
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /home/dev/apps/trainingportalfrontend
+            git pull origin main
+            npm install
+            npm run build
+            sudo systemctl restart nginx
