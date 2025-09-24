@@ -90,7 +90,6 @@ export default function ResourceUploadDialog({
       toast.success('Resource uploaded successfully!');
       onOpenChange(false);
     } catch (error) {
-      console.error('Upload error:', error);
       toast.error('Failed to upload resource');
     } finally {
       setIsUploading(false);

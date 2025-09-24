@@ -61,7 +61,6 @@ export default function MessageNotificationSimple({ unreadCount, onNotificationC
         setLastMessageTime(new Date());
       }
     } catch (error) {
-      console.error('Error fetching recent messages:', error);
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +98,6 @@ export default function MessageNotificationSimple({ unreadCount, onNotificationC
           tag: 'new-message'
         });
       }
-
 
       // Update unread count
       if (onUnreadCountChange) {
@@ -147,7 +145,6 @@ export default function MessageNotificationSimple({ unreadCount, onNotificationC
         onUnreadCountChange();
       }
     } catch (error) {
-      console.error('Error marking message as read:', error);
     }
 
     // Call the parent click handler

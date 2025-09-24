@@ -143,7 +143,6 @@ const ResourceUploadForm = memo<ResourceUploadFormProps>(({
       
       toast.success(`${files.length} file(s) uploaded successfully`);
     } catch (error) {
-      console.error('Error uploading files:', error);
       toast.error('Failed to upload files');
       setUploadProgress(0);
     }

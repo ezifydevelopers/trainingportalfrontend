@@ -37,7 +37,6 @@ export const ManagerDashboardRefactored: React.FC = () => {
 
   const handleCompanyEdit = (company: any) => {
     // Handle company edit - this would open a dialog
-    console.log('Edit company:', company);
   };
 
   const handleViewTrainee = (traineeId: number) => {
@@ -46,7 +45,6 @@ export const ManagerDashboardRefactored: React.FC = () => {
 
   const handleEditTrainee = (traineeId: number) => {
     // Handle trainee edit
-    console.log('Edit trainee:', traineeId);
   };
 
   const handleViewProgress = () => {

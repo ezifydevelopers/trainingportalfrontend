@@ -42,7 +42,6 @@ const CompanyCard = ({
     }
   };
 
-
   return (
     <Card
       className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200 relative group"

@@ -53,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('authToken');
     const storedUser = localStorage.getItem('user');
 
-
     if (token && storedUser) {
       apiClient.setToken(token);
       try {
@@ -135,7 +134,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         response = await apiClient.login({ email, password });
       }
-      
 
       // Store token and user
       localStorage.setItem('authToken', response.token);

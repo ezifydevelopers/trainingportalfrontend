@@ -53,38 +53,23 @@ const AdminManagerManagement = () => {
   const companies = companiesData?.companies || [];
 
   // Debug logging
-  console.log('Companies data:', companiesData);
-  console.log('Companies array:', companies);
-  console.log('Companies loading:', companiesLoading);
-  console.log('Companies error:', companiesError);
-
   const handleCreateManager = async () => {
     if (!managerName || !managerEmail || !managerPassword) {
       toast.error("Please fill in all fields");
       return;
     }
-
-    console.log('Creating manager with data:', {
-      name: managerName,
-      email: managerEmail,
-      password: '***'
-    });
-
     try {
       const result = await createManagerMutation.mutateAsync({
         name: managerName,
         email: managerEmail,
         password: managerPassword
       });
-      
-      console.log('Manager creation result:', result);
       toast.success("Manager created successfully!");
       setShowCreateDialog(false);
       setManagerName("");
       setManagerEmail("");
       setManagerPassword("");
     } catch (error: any) {
-      console.error('Manager creation error:', error);
       toast.error(error.message || "Failed to create manager");
     }
   };

@@ -45,7 +45,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
   // Debug logging
   if (user?.role === 'MANAGER') {
-    console.log('Sidebar Manager - Companies:', managerCompanies);
+
   }
 
   // Calculate pending help requests count
@@ -148,7 +148,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const getTitle = () => {
     return "Training Portal";
   };
-
 
   const isPathActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');

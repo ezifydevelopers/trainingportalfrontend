@@ -287,8 +287,7 @@ export default function DataManagement() {
         {/* Show company grid or comprehensive table when not viewing all data and no company selected */}
         {!showAllData && !selectedCompany && (
           <>
-           
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
               {/* All Data Box */}
               <div

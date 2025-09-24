@@ -19,7 +19,6 @@ export default function Layout({ children }: { children: ReactNode }) {
     navigate("/");
   };
 
-
   const getInitials = (name: string): string => {
     return name
       .split(" ")

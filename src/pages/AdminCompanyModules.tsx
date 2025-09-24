@@ -4,9 +4,10 @@ import CompanyCard from "@/components/CompanyCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash, Upload, Play, FileText, Check, ArrowLeft, X, Clock, Users, Eye, Edit, Save, XIcon, GripVertical, File, Image, Music } from "lucide-react";
+import { Plus, Trash, Upload, Play, FileText, Check, ArrowLeft, X, Clock, Users, Eye, Edit, Save, XIcon, GripVertical, File, Image, Music, Copy } from "lucide-react";
 import NewCompanyDialog from "@/components/NewCompanyDialog";
 import EditCompanyDialog from "@/components/EditCompanyDialog";
+import { DuplicateCompanyDialog } from "@/components/DuplicateCompanyDialog";
 import { 
   useAllCompanies, 
   useCreateCompany, 
@@ -20,7 +21,8 @@ import {
   useUpdateModule,
   useAddResource,
   useGetModuleResources,
-  useDeleteResource
+  useDeleteResource,
+  useDuplicateCompanyData
 } from "@/hooks/useApi";
 import { getApiBaseUrl } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
@@ -147,8 +149,12 @@ function SortableModule({
               <GripVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 hover:text-gray-600" />
             </div>
             
-            {/* Order number */}
-            <span className="text-xs sm:text-sm font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-full min-w-[1.5rem] sm:min-w-[2rem] text-center flex-shrink-0">
+            {/* Order number with real-time update indicator */}
+            <span className={`text-xs sm:text-sm font-bold px-2 py-1 rounded-full min-w-[1.5rem] sm:min-w-[2rem] text-center flex-shrink-0 transition-colors ${
+              isDragging 
+                ? 'text-blue-600 bg-blue-100 border-2 border-blue-300' 
+                : 'text-gray-600 bg-gray-100'
+            }`}>
               #{index + 1}
             </span>
             
@@ -297,6 +303,7 @@ export default function AdminCompanyModules() {
   const [showEditCompany, setShowEditCompany] = useState(false);
   const [companyToEdit, setCompanyToEdit] = useState(null);
   const [showResourceModuleDialog, setShowResourceModuleDialog] = useState(false);
+  const [showDuplicateCompanyDialog, setShowDuplicateCompanyDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<'video' | 'resource'>('video');
   
   const [resourceModuleName, setResourceModuleName] = useState("");
@@ -325,11 +332,20 @@ export default function AdminCompanyModules() {
 
   // Drag and drop state
   const [orderedModules, setOrderedModules] = useState([]);
+  const [originalOrder, setOriginalOrder] = useState([]);
   const [isReordering, setIsReordering] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   // Fetch modules for selected company
   const { data: modules = [], isLoading: modulesLoading, isError: modulesError } = useCompanyModules(selectedCompany?.id || null);
+
+  // Computed modules to display (uses orderedModules when available, otherwise filtered modules)
+  const displayModules = React.useMemo(() => {
+    if (orderedModules.length > 0) {
+      return orderedModules;
+    }
+    return modules.filter(module => !module.isResourceModule);
+  }, [orderedModules, modules]);
 
   // Refresh selectedModule when modules data changes
   useEffect(() => {
@@ -356,13 +372,11 @@ export default function AdminCompanyModules() {
     // If videoUrl already starts with /uploads/, use it directly
     if (videoUrl.startsWith('/uploads/')) {
       const fullUrl = `${baseUrl}${videoUrl}`;
-      console.log('Generated video URL (with /uploads/):', fullUrl);
       return fullUrl;
     }
     
     // Otherwise, add /uploads/ prefix
     const fullUrl = `${baseUrl}/uploads/${videoUrl}`;
-    console.log('Generated video URL (added /uploads/):', fullUrl);
     return fullUrl;
   };
 
@@ -445,8 +459,22 @@ export default function AdminCompanyModules() {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over?.id);
 
-        return arrayMove(items, oldIndex, newIndex);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        
+        // Update the order property in real-time for immediate UI feedback
+        const updatedOrder = newOrder.map((module, index) => ({
+          ...module,
+          order: index
+        }));
+        
+        return updatedOrder;
       });
+      
+      // Store original order if not already stored
+      if (originalOrder.length === 0) {
+        setOriginalOrder([...orderedModules]);
+      }
+      
       setIsReordering(true);
     }
   };
@@ -488,12 +516,12 @@ export default function AdminCompanyModules() {
         return;
       }
       
-      if (!orderedModules || orderedModules.length === 0) {
+      if (!displayModules || displayModules.length === 0) {
         toast.error('No modules to reorder');
         return;
       }
 
-      const orderUpdates = orderedModules.map((module, index) => ({
+      const orderUpdates = displayModules.map((module, index) => ({
         id: module.id,
         order: index
       }));
@@ -521,8 +549,14 @@ export default function AdminCompanyModules() {
       if (response.ok && result.success) {
         toast.success('Module order saved successfully!');
         setIsReordering(false);
+        setOriginalOrder([]); // Clear original order since changes are saved
+        // Clear orderedModules to force refresh from database
+        setOrderedModules([]);
         // Invalidate and refetch the modules to show the new order
         queryClient.invalidateQueries({ queryKey: ["company-modules", selectedCompany.id] });
+        // Also invalidate dashboard queries to update trainee views
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+        queryClient.invalidateQueries({ queryKey: ["trainee-progress"] });
       } else {
         toast.error(result.message || 'Failed to update module order');
       }
@@ -535,32 +569,19 @@ export default function AdminCompanyModules() {
 
   // Handle canceling the order changes
   const handleCancelOrder = () => {
-    // Reset to database order
-    if (modules && modules.length > 0 && selectedCompany) {
-      // Sort modules by order field from database, then by ID as fallback
-      const sortedModules = [...modules].sort((a, b) => {
-        // First sort by order field (if available)
-        if (a.order !== undefined && b.order !== undefined) {
-          return a.order - b.order;
-        }
-        // If one has order and other doesn't, prioritize the one with order
-        if (a.order !== undefined && b.order === undefined) {
-          return -1;
-        }
-        if (a.order === undefined && b.order !== undefined) {
-          return 1;
-        }
-        // If neither has order, sort by ID (creation order)
-        return a.id - b.id;
-      });
-      
-      setOrderedModules(sortedModules);
+    // Reset to original order if available, otherwise reset to database order
+    if (originalOrder.length > 0) {
+      setOrderedModules([...originalOrder]);
+      setOriginalOrder([]);
+    } else {
+      // Clear orderedModules to use database order
+      setOrderedModules([]);
     }
     setIsReordering(false);
   };
 
   const handleCompanySelect = (company) => {
-    console.log('Company card clicked, opening module management for:', company.name);
+
     setSelectedCompany(company);
     setShowAddModule(false);
     setVideoFile(null);
@@ -677,23 +698,19 @@ export default function AdminCompanyModules() {
   };
 
   const handleAddMcq = () => {
-    console.log('handleAddMcq called');
-    console.log('question:', question);
-    console.log('options:', options);
-    console.log('correctAnswer:', correctAnswer);
-    
+
     // Filter out empty options for validation
     const validOptions = options.filter(opt => opt.trim());
     
     if (!question.trim() || validOptions.length < 2) {
-      console.log('Validation failed - question or insufficient options');
+
       toast.error("Please provide a question and at least 2 options");
       return;
     }
     
     // Validate that the correct answer is one of the valid options
     if (correctAnswer >= validOptions.length) {
-      console.log('Validation failed - correct answer index out of range');
+
       toast.error("Please select a valid correct answer");
       return;
     }
@@ -704,8 +721,7 @@ export default function AdminCompanyModules() {
       answer: validOptions[correctAnswer],
       explanation: ""
     };
-    
-    console.log('Adding MCQ to list:', newMcq);
+
     setMcqs([
       ...mcqs,
       newMcq,
@@ -713,7 +729,7 @@ export default function AdminCompanyModules() {
     setQuestion("");
     setOptions(["", "", "", ""]);
     setCorrectAnswer(0);
-    console.log('MCQ added successfully');
+
     toast.success("Question added successfully!");
   };
 
@@ -757,7 +773,7 @@ export default function AdminCompanyModules() {
       
       // 3. Add MCQs to module (optional)
       if (mcqs.length > 0) {
-        console.log('Adding MCQs to module:', moduleId, mcqs);
+
         console.log('MCQ validation:', mcqs.map(mcq => ({
           question: mcq.question,
           options: mcq.options,
@@ -768,11 +784,11 @@ export default function AdminCompanyModules() {
         toast.loading("Step 3/3: Adding quiz questions...", { id: loadingToast });
         try {
           await addMCQsMutation.mutateAsync({ moduleId, mcqs });
-          console.log('MCQs added successfully');
+
           setUploadProgress(100);
           toast.success("✅ Module, video, and MCQs added successfully!", { id: loadingToast });
         } catch (mcqError) {
-          console.error('MCQ saving error:', mcqError);
+
           throw mcqError;
         }
         
@@ -784,7 +800,7 @@ export default function AdminCompanyModules() {
           });
         }
       } else {
-        console.log('No MCQs to add');
+
         setUploadProgress(100);
         toast.success("✅ Module and video added successfully! (No MCQs added)", { id: loadingToast });
       }
@@ -822,30 +838,26 @@ export default function AdminCompanyModules() {
 
   const handleUpdateCompany = async (companyId, companyName, logoFile) => {
     try {
-      console.log('Updating company:', { companyId, companyName, logoFile });
+
       const formData = new FormData();
       formData.append('name', companyName);
       if (logoFile) {
-        console.log('Adding logo file to form data:', logoFile.name);
+
         formData.append('logo', logoFile);
       }
       await updateCompanyMutation.mutateAsync({ id: companyId, data: formData });
-      console.log('Company updated successfully');
+
       toast.success("Company updated successfully!");
       setShowEditCompany(false);
       setCompanyToEdit(null);
     } catch (error) {
-      console.error('Error updating company:', error);
+
       toast.error("Failed to update company. Please try again.");
     }
   };
 
-
-
-
   const handleCreateResourceModule = async () => {
-    console.log('Creating resource module:', { resourceModuleName, selectedCompany });
-    
+
     if (!resourceModuleName.trim()) {
       toast.error("Please enter a resource module name");
       return;
@@ -856,21 +868,17 @@ export default function AdminCompanyModules() {
     }
 
     try {
-      console.log('Calling addModuleMutation...');
+
       const moduleRes = await addModuleMutation.mutateAsync({ 
         companyId: selectedCompany.id, 
         name: resourceModuleName 
       });
-      
-      console.log('Module creation response:', moduleRes);
-      
+
       const moduleId = moduleRes?.module?.id;
       if (!moduleId) {
         throw new Error(`Failed to create module: ${moduleRes?.message || 'No module ID returned'}`);
       }
 
-      console.log('Resource module created successfully:', { moduleId, moduleName: resourceModuleName });
-      
       // Set the created module and open resource upload dialog
       setSelectedModuleForResource({ id: moduleId, name: resourceModuleName });
       setShowResourceModuleDialog(false);
@@ -881,7 +889,7 @@ export default function AdminCompanyModules() {
       
       toast.success("Resource module created! Now upload your files.");
     } catch (error) {
-      console.error('Error creating resource module:', error);
+
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast.error(`Failed to create resource module: ${errorMessage}`);
     }
@@ -956,7 +964,7 @@ export default function AdminCompanyModules() {
       // Refresh the modules list
       queryClient.invalidateQueries({ queryKey: ['companyModules', selectedCompany.id] });
     } catch (error) {
-      console.error('Error creating resource module with files:', error);
+
       toast.error(error.message || 'Failed to create resource module');
     }
   };
@@ -1012,13 +1020,13 @@ export default function AdminCompanyModules() {
       queryClient.invalidateQueries({ queryKey: ['module-resources', selectedModuleForResource.id] });
       
     } catch (error) {
-      console.error('Resource upload error:', error);
+
       throw error; // Re-throw so ResourceUploadDialog can handle it
     }
   };
 
   const handleEditCompany = (company) => {
-    console.log('Opening edit dialog for company:', company.name);
+
     setCompanyToEdit(company);
     setShowEditCompany(true);
   };
@@ -1242,13 +1250,22 @@ export default function AdminCompanyModules() {
                     <p className="text-blue-100 text-sm sm:text-base lg:text-lg">Manage training content and assessments for your companies</p>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => setShowNewCompany(true)} 
-                  className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-6 py-3 rounded-xl shadow-lg"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  New Company
-                </Button>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => setShowNewCompany(true)} 
+                    className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-6 py-3 rounded-xl shadow-lg"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    New Company
+                  </Button>
+                  <Button 
+                    onClick={() => setShowDuplicateCompanyDialog(true)} 
+                    className="bg-green-600 text-white hover:bg-green-700 font-medium px-6 py-3 rounded-xl shadow-lg"
+                  >
+                    <Copy className="h-5 w-5 mr-2" />
+                    Duplicate Data
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -1268,6 +1285,11 @@ export default function AdminCompanyModules() {
               onOpenChange={setShowEditCompany}
               company={companyToEdit}
               onUpdateCompany={handleUpdateCompany}
+            />
+            <DuplicateCompanyDialog
+              isOpen={showDuplicateCompanyDialog}
+              onClose={() => setShowDuplicateCompanyDialog(false)}
+              companies={companies}
             />
             
             <ResourceUploadDialog
@@ -1309,7 +1331,7 @@ export default function AdminCompanyModules() {
                   {/* Test Edit Dialog Button */}
                   <Button
                     onClick={() => {
-                      console.log('TEST BUTTON CLICKED');
+
                       setCompanyToEdit({ id: 1, name: 'Test Company', logo: null });
                       setShowEditCompany(true);
                     }}
@@ -1359,7 +1381,7 @@ export default function AdminCompanyModules() {
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  console.log('EDIT BUTTON CLICKED FOR:', company.name);
+
                                   handleEditCompany(company);
                                 }}
                                 className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-md hover:bg-blue-50 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 z-10 relative"
@@ -1373,7 +1395,7 @@ export default function AdminCompanyModules() {
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  console.log('DELETE BUTTON CLICKED FOR:', company.name);
+
                                   setCompanyToDelete(company);
                                 }}
                                 className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 z-10 relative"
@@ -1388,7 +1410,7 @@ export default function AdminCompanyModules() {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                console.log('MANAGE BUTTON CLICKED FOR:', company.name);
+
                                 handleCompanySelect(company);
                               }}
                               className="flex items-center text-blue-600 hover:text-blue-700 focus:outline-none z-10 relative"
@@ -1443,7 +1465,7 @@ export default function AdminCompanyModules() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('Add Resource Module button clicked');
+
                       setShowResourceModuleDialog(true);
                     }}
                     className="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl shadow-lg text-sm sm:text-base"
@@ -1537,8 +1559,6 @@ export default function AdminCompanyModules() {
                       )}
                     </div>
 
-
-                  
                   {/* MCQ Section - Only show for video modules */}
                   {!showResourceModuleDialog && (
                   <div className="mb-6">
@@ -1608,9 +1628,7 @@ export default function AdminCompanyModules() {
                           type="button" 
                           size="sm" 
                           onClick={() => {
-                            console.log('Add MCQ button clicked');
-                            console.log('Current question:', question);
-                            console.log('Current options:', options);
+
                             const validOptions = options.filter(opt => opt.trim());
                             console.log('Button disabled:', !question.trim() || validOptions.length < 2);
                             handleAddMcq();
@@ -1807,9 +1825,18 @@ export default function AdminCompanyModules() {
                           </div>
                         </div>
                         {isReordering && (
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 px-3 py-1 self-start sm:self-auto">
-                            Order Changed
-                          </Badge>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 px-3 py-1 self-start sm:self-auto">
+                              Order Changed
+                            </Badge>
+                            <span className="text-xs text-gray-500">
+                              {displayModules.length} modules reordered
+                            </span>
+                            <div className="flex items-center space-x-1 text-xs text-blue-600">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                              <span>Live Preview</span>
+                            </div>
+                          </div>
                         )}
                       </div>
                       {!isReordering ? (
@@ -1919,11 +1946,11 @@ export default function AdminCompanyModules() {
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={orderedModules.map(module => module.id)}
+                      items={displayModules.map(module => module.id)}
                       strategy={verticalListSortingStrategy}
                     >
                                            <div className="space-y-1">
-                       {orderedModules.map((mod, idx) => (
+                       {displayModules.map((mod, idx) => (
                          <div key={mod.id}>
                            <SortableModule
                              module={mod}
@@ -1953,7 +1980,7 @@ export default function AdminCompanyModules() {
                     {/* Video Modules Tab Content */}
                     {activeTab === 'video' && (
                       <>
-                        {modules.filter(module => !module.isResourceModule).map((module, index) => (
+                        {displayModules.map((module, index) => (
                       <div key={module.id}>
                         <div 
                           className="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-blue-300 group transform hover:-translate-y-1"
@@ -2315,9 +2342,9 @@ export default function AdminCompanyModules() {
                               className="w-full h-auto"
                               preload="metadata"
                               onError={(e) => {
-                                console.error('Video loading error:', e);
+
                                 console.error('Video URL:', getVideoUrl(selectedModule.videos?.[0].url));
-                                console.error('Original video URL:', selectedModule.videos?.[0].url);
+
                                 // Show error message
                                 const videoElement = e.target as HTMLVideoElement;
                                 const errorDiv = document.createElement('div');
@@ -2337,13 +2364,13 @@ export default function AdminCompanyModules() {
                                 // Test if the video URL is accessible
                                 fetch(getVideoUrl(selectedModule.videos?.[0].url), { method: 'HEAD' })
                                   .then(response => {
-                                    console.log('Video URL accessibility test:', response.status, response.statusText);
+
                                     if (!response.ok) {
-                                      console.error('Video URL not accessible:', response.status, response.statusText);
+
                                     }
                                   })
                                   .catch(error => {
-                                    console.error('Video URL fetch error:', error);
+
                                   });
                               }}
                               onCanPlay={() => {
@@ -2766,7 +2793,7 @@ export default function AdminCompanyModules() {
                               className="w-full h-auto max-h-[50vh] sm:max-h-[60vh]"
                               preload="metadata"
                               onError={(e) => {
-                                console.error('Video loading error:', e);
+
                                 console.error('Video URL:', getVideoUrl(selectedModule.videos[0].url));
                               }}
                               onLoadStart={() => {
@@ -2787,7 +2814,6 @@ export default function AdminCompanyModules() {
                       </div>
                     )}
 
-
                     {/* Module Resources - Only show for resource modules */}
                     {selectedModule && selectedModule.isResourceModule && (
                       <div className="space-y-4">
@@ -2806,7 +2832,7 @@ export default function AdminCompanyModules() {
                           }}
                           onViewResource={(resource) => {
                             // Handle resource viewing if needed
-                            console.log('Viewing resource:', resource);
+
                           }}
                         />
                       </div>

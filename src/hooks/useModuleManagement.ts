@@ -99,7 +99,6 @@ export function useModuleManagement(companyId: number) {
       return module;
 
     } catch (error) {
-      console.error('Error creating module:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create module';
       toast.error(`Failed to create module: ${errorMessage}`);
       throw error;
@@ -120,7 +119,6 @@ export function useModuleManagement(companyId: number) {
         throw new Error(response.message || 'Failed to delete module');
       }
     } catch (error) {
-      console.error('Error deleting module:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete module';
       toast.error(`Failed to delete module: ${errorMessage}`);
       throw error;
@@ -142,7 +140,6 @@ export function useModuleManagement(companyId: number) {
         throw new Error(response.message || 'Failed to update module');
       }
     } catch (error) {
-      console.error('Error updating module:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to update module';
       toast.error(`Failed to update module: ${errorMessage}`);
       throw error;

@@ -81,7 +81,6 @@ export const useManagerCompanyManagement = (managerId: number, selectedCompanyId
       setShowNewCompany(false);
       queryClient.invalidateQueries({ queryKey: ['manager-companies', managerId] });
     } catch (error) {
-      console.error('Error creating company:', error);
       toast.error('Failed to create company');
     }
   }, [createCompanyMutation, queryClient, managerId]);
@@ -95,7 +94,6 @@ export const useManagerCompanyManagement = (managerId: number, selectedCompanyId
       setCompanyToEdit(null);
       queryClient.invalidateQueries({ queryKey: ['manager-companies', managerId] });
     } catch (error) {
-      console.error('Error updating company:', error);
       toast.error('Failed to update company');
     }
   }, [updateCompanyMutation, queryClient, managerId]);
@@ -114,7 +112,6 @@ export const useManagerCompanyManagement = (managerId: number, selectedCompanyId
       setCompanyToDelete(null);
       queryClient.invalidateQueries({ queryKey: ['manager-companies', managerId] });
     } catch (error) {
-      console.error('Error deleting company:', error);
       toast.error('Failed to delete company');
     }
   }, [companyToDelete, deleteCompanyMutation, queryClient, managerId]);

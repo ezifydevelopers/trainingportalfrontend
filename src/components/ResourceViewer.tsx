@@ -69,12 +69,6 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ resource, onComplete })
   };
 
   const getResourceUrl = () => {
-    console.log('ResourceViewer Debug:', {
-      resourceUrl: resource.url,
-      filePath: resource.filePath,
-      hasUrl: !!resource.url
-    });
-    
     if (resource.url) {
       // If url exists but doesn't include /resources/, fix it
       if (resource.url.includes('/uploads/') && !resource.url.includes('/uploads/resources/')) {
@@ -120,7 +114,6 @@ const ResourceViewer: React.FC<ResourceViewerProps> = ({ resource, onComplete })
         timeSpent: newTimeSpent
       });
     } catch (error) {
-      console.error('Failed to update time tracking:', error);
     }
 
     // Check if completed

@@ -100,7 +100,6 @@ export default function ModuleManagementView({
       await createModule(moduleData);
       setShowAddModule(false);
     } catch (error) {
-      console.error('Error creating module:', error);
     }
   };
 
@@ -109,7 +108,6 @@ export default function ModuleManagementView({
     try {
       await deleteModule(module);
     } catch (error) {
-      console.error('Error deleting module:', error);
     } finally {
       setDeletingModuleId(null);
     }

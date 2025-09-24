@@ -62,7 +62,7 @@ export default function Chat() {
   
   // Debug logging for showUserList state changes
   useEffect(() => {
-    console.log('showUserList state changed:', showUserList);
+
   }, [showUserList]);
   const [searchQuery, setSearchQuery] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
@@ -168,7 +168,7 @@ export default function Chat() {
         }
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+
     }
   }, [unreadCount]);
 
@@ -240,7 +240,7 @@ export default function Chat() {
         setChatRooms(data);
       }
     } catch (error) {
-      console.error('Error fetching chat rooms:', error);
+
     }
   };
 
@@ -253,8 +253,7 @@ export default function Chat() {
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      
+
       if (response.ok) {
         const data = await response.json();
         setCompanyUsers(data);
@@ -280,7 +279,7 @@ export default function Chat() {
         setMessages(data);
       }
     } catch (error) {
-      console.error('Error fetching messages:', error);
+
     }
   };
 

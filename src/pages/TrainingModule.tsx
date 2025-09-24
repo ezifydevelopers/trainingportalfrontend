@@ -52,7 +52,6 @@ export default function TrainingModule() {
     return dashboardData.modulesCompleted === totalModules && totalModules > 0;
   };
 
-
   useEffect(() => {
     if (!user || user.role !== "TRAINEE") {
       navigate("/training");
@@ -228,7 +227,6 @@ export default function TrainingModule() {
         answers[mcq.id] = mcq.options[selectedAnswerIndex];
       }
     });
-
 
     try {
       const response = await fetch(`${getApiBaseUrl()}/trainee/modules/${moduleId}/mcq`, {

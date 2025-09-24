@@ -60,13 +60,6 @@ export default function PendingTrainees() {
   });
 
   // Debug: Log trainees to console
-  console.log('=== PENDING TRAINEES DEBUG ===');
-  console.log('traineesData:', traineesData);
-  console.log('traineesLoading:', traineesLoading);
-  console.log('All trainees:', trainees);
-  console.log('Filtered trainees:', filteredTrainees);
-  console.log('filterStatus:', filterStatus);
-  console.log('searchTerm:', searchTerm);
 
   const handleApprove = async (trainee: PendingTrainee) => {
     setSelectedTrainee(trainee);

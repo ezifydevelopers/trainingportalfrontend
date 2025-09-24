@@ -39,11 +39,9 @@ const EditCompanyDialog = ({ open, onOpenChange, company, onUpdateCompany }: Edi
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    console.log('Logo file selected:', file);
     if (file) {
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
-      console.log('Logo preview URL created');
     } else {
       setLogoFile(null);
       setLogoPreview(company?.logo || "");
@@ -52,7 +50,6 @@ const EditCompanyDialog = ({ open, onOpenChange, company, onUpdateCompany }: Edi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('EditCompanyDialog submit:', { companyName, logoFile, company });
     if (!companyName.trim()) {
       toast.error("Company name is required");
       return;

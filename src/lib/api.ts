@@ -399,7 +399,6 @@ class ApiClient {
     });
   }
 
-
   // Admin endpoints (require admin authentication)
   async getAllTrainees(): Promise<User[]> {
     return this.request<User[]>('/admin/trainees');
@@ -578,6 +577,25 @@ class ApiClient {
   async deleteCompany(id: number): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/admin/companies/${id}`, {
       method: 'DELETE',
+    });
+  }
+
+  async duplicateCompanyData(sourceCompanyId: number, targetCompanyId: number): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      sourceCompany: string;
+      targetCompany: string;
+      duplicatedModules: number;
+      duplicatedVideos: number;
+      duplicatedMCQs: number;
+      duplicatedResources: number;
+      progressRecordsCreated: number;
+    };
+  }> {
+    return this.request('/admin/companies/duplicate-data', {
+      method: 'POST',
+      body: JSON.stringify({ sourceCompanyId, targetCompanyId }),
     });
   }
 

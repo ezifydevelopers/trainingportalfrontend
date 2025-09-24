@@ -218,7 +218,6 @@ const EditModuleForm = memo<EditModuleFormProps>(({
       setOptions(['', '', '', '']);
       setCorrectAnswer(0);
     } catch (error) {
-      console.error('Error updating module:', error);
     }
   }, [module, moduleName, videoFile, videoDuration, mcqs, onSubmit]);
 

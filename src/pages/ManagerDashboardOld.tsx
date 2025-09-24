@@ -135,7 +135,6 @@ const ManagerDashboard = () => {
   }, [modules, selectedModule]);
   const trainees = traineesData || [];
 
-
   // Helper function to capitalize module name
   const capitalizeModuleName = (name: string) => {
     if (!name) return "";
@@ -187,7 +186,6 @@ const ManagerDashboard = () => {
   const addResourceMutation = useAddResource();
   const deleteResourceMutation = useDeleteResource();
 
-
   const handleUpdateCompanySubmit = async (companyName: string, logoFile: File | null) => {
     try {
       const formData = new FormData();
@@ -203,7 +201,6 @@ const ManagerDashboard = () => {
       toast.error("Failed to update company");
     }
   };
-
 
   const handleAddModule = () => {
     setShowVideoModuleDialog(true);
@@ -1197,7 +1194,6 @@ const ManagerDashboard = () => {
             </DialogContent>
           </Dialog>
         )}
-
 
         {/* Delete Module Dialog */}
         <AlertDialog open={showModuleDeleteDialog} onOpenChange={setShowModuleDeleteDialog}>

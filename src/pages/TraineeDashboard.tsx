@@ -45,8 +45,9 @@ export default function TraineeDashboard() {
 
     return modules.map((module) => {
       const isCompleted = module.completed;
-      const isAvailable = module.unlocked;
-      const isLocked = !module.unlocked;
+      // For resource modules, always keep them unlocked
+      const isAvailable = module.isResourceModule ? true : module.unlocked;
+      const isLocked = module.isResourceModule ? false : !module.unlocked;
       const isCurrent = !isCompleted && isAvailable;
       
       return (
@@ -135,7 +136,6 @@ export default function TraineeDashboard() {
       );
     });
   };
-
 
   if (!user || user.role !== "TRAINEE") {
     return <div>Access denied</div>;
@@ -428,8 +428,9 @@ export default function TraineeDashboard() {
                 {resourceModules.length > 0 ? (
                   resourceModules.map((module) => {
                     const isCompleted = module.completed;
-                    const isAvailable = module.unlocked;
-                    const isLocked = !module.unlocked;
+                    // Always keep resource modules unlocked/available
+                    const isAvailable = true; // module.unlocked;
+                    const isLocked = false; // !module.unlocked;
                     const isCurrent = !isCompleted && isAvailable;
                     
                     return (

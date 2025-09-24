@@ -30,50 +30,42 @@ class Logger {
 
   debug(...args: any[]): void {
     if (this.shouldLog('debug')) {
-      console.log('[DEBUG]', ...args);
     }
   }
 
   info(...args: any[]): void {
     if (this.shouldLog('info')) {
-      console.info('[INFO]', ...args);
     }
   }
 
   warn(...args: any[]): void {
     if (this.shouldLog('warn')) {
-      console.warn('[WARN]', ...args);
     }
   }
 
   error(...args: any[]): void {
     if (this.shouldLog('error')) {
-      console.error('[ERROR]', ...args);
     }
   }
 
   // Special methods for common debugging scenarios
   apiRequest(url: string, method: string, data?: any): void {
     if (this.shouldLog('debug')) {
-      console.log('[API REQUEST]', { url, method, data });
     }
   }
 
   apiResponse(url: string, status: number, data?: any): void {
     if (this.shouldLog('debug')) {
-      console.log('[API RESPONSE]', { url, status, data });
     }
   }
 
   websocketEvent(event: string, data?: any): void {
     if (this.shouldLog('debug')) {
-      console.log('[WEBSOCKET]', { event, data });
     }
   }
 
   userAction(action: string, data?: any): void {
     if (this.shouldLog('debug')) {
-      console.log('[USER ACTION]', { action, data });
     }
   }
 }
@@ -91,7 +83,7 @@ export const env = {
   isProduction,
   isDebugMode,
   apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:7001',
-  wsUrl: import.meta.env.VITE_WS_URL || 'ws://localhost:5000',
+  wsUrl: import.meta.env.VITE_WS_URL || 'ws://localhost:7001',
   appName: import.meta.env.VITE_APP_NAME || 'Training Portal',
   appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
 };

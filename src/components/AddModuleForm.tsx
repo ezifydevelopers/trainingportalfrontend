@@ -123,7 +123,6 @@ export default function AddModuleForm({
       setCorrectAnswer(0);
       setExplanation('');
     } catch (error) {
-      console.error('Error saving module:', error);
     }
   };
 

@@ -201,7 +201,6 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
           }
         });
       } catch (chatError) {
-        console.warn('Chat clear failed:', chatError);
       }
       
       // Try to mark system notifications as read
@@ -214,7 +213,6 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
           }
         });
       } catch (notificationError) {
-        console.warn('Notification clear failed:', notificationError);
       }
       
       // Refresh the unread count in the parent component
@@ -229,7 +227,6 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
       
       toast.success('All notifications cleared');
     } catch (error) {
-      console.error('Error clearing all notifications:', error);
       toast.error('Failed to clear notifications');
     } finally {
       setIsClearingAll(false);
@@ -263,7 +260,6 @@ export default function MessageNotification({ unreadCount, onNotificationClick, 
         onUnreadCountChange();
       }
     } catch (error) {
-      console.error('Error marking message as read:', error);
     }
     
     onNotificationClick(notification.chatRoomId);

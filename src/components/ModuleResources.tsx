@@ -67,7 +67,6 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
 
   const handleUploadResource = async (resourceFile: File, type: string, duration?: number, estimatedReadingTime?: number) => {
     // This would be handled by the parent component
-    console.log('Upload resource:', { resourceFile, type, duration, estimatedReadingTime });
     setShowUploadDialog(false);
     refetch();
   };
@@ -274,7 +273,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
               {selectedResource.type === 'PDF' ? (
                 <div className="w-full h-full">
                   <iframe
-                    src={selectedResource.url ? `http://localhost:7001${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/uploads/resources/${selectedResource.filePath}`}
+                    src={selectedResource.url ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}}/uploads/resources/${selectedResource.filePath}`}
                     className="w-full h-[600px] border-0 rounded-lg"
                     title={selectedResource.originalName || selectedResource.filename}
                   />
@@ -282,7 +281,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
               ) : selectedResource.type === 'IMAGE' ? (
                 <div className="text-center">
                   <img
-                    src={selectedResource.url ? `http://localhost:7001${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/uploads/resources/${selectedResource.filePath}`}
+                    src={selectedResource.url ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}}/uploads/resources/${selectedResource.filePath}`}
                     alt={selectedResource.originalName || selectedResource.filename}
                     className="max-w-full max-h-[600px] mx-auto rounded-lg shadow-lg"
                   />
@@ -290,7 +289,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
               ) : selectedResource.type === 'VIDEO' ? (
                 <div className="text-center">
                   <video
-                    src={selectedResource.url ? `http://localhost:7001${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/uploads/resources/${selectedResource.filePath}`}
+                    src={selectedResource.url ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}}/uploads/resources/${selectedResource.filePath}`}
                     controls
                     className="max-w-full max-h-[600px] mx-auto rounded-lg shadow-lg"
                   >
@@ -300,7 +299,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
               ) : selectedResource.type === 'AUDIO' ? (
                 <div className="text-center">
                   <audio
-                    src={selectedResource.url ? `http://localhost:7001${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/uploads/resources/${selectedResource.filePath}`}
+                    src={selectedResource.url ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}}/uploads/resources/${selectedResource.filePath}`}
                     controls
                     className="w-full max-w-md mx-auto"
                   >
@@ -321,7 +320,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
                   <Button
                     onClick={() => {
                       const link = document.createElement('a');
-                      link.href = selectedResource.url ? `http://localhost:7001${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/uploads/resources/${selectedResource.filePath}`;
+                      link.href = selectedResource.url ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}${selectedResource.url}` : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}}/uploads/resources/${selectedResource.filePath}`;
                       link.download = selectedResource.originalName || selectedResource.filename;
                       link.click();
                     }}
@@ -349,7 +348,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
                     size="sm"
                     onClick={() => {
                       const link = document.createElement('a');
-                      link.href = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/uploads/${selectedResource.filePath}`;
+                      link.href = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}}/uploads/${selectedResource.filePath}`;
                       link.download = selectedResource.originalName || selectedResource.filename;
                       link.click();
                     }}

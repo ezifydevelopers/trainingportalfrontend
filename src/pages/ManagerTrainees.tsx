@@ -36,7 +36,6 @@ const ManagerTrainees = () => {
   // Delete trainee mutation
   const deleteTraineeMutation = useDeleteTrainee();
 
-
   // Get manager's assigned companies
   const { data: managerCompaniesData, isLoading: managerCompaniesLoading } = useGetManagerCompanies(user?.id || 0);
   const managerCompanies = useMemo(() => managerCompaniesData?.companies || [], [managerCompaniesData?.companies]);
@@ -104,7 +103,7 @@ const ManagerTrainees = () => {
     if (trainee && trainee.companyId) {
       navigate(`/manager/company/${trainee.companyId}/trainee/${traineeId}`);
     } else {
-      console.error('Company ID not found for trainee:', traineeId);
+
       toast.error('Unable to find company information for this trainee');
     }
   };
@@ -121,7 +120,7 @@ const ManagerTrainees = () => {
       toast.success(`Trainee ${traineeToDelete.name} deleted successfully`);
       setTraineeToDelete(null);
     } catch (error) {
-      console.error('Error deleting trainee:', error);
+
       toast.error('Failed to delete trainee');
     }
   };

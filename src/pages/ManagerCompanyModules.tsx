@@ -16,7 +16,7 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from '@/components/ui/alert-dialog';
-import { Plus, FileText, Video, Users, Upload, X, RefreshCw } from 'lucide-react';
+import { Plus, FileText, Video, Users, Upload, X, RefreshCw, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Module } from '@/shared/types/common.types';
 
@@ -28,6 +28,7 @@ import { useModuleManagement } from '@/features/modules/hooks/useModuleManagemen
 import CompanyHeader from '@/features/companies/components/CompanyHeader';
 import CompanyList from '@/features/companies/components/CompanyList';
 import ModuleList from '@/features/modules/components/ModuleList';
+import { DuplicateCompanyDialog } from '@/components/DuplicateCompanyDialog';
 import ModuleDetail from '@/features/modules/components/ModuleDetail';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
 
@@ -110,7 +111,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
   // Debug: Log module data to see if resources are included
   React.useEffect(() => {
     if (resourceModules.length > 0) {
-      console.log('Resource modules data:', resourceModules);
+
       resourceModules.forEach(module => {
         console.log(`Module ${module.name} (ID: ${module.id}):`, {
           resources: module.resources,
@@ -123,6 +124,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
 
   // Resource module dialog state
   const [showResourceModuleDialog, setShowResourceModuleDialog] = useState(false);
+  const [showDuplicateCompanyDialog, setShowDuplicateCompanyDialog] = useState(false);
   const [resourceModuleName, setResourceModuleName] = useState("");
   const [resourceFiles, setResourceFiles] = useState<File[]>([]);
 
@@ -138,7 +140,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
   }, [handleTabChange]);
 
   const handleRefreshModules = useCallback(() => {
-    console.log('Manual refresh triggered');
+
     queryClient.invalidateQueries({ queryKey: ['company-modules', selectedCompany?.id] });
     queryClient.refetchQueries({ queryKey: ['company-modules', selectedCompany?.id] });
   }, [queryClient, selectedCompany?.id]);
@@ -173,13 +175,12 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
 
       const moduleData = await moduleResponse.json();
       const moduleId = moduleData.module.id;
-      console.log('Created module with ID:', moduleId);
 
       // Upload files if any
       if (resourceFiles.length > 0) {
-        console.log('Uploading', resourceFiles.length, 'files to module', moduleId);
+
         for (const file of resourceFiles) {
-          console.log('Uploading file:', file.name, 'Type:', file.type);
+
           const formData = new FormData();
           formData.append('moduleId', moduleId.toString());
           formData.append('resourceFile', file);
@@ -203,7 +204,6 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
           }
           
           formData.append('type', resourceType);
-          console.log('Mapped file type:', file.type, 'to resource type:', resourceType);
 
           const resourceResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:7001/api'}/admin/resources`, {
             method: 'POST',
@@ -215,12 +215,12 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
 
           if (!resourceResponse.ok) {
             const errorData = await resourceResponse.json();
-            console.error('Resource upload failed:', errorData);
+
             throw new Error(`Failed to upload resource: ${errorData.message || 'Unknown error'}`);
           }
 
           const resourceData = await resourceResponse.json();
-          console.log('Resource uploaded successfully:', resourceData);
+
         }
       }
 
@@ -230,7 +230,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
       setResourceFiles([]);
       
       // Refresh modules by invalidating the query cache
-      console.log('Invalidating queries for company:', selectedCompany.id);
+
       queryClient.invalidateQueries({ queryKey: ['company-modules', selectedCompany.id] });
       
       // Also invalidate all modules queries to ensure data consistency
@@ -239,11 +239,11 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
       
       // Force a refetch after a short delay to ensure backend has processed the uploads
       setTimeout(() => {
-        console.log('Force refetching modules...');
+
         queryClient.refetchQueries({ queryKey: ['company-modules', selectedCompany.id] });
       }, 1000);
     } catch (error) {
-      console.error('Error creating resource module:', error);
+
       toast.error('Failed to create resource module');
     }
   }, [resourceModuleName, selectedCompany, resourceFiles, queryClient]);
@@ -278,6 +278,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
           onShowNewCompany={undefined} // Managers can't create companies
           onShowAddModule={handleShowAddModule}
           onShowAddResource={handleAddResourceModule}
+          onShowDuplicateCompany={() => setShowDuplicateCompanyDialog(true)}
           isManagerView={true}
         />
 
@@ -380,7 +381,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
           onClose={() => {}}
           onSubmit={async (moduleId: number, files: File[]) => {
             // Handle resource upload
-            console.log('Uploading resources to module:', moduleId, files);
+
           }}
           isLoading={false}
         />
@@ -515,6 +516,13 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Duplicate Company Dialog */}
+        <DuplicateCompanyDialog
+          isOpen={showDuplicateCompanyDialog}
+          onClose={() => setShowDuplicateCompanyDialog(false)}
+          companies={companies}
+        />
       </div>
     </ErrorBoundary>
   );

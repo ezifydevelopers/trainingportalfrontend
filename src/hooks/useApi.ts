@@ -121,7 +121,6 @@ export const useCreateTrainee = () => {
   });
 };
 
-
 export const useDeleteTrainee = () => {
   const queryClient = useQueryClient();
   
@@ -198,6 +197,22 @@ export const useDeleteCompany = () => {
       // Invalidate and refetch companies data
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['public-companies'] });
+    },
+  });
+};
+
+export const useDuplicateCompanyData = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ sourceCompanyId, targetCompanyId }: { sourceCompanyId: number; targetCompanyId: number }) => 
+      apiClient.duplicateCompanyData(sourceCompanyId, targetCompanyId),
+    onSuccess: () => {
+      // Invalidate and refetch companies and modules data
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['public-companies'] });
+      queryClient.invalidateQueries({ queryKey: ['company-modules'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-modules'] });
     },
   });
 };

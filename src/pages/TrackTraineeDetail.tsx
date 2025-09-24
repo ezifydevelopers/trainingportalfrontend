@@ -16,8 +16,6 @@ export default function TrackTraineeDetail() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
   // Debug logging
-  console.log('TrackTraineeDetail Debug:', { id, urlTraineeId, traineeId, currentPath: location.pathname });
-
   // Determine appropriate back navigation based on current route
   const getBackNavigation = () => {
     const currentPath = location.pathname;

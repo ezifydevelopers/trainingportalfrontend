@@ -61,9 +61,8 @@ class WebSocketService {
     }
 
     this.userId = userId;
-    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}/ws?userId=${userId}`;
-    
-    
+    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:7001'}/ws?userId=${userId}`;
+
     try {
       this.ws = new WebSocket(wsUrl);
       this.setupWebSocketHandlers();
@@ -112,14 +111,11 @@ class WebSocketService {
   }
 
   private handleMessage(message: WebSocketMessage) {
-    console.log('WebSocket message received:', message);
     const handlers = this.messageHandlers.get(message.type) || [];
-    console.log(`Handlers for ${message.type}:`, handlers.length);
     handlers.forEach(handler => {
       try {
         handler(message.data);
       } catch (error) {
-        console.error('Error in WebSocket handler:', error);
       }
     });
   }
@@ -131,8 +127,7 @@ class WebSocketService {
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
-    
+
     setTimeout(() => {
       if (this.userId && !this.isConnected) {
         this.connect(this.userId);

@@ -34,10 +34,7 @@ const ModuleDetail = memo<ModuleDetailProps>(({
   const [videoError, setVideoError] = useState<string | null>(null);
 
   // Debug video data
-  console.log('ModuleDetail - Module data:', module);
-  console.log('ModuleDetail - Videos:', module?.videos);
   if (module?.videos?.[0]) {
-    console.log('ModuleDetail - First video:', module.videos[0]);
     console.log('ModuleDetail - Video URL:', getVideoUrl(module.videos[0].url));
   }
   const formatDuration = useMemo(() => (seconds: number) => {
@@ -120,10 +117,7 @@ const ModuleDetail = memo<ModuleDetailProps>(({
                   onError={(e) => {
                     setIsVideoLoading(false);
                     setVideoError('Failed to load video. Please check your internet connection and try again.');
-                    console.error('Video loading error:', e);
                     console.error('Video URL:', getVideoUrl(module.videos[0].url));
-                    console.error('Original video URL:', module.videos[0].url);
-                    console.error('Video element:', e.target);
                   }}
                 >
                   <source src={getVideoUrl(module.videos[0].url)} type="video/mp4" />

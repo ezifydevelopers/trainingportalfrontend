@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { ArrowLeft, Plus, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Company } from '@/shared/types/common.types';
@@ -12,6 +12,7 @@ interface CompanyHeaderProps {
   onShowNewCompany?: () => void;
   onShowAddModule?: () => void;
   onShowAddResource?: () => void;
+  onShowDuplicateCompany?: () => void;
   isManagerView?: boolean;
 }
 
@@ -23,6 +24,7 @@ const CompanyHeader = memo<CompanyHeaderProps>(({
   onShowNewCompany,
   onShowAddModule,
   onShowAddResource,
+  onShowDuplicateCompany,
   isManagerView = false
 }) => {
   if (selectedCompany) {
@@ -92,16 +94,28 @@ const CompanyHeader = memo<CompanyHeaderProps>(({
               className="pl-8 sm:pl-10 w-full sm:w-64 bg-white/10 border-white/20 text-white placeholder:text-blue-200 focus:bg-white/20 text-sm sm:text-base h-9 sm:h-10"
             />
           </div>
-          {!isManagerView && onShowNewCompany && (
-            <Button 
-              onClick={onShowNewCompany}
-              className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 rounded-lg sm:rounded-xl shadow-lg text-sm sm:text-base w-full sm:w-auto"
-            >
-              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Create Company</span>
-              <span className="sm:hidden">Create</span>
-            </Button>
-          )}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+            {!isManagerView && onShowNewCompany && (
+              <Button 
+                onClick={onShowNewCompany}
+                className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 rounded-lg sm:rounded-xl shadow-lg text-sm sm:text-base w-full sm:w-auto"
+              >
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Create Company</span>
+                <span className="sm:hidden">Create</span>
+              </Button>
+            )}
+            {onShowDuplicateCompany && (
+              <Button 
+                onClick={onShowDuplicateCompany}
+                className="bg-green-600 text-white hover:bg-green-700 font-medium px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3 rounded-lg sm:rounded-xl shadow-lg text-sm sm:text-base w-full sm:w-auto"
+              >
+                <Copy className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Duplicate Data</span>
+                <span className="sm:hidden">Duplicate</span>
+              </Button>
+            )}
+          </div>
         </div>
         </div>
       </div>

@@ -154,7 +154,6 @@ const AddModuleForm = memo<AddModuleFormProps>(({
       setOptions(['', '', '', '']);
       setCorrectAnswer(0);
     } catch (error) {
-      console.error('Error creating module:', error);
     }
   }, [moduleName, videoFile, videoDuration, mcqs, onSubmit]);
 

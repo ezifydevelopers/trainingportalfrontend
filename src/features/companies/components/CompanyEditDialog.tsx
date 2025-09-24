@@ -99,7 +99,6 @@ const CompanyEditDialog = memo<CompanyEditDialogProps>(({
       setLogoFile(null);
       setLogoPreview('');
     } catch (error) {
-      console.error('Error updating company:', error);
     }
   }, [company, name, description, logoFile, onSubmit]);
 

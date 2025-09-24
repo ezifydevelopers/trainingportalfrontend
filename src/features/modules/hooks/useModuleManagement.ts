@@ -111,16 +111,13 @@ export const useModuleManagement = (companyId: number | null) => {
       
       // 3. Add MCQs to module (optional)
       if (moduleData.mcqs && moduleData.mcqs.length > 0) {
-        console.log('Adding MCQs to module:', moduleId, moduleData.mcqs);
         setUploadProgress(90);
         toast.loading("Step 3/3: Adding quiz questions...", { id: loadingToast });
         try {
           await addMCQsMutation.mutateAsync({ moduleId, mcqs: moduleData.mcqs });
-          console.log('MCQs added successfully');
           setUploadProgress(100);
           toast.success("✅ Module, video, and MCQs added successfully!", { id: loadingToast });
         } catch (mcqError) {
-          console.error('MCQ addition failed:', mcqError);
           toast.error("Module and video created, but failed to add quiz questions.", { id: loadingToast });
         }
       } else {
@@ -136,7 +133,6 @@ export const useModuleManagement = (companyId: number | null) => {
       queryClient.invalidateQueries({ queryKey: ['company-modules', companyId] });
       
     } catch (error) {
-      console.error('Error creating module:', error);
       toast.error(`Failed to create module: ${error.message || 'Unknown error'}`);
       setUploadProgress(0);
     } finally {
@@ -188,7 +184,6 @@ export const useModuleManagement = (companyId: number | null) => {
       toast.success('Module updated successfully');
       queryClient.invalidateQueries({ queryKey: ['company-modules', companyId] });
     } catch (error) {
-      console.error('Error updating module:', error);
       toast.error('Failed to update module');
     }
   }, [updateModuleMutation, addVideoMutation, addMCQsMutation, queryClient, companyId]);
@@ -201,7 +196,6 @@ export const useModuleManagement = (companyId: number | null) => {
       toast.success(`Module "${moduleName}" deleted successfully`);
       queryClient.invalidateQueries({ queryKey: ['company-modules', companyId] });
     } catch (error) {
-      console.error('Error deleting module:', error);
       toast.error('Failed to delete module');
     } finally {
       setDeletingModuleId(null);
