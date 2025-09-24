@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - staging
 
 jobs:
   deploy:
@@ -12,7 +13,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Deploy via SSH
+      # Staging deployment
+      - name: Deploy to Staging VPS
+        if: github.ref == 'refs/heads/staging'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -20,6 +23,25 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /home/staging/apps/staging/trainingportalfrontend
+            git fetch --all
+            git reset --hard origin/staging
+            git pull origin staging
+            npm install
+            npm run build
+            sudo systemctl restart nginx
+
+      # Production deployment
+      - name: Deploy to Production VPS
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USERNAME }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /home/dev/apps/trainingportalfrontend
+            git fetch --all
+            git reset --hard origin/main
             git pull origin main
             npm install
             npm run build
