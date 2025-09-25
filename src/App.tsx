@@ -32,7 +32,7 @@ import MobileTest from "./pages/MobileTest";
 
 const queryClient = new QueryClient();
 
-// Dashboard redirect component
+// Dashboard redirect component we can remove this later
 const DashboardRedirect = () => {
   const { user } = useAuth();
   
@@ -48,9 +48,9 @@ const DashboardRedirect = () => {
 };
 
 // Protected route component
-const ProtectedRoute = ({ 
+const ProtectedRoute = ({
   children, 
-  allowedRoles = ["TRAINEE", "MANAGER", "ADMIN"] 
+  allowedRoles = ["TRAINEE", "MANAGER", "ADMIN"]
 }: { 
   children: React.ReactNode, 
   allowedRoles?: UserRole[] 

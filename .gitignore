@@ -27,13 +27,17 @@ dist-ssr
 uploads/
 dist/
 
-# Environment variables
+# Environment variables (CRITICAL - Never commit these)
 .env
 .env.local
+.env.development
+.env.staging
+.env.production
 .env.development.local
-.env.test.local
+.env.staging.local
 .env.production.local
+.env.test.local
 
 # Environment example files (keep these in version control)
-!.env.exampledist/
+!.env.example
 dist/
