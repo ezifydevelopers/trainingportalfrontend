@@ -13,7 +13,7 @@ Create a `.env` file in your project root directory with the following variables
 # API CONFIGURATION
 # ===========================================
 # Backend API URL - Change this to your production API URL
-VITE_API_URL=http://localhost:7001
+VITE_API_BASE_URL=http://localhost:7001
 
 # WebSocket URL - Change this to your production WebSocket URL
 VITE_WS_URL=ws://localhost:5000
@@ -87,7 +87,7 @@ VITE_MOCK_API=false
 # PRODUCTION OVERRIDES
 # ===========================================
 # Uncomment and modify these for production deployment
-# VITE_API_URL=https://your-production-api.com
+# VITE_API_BASE_URL=https://your-production-api.com
 # VITE_WS_URL=wss://your-production-websocket.com
 # VITE_APP_ENV=production
 # VITE_DEBUG_MODE=false
@@ -107,7 +107,7 @@ VITE_MOCK_API=false
 
 ### 3. Current Usage in Your Project
 Your project currently uses these environment variables:
-- `VITE_API_URL` - Used in multiple files for API calls
+- `VITE_API_BASE_URL` - Used in multiple files for API calls
 - `VITE_WS_URL` - Used in websocketService.ts for WebSocket connections
 - `import.meta.env.MODE` - Used in AuthContext.tsx for development mode detection
 
@@ -128,7 +128,7 @@ When adding new environment variables:
 
 ```typescript
 // Accessing environment variables
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:7001';
+const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
 const isDebugMode = import.meta.env.VITE_DEBUG_MODE === 'true';
 const appEnv = import.meta.env.VITE_APP_ENV;
 

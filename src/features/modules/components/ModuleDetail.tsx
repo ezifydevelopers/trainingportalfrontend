@@ -258,7 +258,7 @@ const ModuleDetail = memo<ModuleDetailProps>(({
                         onClick={() => {
                           // Open the resource in a new tab using filePath
                           // Remove /api from the base URL since static files are served directly
-                          const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:7001').replace('/api', '');
+                          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
                           const resourceUrl = `${baseUrl}/uploads/resources/${resource.filePath}`;
                           window.open(resourceUrl, '_blank');
                         }}

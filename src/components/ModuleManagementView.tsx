@@ -161,9 +161,8 @@ export default function ModuleManagementView({
       <AddModuleForm
         isOpen={showAddModule}
         onClose={() => setShowAddModule(false)}
-        onSave={handleCreateModule}
-        isCreating={isCreatingModule}
-        uploadProgress={uploadProgress}
+        companyId={company.id}
+        isResourceModule={false}
       />
 
       {/* Modules List */}

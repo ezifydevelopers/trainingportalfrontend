@@ -365,9 +365,7 @@ export default function AdminCompanyModules() {
     }
     
     // Use base URL without /api for static files
-    const baseUrl = import.meta.env.VITE_API_URL ? 
-      import.meta.env.VITE_API_URL.replace('/api', '') : 
-      'http://localhost:7001';
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
     
     // If videoUrl already starts with /uploads/, use it directly
     if (videoUrl.startsWith('/uploads/')) {
@@ -389,9 +387,7 @@ export default function AdminCompanyModules() {
       return logoUrl;
     }
     // Use base URL without /api for static files
-    const baseUrl = import.meta.env.VITE_API_URL ? 
-      import.meta.env.VITE_API_URL.replace('/api', '') : 
-      'http://localhost:7001';
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
     const fullUrl = `${baseUrl}/uploads/${logoUrl}`;
     return fullUrl;
   };

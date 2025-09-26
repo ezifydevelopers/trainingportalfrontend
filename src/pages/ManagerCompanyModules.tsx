@@ -157,7 +157,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
       }
 
       // First create the module
-      const moduleResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:7001/api'}/admin/companies/${selectedCompany.id}/modules`, {
+      const moduleResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/api/admin/companies/${selectedCompany.id}/modules`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
           
           formData.append('type', resourceType);
 
-          const resourceResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:7001/api'}/admin/resources`, {
+          const resourceResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/api/admin/resources`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${authToken}`
@@ -362,8 +362,8 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
         <AddModuleForm
           isOpen={showAddModule}
           onClose={handleCloseAddModule}
-          onSubmit={handleCreateModule}
-          isLoading={isCreatingModule}
+          companyId={selectedCompanyId}
+          isResourceModule={false}
         />
 
         <EditModuleForm

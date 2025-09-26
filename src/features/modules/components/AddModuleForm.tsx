@@ -17,6 +17,8 @@ import {
   Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAtomicModuleCreation } from '@/hooks/useAtomicModuleCreation';
+import ModuleCreationProgress from '@/components/ModuleCreationProgress';
 
 interface MCQ {
   question: string;
@@ -28,24 +30,15 @@ interface MCQ {
 interface AddModuleFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: {
-    name: string;
-    videoFile?: File;
-    duration?: number;
-    mcqs?: MCQ[];
-  }) => Promise<void>;
-  isLoading?: boolean;
-  uploadProgress?: number;
-  isUploadingVideo?: boolean;
+  companyId: number;
+  isResourceModule?: boolean;
 }
 
 const AddModuleForm = memo<AddModuleFormProps>(({
   isOpen,
   onClose,
-  onSubmit,
-  isLoading = false,
-  uploadProgress = 0,
-  isUploadingVideo = false
+  companyId,
+  isResourceModule = false
 }) => {
   const [moduleName, setModuleName] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -61,6 +54,13 @@ const AddModuleForm = memo<AddModuleFormProps>(({
   const [correctAnswer, setCorrectAnswer] = useState(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Progress tracking state
+  const [showProgress, setShowProgress] = useState(false);
+  const [sessionId, setSessionId] = useState('');
+
+  // Atomic module creation hook
+  const { createModule, isCreating, error } = useAtomicModuleCreation();
 
   // Video handling
   const handleVideoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,7 +127,7 @@ const AddModuleForm = memo<AddModuleFormProps>(({
     setMcqs(mcqs.filter((_, i) => i !== idx));
   }, [mcqs]);
 
-  // Form submission
+  // Form submission using atomic creation
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -136,26 +136,47 @@ const AddModuleForm = memo<AddModuleFormProps>(({
       return;
     }
 
+    if (!videoFile) {
+      toast.error("Please select a video file");
+      return;
+    }
+
+    if (!videoDuration || videoDuration <= 0) {
+      toast.error("Please wait for video duration to load or try a different video");
+      return;
+    }
+
     try {
-      await onSubmit({
+      const result = await createModule({
+        companyId,
         name: moduleName,
-        videoFile: videoFile || undefined,
-        duration: videoDuration || undefined,
+        isResourceModule,
+        videoFile,
+        duration: videoDuration,
         mcqs: mcqs.length > 0 ? mcqs : undefined
       });
-      
-      // Reset form
-      setModuleName('');
-      setVideoFile(null);
-      setVideoPreview('');
-      setVideoDuration(0);
-      setMcqs([]);
-      setQuestion('');
-      setOptions(['', '', '', '']);
-      setCorrectAnswer(0);
+
+      if (result.success) {
+        setSessionId(result.sessionId);
+        setShowProgress(true);
+        // Don't close the form yet - let progress component handle it
+      }
     } catch (error) {
+      console.error('Error creating module:', error);
     }
-  }, [moduleName, videoFile, videoDuration, mcqs, onSubmit]);
+  }, [moduleName, videoFile, videoDuration, mcqs, companyId, isResourceModule, createModule]);
+
+  // Progress handlers
+  const handleProgressSuccess = useCallback((data: any) => {
+    toast.success('Module created successfully!');
+    setShowProgress(false);
+    handleClose();
+  }, []);
+
+  const handleProgressError = useCallback((error: string) => {
+    toast.error(`Module creation failed: ${error}`);
+    setShowProgress(false);
+  }, []);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -168,6 +189,8 @@ const AddModuleForm = memo<AddModuleFormProps>(({
     setQuestion('');
     setOptions(['', '', '', '']);
     setCorrectAnswer(0);
+    setShowProgress(false);
+    setSessionId('');
   }, [onClose]);
 
   return (
@@ -406,24 +429,24 @@ const AddModuleForm = memo<AddModuleFormProps>(({
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={isLoading}
+              disabled={isCreating || showProgress}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="bg-blue-600 hover:bg-blue-700"
-              disabled={isLoading || isUploadingVideo || !moduleName.trim()}
+              disabled={isCreating || showProgress || !moduleName.trim() || !videoFile || !videoDuration}
             >
-              {isLoading ? (
+              {isCreating ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
                   Creating...
                 </>
-              ) : isUploadingVideo ? (
+              ) : showProgress ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
-                  Uploading Video...
+                  Processing...
                 </>
               ) : (
                 <>
@@ -435,6 +458,15 @@ const AddModuleForm = memo<AddModuleFormProps>(({
           </div>
         </form>
       </div>
+
+      {/* Progress Tracking Component */}
+      <ModuleCreationProgress
+        sessionId={sessionId}
+        isVisible={showProgress}
+        onClose={() => setShowProgress(false)}
+        onSuccess={handleProgressSuccess}
+        onError={handleProgressError}
+      />
     </ModalDialog>
   );
 });

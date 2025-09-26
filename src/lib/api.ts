@@ -1,9 +1,9 @@
 import { logger } from './logger';
 
-// Get the base URL without /api for static files
+// Get the base URL (without /api) from environment
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
-// Get the API URL with /api for API calls
-const API_BASE_URL = import.meta.env.VITE_API_URL || `${BASE_URL}/api`;
+// Get the API base URL (with /api) for API calls
+const API_BASE_URL = `${BASE_URL}/api`;
 
 // Export the API base URL for use in other files
 export const getApiBaseUrl = () => API_BASE_URL;
