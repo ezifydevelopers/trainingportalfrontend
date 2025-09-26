@@ -1,9 +1,14 @@
 import { logger } from './logger';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7001/api';
+// Get the base URL without /api for static files
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
+// Get the API URL with /api for API calls
+const API_BASE_URL = import.meta.env.VITE_API_URL || `${BASE_URL}/api`;
 
 // Export the API base URL for use in other files
 export const getApiBaseUrl = () => API_BASE_URL;
+// Export the base URL for static files
+export const getBaseUrl = () => BASE_URL;
 
 // Types based on the backend API
 export interface User {

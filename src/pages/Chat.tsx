@@ -611,23 +611,32 @@ export default function Chat() {
                         {getOtherParticipant(selectedChatRoom)?.name}
                       </h3>
                       <div className="flex items-center gap-1 sm:gap-2 mt-1">
-                        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
-                          onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) 
-                            ? 'bg-green-500' 
-                            : 'bg-gray-400'
-                        }`} />
-                        <span className="text-xs sm:text-sm text-gray-600">
-                          {onlineUsers.has(getOtherParticipant(selectedChatRoom)!.id) ? 'Online' : 'Offline'}
-                        </span>
-                        <Badge 
-                          className={`text-xs px-1.5 sm:px-2 py-0.5 font-semibold ${
-                            getOtherParticipant(selectedChatRoom)?.role === 'ADMIN' 
-                              ? 'bg-yellow-500 text-white' 
-                              : 'bg-green-500 text-white'
-                          }`}
-                        >
-                          {getOtherParticipant(selectedChatRoom)?.role}
-                        </Badge>
+                        {(() => {
+                          const otherUser = getOtherParticipant(selectedChatRoom);
+                          if (!otherUser) return null;
+                          
+                          return (
+                            <>
+                              <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
+                                onlineUsers.has(otherUser.id) 
+                                  ? 'bg-green-500' 
+                                  : 'bg-gray-400'
+                              }`} />
+                              <span className="text-xs sm:text-sm text-gray-600">
+                                {onlineUsers.has(otherUser.id) ? 'Online' : 'Offline'}
+                              </span>
+                              <Badge 
+                                className={`text-xs px-1.5 sm:px-2 py-0.5 font-semibold ${
+                                  otherUser.role === 'ADMIN' 
+                                    ? 'bg-yellow-500 text-white' 
+                                    : 'bg-green-500 text-white'
+                                }`}
+                              >
+                                {otherUser.role}
+                              </Badge>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

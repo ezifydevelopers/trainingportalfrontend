@@ -14,7 +14,7 @@ import HelpRequestButton from "@/components/HelpRequestButton";
 import FeedbackModal from "@/components/FeedbackModal";
 import ResourceViewer from "@/components/ResourceViewer";
 import ModuleResources from "@/components/ModuleResources";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiBaseUrl, getBaseUrl } from "@/lib/api";
 
 export default function TrainingModule() {
   const { moduleId } = useParams();
@@ -288,15 +288,11 @@ export default function TrainingModule() {
       fullUrl = videoUrl;
     } else if (videoUrl.startsWith('/uploads/')) {
       // Video URL already has /uploads/ prefix, just add the base URL
-      const baseUrl = import.meta.env.VITE_API_URL ? 
-        import.meta.env.VITE_API_URL.replace('/api', '') : 
-        'http://localhost:7001';
+      const baseUrl = getBaseUrl();
       fullUrl = `${baseUrl}${videoUrl}`;
     } else {
       // Video URL is just a filename, add /uploads/ prefix
-      const baseUrl = import.meta.env.VITE_API_URL ? 
-        import.meta.env.VITE_API_URL.replace('/api', '') : 
-        'http://localhost:7001';
+      const baseUrl = getBaseUrl();
       fullUrl = `${baseUrl}/uploads/${videoUrl}`;
     }
     

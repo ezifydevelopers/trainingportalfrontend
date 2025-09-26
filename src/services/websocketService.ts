@@ -61,7 +61,19 @@ class WebSocketService {
     }
 
     this.userId = userId;
-    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:7001'}/ws?userId=${userId}`;
+    // Construct WebSocket URL properly
+    const baseUrl = import.meta.env.VITE_WS_URL || (import.meta.env.DEV ? 'ws://localhost:7001' : '');
+    
+    if (!baseUrl) {
+      console.error('WebSocket URL not configured. Please set VITE_WS_URL environment variable.');
+      return;
+    }
+    
+    // Ensure we don't add /api to WebSocket URL
+    const cleanBaseUrl = baseUrl.replace('/api', '');
+    const wsUrl = `${cleanBaseUrl}/ws?userId=${userId}`;
+    
+    console.log('WebSocket connecting to:', wsUrl);
 
     try {
       this.ws = new WebSocket(wsUrl);
