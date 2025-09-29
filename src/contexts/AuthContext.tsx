@@ -82,8 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // Token is valid, restore user
               setUser(parsedUser);
               
-              // Connect to WebSocket for real-time notifications
-              websocketService.connect(parsedUser.id);
+              // Connect to WebSocket for real-time notifications (only if not already connected)
+              if (!websocketService.getConnectionStatus()) {
+                websocketService.connect(parsedUser.id);
+              }
             } else {
               // Token is invalid, clear storage and cache
               localStorage.removeItem('authToken');
@@ -95,8 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // On network error, still restore user but token might be invalid
             setUser(parsedUser);
             
-            // Connect to WebSocket for real-time notifications
-            websocketService.connect(parsedUser.id);
+            // Connect to WebSocket for real-time notifications (only if not already connected)
+            if (!websocketService.getConnectionStatus()) {
+              websocketService.connect(parsedUser.id);
+            }
           } finally {
             setIsLoading(false);
           }
@@ -143,8 +147,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set user
       setUser(response.user);
       
-      // Connect to WebSocket for real-time notifications
-      websocketService.connect(response.user.id);
+      // Connect to WebSocket for real-time notifications (only if not already connected)
+      if (!websocketService.getConnectionStatus()) {
+        websocketService.connect(response.user.id);
+      }
       
       return true;
     } catch (error) {

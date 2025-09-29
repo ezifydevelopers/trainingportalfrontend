@@ -27,6 +27,8 @@ class WebSocketService {
   private messageHandlers: Map<string, Function[]> = new Map();
   private isConnected = false;
   private userId: number | null = null;
+  private lastConnectionAttempt = 0;
+  private connectionDebounceMs = 2000; // 2 seconds debounce
 
   constructor() {
     this.setupEventListeners();
@@ -35,22 +37,35 @@ class WebSocketService {
   private setupEventListeners() {
     // Handle page visibility changes to reconnect when tab becomes visible
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && !this.isConnected && this.userId && this.ws?.readyState !== WebSocket.CONNECTING) {
+      if (!document.hidden && !this.isConnected && this.userId && 
+          (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+        console.log('Page visible, attempting to reconnect WebSocket...');
         this.connect(this.userId);
       }
     });
 
     // Handle online/offline events
     window.addEventListener('online', () => {
-      if (!this.isConnected && this.userId && this.ws?.readyState !== WebSocket.CONNECTING) {
+      if (!this.isConnected && this.userId && 
+          (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+        console.log('Network online, attempting to reconnect WebSocket...');
         this.connect(this.userId);
       }
     });
   }
 
   connect(userId: number) {
+    // Debounce connection attempts
+    const now = Date.now();
+    if (now - this.lastConnectionAttempt < this.connectionDebounceMs) {
+      console.log('WebSocket connection debounced, too soon since last attempt');
+      return;
+    }
+    this.lastConnectionAttempt = now;
+
     // Prevent multiple connections
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      console.log('WebSocket already connected or connecting, skipping...');
       return;
     }
 
@@ -79,6 +94,7 @@ class WebSocketService {
       this.ws = new WebSocket(wsUrl);
       this.setupWebSocketHandlers();
     } catch (error) {
+      console.error('WebSocket connection error:', error);
       this.scheduleReconnect();
     }
   }

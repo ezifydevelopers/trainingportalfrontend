@@ -38,6 +38,15 @@ interface ChatMessage {
   createdAt: string;
   isRead: boolean;
   chatRoomId: number; // Added for real-time handling
+  replyToMessageId?: number;
+  replyToMessage?: {
+    id: number;
+    content: string;
+    sender: {
+      id: number;
+      name: string;
+    };
+  };
 }
 
 interface ChatRoom {
@@ -64,6 +73,13 @@ export default function Chat() {
   useEffect(() => {
 
   }, [showUserList]);
+
+  // When a chat room is selected, hide the user list
+  useEffect(() => {
+    if (selectedChatRoom) {
+      setShowUserList(false);
+    }
+  }, [selectedChatRoom]);
   const [searchQuery, setSearchQuery] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,6 +88,24 @@ export default function Chat() {
   // Real-time chat state
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
+  
+  // Message selection and delete state
+  const [selectedMessages, setSelectedMessages] = useState<Set<number>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteType, setDeleteType] = useState<'single' | 'multiple' | 'chat' | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<number | number[] | null>(null);
+  
+  // WhatsApp-style state
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [contextMenuMessage, setContextMenuMessage] = useState<ChatMessage | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isLongPressing, setIsLongPressing] = useState(false);
+  
+  // Reply functionality
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [showReplyPreview, setShowReplyPreview] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollToBottom = () => {
@@ -168,7 +202,7 @@ export default function Chat() {
         }
       }
     } catch (error) {
-
+      console.error('Error:', error);
     }
   }, [unreadCount]);
 
@@ -240,7 +274,7 @@ export default function Chat() {
         setChatRooms(data);
       }
     } catch (error) {
-
+      console.error('Error:', error);
     }
   };
 
@@ -279,7 +313,7 @@ export default function Chat() {
         setMessages(data);
       }
     } catch (error) {
-
+      console.error('Error:', error);
     }
   };
 
@@ -369,6 +403,140 @@ export default function Chat() {
     }
   };
 
+  // Delete a single message
+  const deleteMessage = async (messageId: number) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch(`${getApiBaseUrl()}/chat/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        // Remove message from local state
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+        
+        // Update chat room in list
+        setChatRooms(prev => 
+          prev.map(room => 
+            room.id === selectedChatRoom?.id 
+              ? { ...room, messages: room.messages.filter(msg => msg.id !== messageId) }
+              : room
+          )
+        );
+        
+        toast.success('Message deleted successfully');
+      } else if (response.status === 401) {
+        console.error('Token expired or invalid, redirecting to login');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to delete message');
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    }
+  };
+
+  // Delete multiple messages
+  const deleteMultipleMessages = async (messageIds: number[]) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch(`${getApiBaseUrl()}/chat/messages/delete-multiple`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ messageIds })
+      });
+
+      if (response.ok) {
+        // Remove messages from local state
+        setMessages(prev => prev.filter(msg => !messageIds.includes(msg.id)));
+        
+        // Update chat room in list
+        setChatRooms(prev => 
+          prev.map(room => 
+            room.id === selectedChatRoom?.id 
+              ? { ...room, messages: room.messages.filter(msg => !messageIds.includes(msg.id)) }
+              : room
+          )
+        );
+        
+        toast.success(`${messageIds.length} messages deleted successfully`);
+      } else if (response.status === 401) {
+        console.error('Token expired or invalid, redirecting to login');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to delete messages');
+      }
+    } catch (error) {
+      console.error('Error deleting messages:', error);
+      toast.error('Failed to delete messages');
+    }
+  };
+
+  // Delete entire chat room
+  const deleteChatRoom = async (chatRoomId: number) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch(`${getApiBaseUrl()}/chat/rooms/${chatRoomId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        // Remove chat room from list
+        setChatRooms(prev => prev.filter(room => room.id !== chatRoomId));
+        
+        // If this was the selected chat room, clear it
+        if (selectedChatRoom?.id === chatRoomId) {
+          setSelectedChatRoom(null);
+          setMessages([]);
+        }
+        
+        toast.success('Chat room deleted successfully');
+      } else if (response.status === 401) {
+        console.error('Token expired or invalid, redirecting to login');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to delete chat room');
+      }
+    } catch (error) {
+      console.error('Error deleting chat room:', error);
+      toast.error('Failed to delete chat room');
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -379,6 +547,139 @@ export default function Chat() {
         sendTypingIndicator(selectedChatRoom.id, true);
       }
     }
+  };
+
+  // Message selection functions
+  const toggleMessageSelection = (messageId: number) => {
+    setSelectedMessages(prev => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(messageId)) {
+        newSelection.delete(messageId);
+      } else {
+        newSelection.add(messageId);
+      }
+      return newSelection;
+    });
+  };
+
+  const selectAllMessages = () => {
+    setSelectedMessages(new Set(messages.map(msg => msg.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedMessages(new Set());
+    setIsSelectionMode(false);
+  };
+
+  // Delete confirmation functions
+  const confirmDelete = (type: 'single' | 'multiple' | 'chat', target: number | number[]) => {
+    setDeleteType(type);
+    setDeleteTarget(target);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteType || !deleteTarget) return;
+
+    try {
+      switch (deleteType) {
+        case 'single':
+          await deleteMessage(deleteTarget as number);
+          break;
+        case 'multiple':
+          await deleteMultipleMessages(deleteTarget as number[]);
+          break;
+        case 'chat':
+          await deleteChatRoom(deleteTarget as number);
+          break;
+      }
+    } finally {
+      setShowDeleteConfirm(false);
+      setDeleteType(null);
+      setDeleteTarget(null);
+      clearSelection();
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setDeleteType(null);
+    setDeleteTarget(null);
+  };
+
+  // WhatsApp-style handlers
+  const handleMessageLongPress = (message: ChatMessage, event: React.MouseEvent | React.TouchEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (isLongPressing) return;
+    
+    setIsLongPressing(true);
+    
+    // Get position for context menu
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    setContextMenuPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    });
+    
+    setContextMenuMessage(message);
+    setShowContextMenu(true);
+    
+    // Add to selection
+    if (!isSelectionMode) {
+      setIsSelectionMode(true);
+    }
+    toggleMessageSelection(message.id);
+  };
+
+  const handleMessagePressStart = (message: ChatMessage, event: React.MouseEvent | React.TouchEvent) => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+    }
+    
+    const timer = setTimeout(() => {
+      handleMessageLongPress(message, event);
+    }, 500); // 500ms long press
+    
+    setLongPressTimer(timer);
+  };
+
+  const handleMessagePressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    setIsLongPressing(false);
+  };
+
+  const handleContextMenuAction = (action: 'delete-for-me' | 'delete-for-everyone' | 'copy' | 'reply') => {
+    if (!contextMenuMessage) return;
+    
+    switch (action) {
+      case 'delete-for-me':
+        confirmDelete('single', contextMenuMessage.id);
+        break;
+      case 'delete-for-everyone':
+        confirmDelete('single', contextMenuMessage.id);
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(contextMenuMessage.content);
+        toast.success('Message copied to clipboard');
+        break;
+      case 'reply':
+        // TODO: Implement reply functionality
+        toast.info('Reply functionality coming soon');
+        break;
+    }
+    
+    setShowContextMenu(false);
+    setContextMenuMessage(null);
+  };
+
+  const closeContextMenu = () => {
+    setShowContextMenu(false);
+    setContextMenuMessage(null);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -423,21 +724,21 @@ export default function Chat() {
 
     return (
     <Layout>
-      <div className="flex flex-col sm:flex-row h-[calc(100vh-4rem)] bg-gray-50">
+      <div className="flex flex-col sm:flex-row h-[calc(100vh-4rem)] bg-white">
         {/* Enhanced Chat Rooms Sidebar */}
-        <div className={`w-full sm:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col shadow-xl ${selectedChatRoom ? 'hidden sm:flex' : 'flex'}`}>
-          <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div className={`w-full sm:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col shadow-xl h-full ${selectedChatRoom ? 'hidden sm:flex' : 'flex'}`}>
+          <div className="p-3 sm:p-4 lg:p-6 text-gray-900">
             <div className="mb-3 sm:mb-4 lg:mb-6">
               <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold mb-1 sm:mb-2 lg:mb-3">Cross-Company Chat</h2>
-              <p className="text-blue-100 text-xs sm:text-sm lg:text-base xl:text-lg">Connect with trainees and managers from any company</p>
+              <p className="text-gray-600 text-xs sm:text-sm lg:text-base xl:text-lg">Connect with trainees and managers from any company</p>
             </div>
             
             <Button
               onClick={() => setShowUserList(!showUserList)}
               className={`w-full h-9 sm:h-10 lg:h-12 font-semibold text-xs sm:text-sm lg:text-base rounded-lg sm:rounded-xl shadow-lg ${
                 showUserList 
-                  ? 'bg-white text-blue-600 hover:bg-blue-50' 
-                  : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
               }`}
             >
               <Users className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 mr-1 sm:mr-2 lg:mr-3" />
@@ -445,32 +746,32 @@ export default function Chat() {
             </Button>
             
             {showUserList && (
-              <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
+              <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4 flex-1 flex flex-col min-h-0 max-h-[calc(100vh-200px)]">
                 <div className="relative">
                   <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                   <Input
                     placeholder="Search users..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 sm:pl-12 h-9 sm:h-10 lg:h-12 text-sm sm:text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg sm:rounded-xl bg-white/90"
+                    className="pl-10 sm:pl-12 h-9 sm:h-10 lg:h-12 text-sm sm:text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg sm:rounded-xl bg-white"
                   />
                 </div>
-                <ScrollArea className="h-64 sm:h-80 lg:h-96">
-                  <div className="space-y-2 sm:space-y-3 pr-2 sm:pr-3">
+                <div className="flex-1 min-h-0 bg-white overflow-y-auto max-h-96">
+                  <div className="space-y-2 sm:space-y-3 pr-2 sm:pr-3 pb-4 bg-white">
                     {filteredUsers.map((user) => (
                       <div
                         key={user.id}
-                        className="flex items-center p-3 sm:p-4 lg:p-5 hover:bg-white/20 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 border border-transparent hover:border-white/30 hover:shadow-lg transform hover:-translate-y-1"
+                        className="flex items-center p-3 sm:p-4 lg:p-5 hover:bg-gray-100 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 border border-transparent hover:border-gray-200 hover:shadow-lg transform hover:-translate-y-1"
                         onClick={() => startChatWithUser(user.id)}
                       >
-                        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 mr-3 sm:mr-4 ring-2 sm:ring-4 ring-white/20">
-                          <AvatarFallback className="text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-br from-white to-blue-100 text-blue-600">
+                        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14 mr-3 sm:mr-4 ring-2 sm:ring-4 ring-gray-200">
+                          <AvatarFallback className="text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                             {user.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-                            <p className="text-sm sm:text-base font-bold text-white truncate">{user.name}</p>
+                            <p className="text-sm sm:text-base font-bold text-gray-900 truncate">{user.name}</p>
                             <Badge 
                               className={`text-xs px-2 sm:px-3 py-0.5 sm:py-1 font-semibold ${
                                 user.role === 'ADMIN' 
@@ -481,9 +782,9 @@ export default function Chat() {
                               {user.role}
                             </Badge>
                           </div>
-                          <p className="text-xs sm:text-sm text-blue-100 truncate mb-1 sm:mb-2">{user.email}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 truncate mb-1 sm:mb-2">{user.email}</p>
                           {user.company && (
-                            <Badge className="text-xs px-2 sm:px-3 py-0.5 sm:py-1 bg-white/20 text-white border border-white/30">
+                            <Badge className="text-xs px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 text-gray-700 border border-gray-300">
                               {user.company.name}
                             </Badge>
                           )}
@@ -491,15 +792,15 @@ export default function Chat() {
                       </div>
                     ))}
                   </div>
-                </ScrollArea>
+                </div>
               </div>
             )}
           </div>
 
           {!showUserList && (
             <div className="flex-1 overflow-hidden bg-white">
-              <ScrollArea className="h-full">
-                <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
+              <ScrollArea className="h-full bg-white overflow-y-auto">
+                <div className="p-2 sm:p-3 space-y-1 sm:space-y-2 pb-4 bg-white">
                   {chatRooms.length === 0 ? (
                     <div className="text-center py-8 sm:py-12 lg:py-16">
                       <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
@@ -523,12 +824,15 @@ export default function Chat() {
                       return (
                         <div
                           key={chatRoom.id}
-                          className={`flex items-center p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                          className={`flex items-center p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 group relative ${
                             selectedChatRoom?.id === chatRoom.id 
                               ? 'bg-blue-50 border border-blue-300' 
                               : 'hover:bg-gray-50 border border-transparent hover:border-gray-200'
                           }`}
-                          onClick={() => setSelectedChatRoom(chatRoom)}
+                          onClick={() => {
+                            setSelectedChatRoom(chatRoom);
+                            setShowUserList(false);
+                          }}
                         >
                           <Avatar className="h-8 w-8 sm:h-10 sm:w-10 mr-2 sm:mr-3">
                             <AvatarFallback className="text-xs sm:text-sm font-semibold bg-gradient-to-br from-blue-500 to-blue-600 text-white">
@@ -571,6 +875,21 @@ export default function Chat() {
                               </div>
                             )}
                           </div>
+                          
+                          {/* Chat room delete button */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 absolute right-2 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDelete('chat', chatRoom.id);
+                            }}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </Button>
                         </div>
                       );
                     })
@@ -582,7 +901,7 @@ export default function Chat() {
         </div>
 
         {/* Enhanced Chat Area */}
-        <div className="flex-1 flex flex-col bg-gray-50">
+        <div className="flex-1 flex flex-col bg-white">
           {selectedChatRoom ? (
             <>
               {/* Mobile Chat Header - WhatsApp Style - Sticky */}
@@ -659,6 +978,17 @@ export default function Chat() {
                     <Button 
                       variant="ghost" 
                       size="sm"
+                      onClick={() => setIsSelectionMode(!isSelectionMode)}
+                      title={isSelectionMode ? "Exit Selection Mode" : "Select Messages"}
+                      className={`h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-gray-100 rounded-full ${
+                        isSelectionMode ? 'bg-blue-100 text-blue-600' : ''
+                      }`}
+                    >
+                      {isSelectionMode ? '✓' : '☐'}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
                       onClick={() => setShowNotificationSettings(true)}
                       title="Notification Settings"
                       className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-gray-100 rounded-full"
@@ -673,8 +1003,8 @@ export default function Chat() {
               </div>
 
               {/* Messages - WhatsApp Style */}
-              <div className="flex-1 overflow-hidden bg-gradient-to-b from-gray-50 to-white">
-                <ScrollArea className="h-full">
+              <div className="flex-1 overflow-hidden bg-white">
+                <ScrollArea className="h-full w-full">
                   <div className="p-2 sm:p-4 space-y-2 sm:space-y-3">
                     {messages.length === 0 ? (
                       <div className="text-center py-8 sm:py-12 lg:py-16">
@@ -689,22 +1019,73 @@ export default function Chat() {
                         {messages.map((message) => (
                           <div
                             key={message.id}
-                            className={`flex ${message.senderId === user.id ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${message.senderId === user.id ? 'justify-end' : 'justify-start'} group relative`}
                           >
                             <div
-                              className={`max-w-xs sm:max-w-sm lg:max-w-md px-3 py-2 rounded-2xl ${
+                              className={`max-w-xs sm:max-w-sm px-3 py-2 rounded-2xl transition-all duration-200 group relative ${
                                 message.senderId === user.id
                                   ? 'bg-blue-500 text-white rounded-br-md'
                                   : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md'
-                              }`}
+                              } ${isSelectionMode ? 'cursor-pointer' : ''} ${
+                                selectedMessages.has(message.id) ? 'ring-2 ring-blue-500 bg-blue-100' : ''
+                              } ${isLongPressing ? 'scale-105 shadow-lg' : ''}`}
+                              onClick={() => {
+                                if (isSelectionMode) {
+                                  toggleMessageSelection(message.id);
+                                }
+                              }}
+                              onMouseDown={(e) => handleMessagePressStart(message, e)}
+                              onMouseUp={handleMessagePressEnd}
+                              onMouseLeave={handleMessagePressEnd}
+                              onTouchStart={(e) => handleMessagePressStart(message, e)}
+                              onTouchEnd={handleMessagePressEnd}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                handleMessageLongPress(message, e);
+                              }}
                             >
-                              <p className="text-sm leading-relaxed break-words">{message.content}</p>
-                              <p className={`text-xs mt-1 ${
-                                message.senderId === user.id ? 'text-blue-100' : 'text-gray-500'
-                              }`}>
-                                {formatTime(message.createdAt)}
-                              </p>
+                              <p className="text-sm leading-relaxed break-words pr-8">{message.content}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <p className={`text-xs ${
+                                  message.senderId === user.id ? 'text-blue-100' : 'text-gray-500'
+                                }`}>
+                                  {formatTime(message.createdAt)}
+                                </p>
+                                {message.senderId === user.id && (
+                                  <div className="flex items-center ml-2">
+                                    <span className="text-xs text-blue-100">✓✓</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Three dots menu - WhatsApp style */}
+                              <button
+                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-black hover:bg-opacity-10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMessageLongPress(message, e);
+                                }}
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                              </button>
                             </div>
+                            
+                            {/* WhatsApp-style selection indicator */}
+                            {isSelectionMode && (
+                              <div className="absolute -left-2 top-1/2 transform -translate-y-1/2">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                  selectedMessages.has(message.id) 
+                                    ? 'bg-blue-500 border-blue-500' 
+                                    : 'border-gray-300 bg-white'
+                                }`}>
+                                  {selectedMessages.has(message.id) && (
+                                    <span className="text-white text-xs font-bold">✓</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                         
@@ -736,8 +1117,48 @@ export default function Chat() {
                 </ScrollArea>
               </div>
 
-              {/* Mobile Message Input - WhatsApp Style - Sticky */}
-              <div className="sticky bottom-0 z-10 p-2 sm:p-4 lg:p-6 border-t border-gray-200 bg-white shadow-sm">
+              {/* Selection Mode Controls */}
+              {isSelectionMode && (
+                <div className="sticky bottom-0 z-20 p-2 sm:p-4 lg:p-6 border-t border-gray-200 bg-blue-50 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-blue-900">
+                        {selectedMessages.size} message{selectedMessages.size !== 1 ? 's' : ''} selected
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={selectAllMessages}
+                        className="text-xs"
+                      >
+                        Select All
+                      </Button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => confirmDelete('multiple', Array.from(selectedMessages))}
+                        disabled={selectedMessages.size === 0}
+                        className="text-xs"
+                      >
+                        Delete Selected
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={clearSelection}
+                        className="text-xs"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Message Input - WhatsApp Style - Fixed */}
+              <div className="sticky bottom-0 z-10 p-2 sm:p-4 lg:p-6 border-t border-gray-200 bg-white shadow-lg">
                 <div className="flex space-x-2 sm:space-x-3">
                   <div className="flex-1 relative">
                     <Input
@@ -766,6 +1187,92 @@ export default function Chat() {
       {/* Notification Settings Modal */}
       {showNotificationSettings && (
         <NotificationSettings onClose={() => setShowNotificationSettings(false)} />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {deleteType === 'single' && 'Delete Message'}
+              {deleteType === 'multiple' && 'Delete Messages'}
+              {deleteType === 'chat' && 'Delete Chat Room'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {deleteType === 'single' && 'Are you sure you want to delete this message? This action cannot be undone.'}
+              {deleteType === 'multiple' && `Are you sure you want to delete ${Array.isArray(deleteTarget) ? deleteTarget.length : 0} selected messages? This action cannot be undone.`}
+              {deleteType === 'chat' && 'Are you sure you want to delete this chat room? This will remove all messages and participants. This action cannot be undone.'}
+            </p>
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={handleDeleteCancel}
+                className="px-4 py-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp-style Context Menu */}
+      {showContextMenu && contextMenuMessage && (
+        <div 
+          className="fixed inset-0 z-40"
+          onClick={closeContextMenu}
+        >
+          <div 
+            className="absolute bg-white rounded-lg shadow-xl border border-gray-200 py-2 min-w-48"
+            style={{
+              left: Math.min(contextMenuPosition.x - 100, window.innerWidth - 200),
+              top: Math.min(contextMenuPosition.y - 50, window.innerHeight - 200)
+            }}
+          >
+            <button
+              className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center space-x-3"
+              onClick={() => handleContextMenuAction('copy')}
+            >
+              <span className="text-gray-600">📋</span>
+              <span className="text-gray-900">Copy</span>
+            </button>
+            
+            <button
+              className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center space-x-3"
+              onClick={() => handleContextMenuAction('reply')}
+            >
+              <span className="text-gray-600">↩️</span>
+              <span className="text-gray-900">Reply</span>
+            </button>
+            
+            <div className="border-t border-gray-200 my-1"></div>
+            
+            <button
+              className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center space-x-3"
+              onClick={() => handleContextMenuAction('delete-for-me')}
+            >
+              <span className="text-gray-600">🗑️</span>
+              <span className="text-gray-900">Delete for me</span>
+            </button>
+            
+            {contextMenuMessage.senderId === user?.id && (
+              <button
+                className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center space-x-3"
+                onClick={() => handleContextMenuAction('delete-for-everyone')}
+              >
+                <span className="text-gray-600">🗑️</span>
+                <span className="text-gray-900">Delete for everyone</span>
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </Layout>
   );

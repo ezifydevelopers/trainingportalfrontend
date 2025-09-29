@@ -36,7 +36,10 @@ export function useRealTimeChat({
   // Connect to WebSocket when user logs in
   useEffect(() => {
     if (user?.id) {
-      websocketService.connect(user.id);
+      // Only connect if not already connected
+      if (!websocketService.getConnectionStatus()) {
+        websocketService.connect(user.id);
+      }
       
       // Set up message handlers
       websocketService.on('NEW_MESSAGE', onNewMessage);
@@ -50,7 +53,7 @@ export function useRealTimeChat({
         websocketService.off('TYPING', onTypingIndicator);
         websocketService.off('USER_ONLINE', onUserOnline);
         websocketService.off('USER_OFFLINE', onUserOffline);
-        websocketService.disconnect();
+        // Don't disconnect here - let AuthContext handle it
       };
     }
   }, [user?.id, onNewMessage, onTypingIndicator, onUserOnline, onUserOffline]);
