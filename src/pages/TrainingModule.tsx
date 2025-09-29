@@ -31,6 +31,9 @@ export default function TrainingModule() {
    const [isFullscreen, setIsFullscreen] = useState(false);
    const [isVideoLoading, setIsVideoLoading] = useState(true);
    const [videoError, setVideoError] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [isVideoPaused, setIsVideoPaused] = useState<boolean>(true);
 
   // Fetch module data from API
   const { 
@@ -163,13 +166,22 @@ export default function TrainingModule() {
   }
 
   const handleVideoComplete = async () => {
-    if (!moduleId) return;
+    console.log('🎬 Video completed! Module ID:', moduleId);
+    console.log('📚 Module data:', module);
+    
+    if (!moduleId) {
+      console.log('❌ No module ID found');
+      return;
+    }
     
     // Check if module has MCQs
     const hasMCQs = module?.mcqs && module.mcqs.length > 0;
+    console.log('❓ Module has MCQs:', hasMCQs);
+    console.log('📝 MCQs count:', module?.mcqs?.length || 0);
     
     if (hasMCQs) {
       // Module has MCQs - don't mark as completed yet, just show quiz prompt
+      console.log('📝 Module has MCQs, showing quiz prompt');
       setVideoCompleted(true);
       setVideoProgress(100);
       toast.success("Video completed! You can now take the quiz.");
@@ -177,9 +189,12 @@ export default function TrainingModule() {
     }
     
     // Module has no MCQs - mark as completed and auto-pass
+    console.log('✅ Module has no MCQs, marking as completed and auto-passing');
     try {
       // Call the API to mark the module as completed (auto-pass)
+      console.log('🔄 Calling completeModule API...');
       const result = await completeModuleMutation.mutateAsync(parseInt(moduleId));
+      console.log('✅ API response:', result);
       
       // Update local state
       setVideoCompleted(true);
@@ -192,6 +207,7 @@ export default function TrainingModule() {
         setShowFeedbackModal(true);
       }
     } catch (error) {
+      console.error('❌ Error calling completeModule API:', error);
       toast.error("Failed to mark video as completed. Please try again.");
     }
   };
@@ -276,6 +292,47 @@ export default function TrainingModule() {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Video control functions
+  const togglePlayPause = () => {
+    const video = (window as any).currentVideo;
+    if (video) {
+      if (video.paused) {
+        video.play();
+        setIsVideoPaused(false);
+        setIsVideoPlaying(true);
+      } else {
+        video.pause();
+        setIsVideoPaused(true);
+        setIsVideoPlaying(false);
+      }
+    }
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const video = (window as any).currentVideo;
+    if (video && video.duration) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
+      const clickTime = (clickX / width) * video.duration;
+      video.currentTime = clickTime;
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const video = (window as any).currentVideo;
+    if (video) {
+      video.volume = parseFloat(e.target.value);
+    }
+  };
+
+  const toggleMute = () => {
+    const video = (window as any).currentVideo;
+    if (video) {
+      video.muted = !video.muted;
+    }
   };
 
   const getVideoUrl = (videoUrl: string) => {
@@ -400,30 +457,41 @@ export default function TrainingModule() {
                             </div>
                           </div>
                         )}
-                        <video 
-                          ref={(el) => {
-                            if (el) {
-                              // Store video reference for controls
-                              (window as any).currentVideo = el;
-                            }
+                        <div className="relative bg-black rounded-lg overflow-hidden">
+                          <video 
+                            ref={(el) => {
+                              if (el) {
+                                // Store video reference for controls
+                                (window as any).currentVideo = el;
+                              }
+                            }}
+                            src={getVideoUrl(module.videos?.[0]?.url)} 
+                            className="w-full h-full"
+                            preload="metadata"
+                            draggable={false}
+                          onEnded={() => {
+                            console.log('🎬 Video onEnded event triggered');
+                            handleVideoComplete();
                           }}
-                          src={getVideoUrl(module.videos?.[0]?.url)} 
-                          controls
-                          controlsList="nodownload nofullscreen noremoteplayback"
-                          disablePictureInPicture
-                          className="w-full h-full"
-                          preload="metadata"
-                          draggable={false}
-                          onEnded={handleVideoComplete}
                           onTimeUpdate={(e) => {
                             const video = e.target as HTMLVideoElement;
                             const progress = (video.currentTime / video.duration) * 100;
                             setVideoProgress(progress);
+                            setCurrentTime(video.currentTime);
+                          }}
+                          onLoadedMetadata={(e) => {
+                            const video = e.target as HTMLVideoElement;
+                            setVideoDuration(video.duration);
+                          }}
+                          onPlay={() => {
+                            setIsVideoPlaying(true);
+                            setIsVideoPaused(false);
+                          }}
+                          onPause={() => {
+                            setIsVideoPlaying(false);
+                            setIsVideoPaused(true);
                           }}
                           onContextMenu={(e) => e.preventDefault()}
-                          onLoadedMetadata={(e) => {
-                            // Video metadata loaded
-                          }}
                           onLoadStart={() => {
                             setIsVideoLoading(true);
                             setVideoError(null);
@@ -436,12 +504,6 @@ export default function TrainingModule() {
                             setIsVideoLoading(false);
                             setVideoError('Failed to load video. Please check your internet connection and try again.');
                             toast.error('Failed to load video. Please try refreshing the page.');
-                          }}
-                          onPlay={() => {
-                            setIsVideoPlaying(true);
-                          }}
-                          onPause={() => {
-                            setIsVideoPlaying(false);
                           }}
                           onSeeked={(e) => {
                             // Prevent seeking by resetting to allowed position
@@ -499,6 +561,76 @@ export default function TrainingModule() {
                              }
                            }}
                         />
+                        
+                        {/* Custom Video Controls */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                          {/* Progress Bar */}
+                          <div className="mb-3">
+                            <div 
+                              className="w-full h-2 bg-white/30 rounded-full cursor-pointer hover:h-3 transition-all duration-200"
+                              onClick={handleProgressClick}
+                            >
+                              <div 
+                                className="h-full bg-blue-500 rounded-full transition-all duration-200"
+                                style={{ width: `${videoProgress}%` }}
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Control Buttons */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              {/* Play/Pause Button */}
+                              <button
+                                onClick={togglePlayPause}
+                                className="text-white hover:text-blue-400 transition-colors duration-200"
+                              >
+                                {isVideoPaused ? (
+                                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                  </svg>
+                                ) : (
+                                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                                  </svg>
+                                )}
+                              </button>
+                              
+                              {/* Time Display */}
+                              <div className="text-white text-sm font-mono">
+                                {formatTime(currentTime)} / {formatTime(videoDuration)}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-4">
+                              {/* Volume Control */}
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={toggleMute}
+                                  className="text-white hover:text-blue-400 transition-colors duration-200"
+                                >
+                                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                                  </svg>
+                                </button>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="1"
+                                  step="0.1"
+                                  defaultValue="1"
+                                  onChange={handleVolumeChange}
+                                  className="w-20 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                                />
+                              </div>
+                              
+                              {/* Progress Percentage */}
+                              <div className="text-white text-sm font-mono">
+                                {Math.round(videoProgress)}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                         
                                                  {/* Custom Play/Pause Button Overlay - Only show when video is loaded and paused */}
                          {!isVideoPlaying && !isVideoLoading && !videoError && (
@@ -576,6 +708,7 @@ export default function TrainingModule() {
                          <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-70 text-white text-xs p-2 rounded text-center">
                            ⚠️ Click play to start, click video to pause. You must watch the entire video to complete this module.
                          </div>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -583,15 +716,18 @@ export default function TrainingModule() {
                           <span>{Math.round(videoProgress)}%</span>
                         </div>
                         <Progress value={videoProgress} />
-                                                 <Button 
-                           onClick={handleVideoComplete} 
-                           size="sm" 
-                           className="mt-1"
-                           disabled={videoCompleted || videoProgress < 100}
-                         >
-                           {videoCompleted ? "Video Completed" : 
-                            videoProgress < 100 ? `Watch Complete Video (${Math.round(videoProgress)}%)` : "Mark as Watched"}
-                         </Button>
+                        <div className="flex space-x-2">
+                          <Button 
+                            onClick={handleVideoComplete} 
+                            size="sm" 
+                            className="mt-1"
+                            disabled={videoCompleted || videoProgress < 100}
+                          >
+                            {videoCompleted ? "Video Completed" : 
+                              videoProgress < 100 ? `Watch Complete Video (${Math.round(videoProgress)}%)` : "Mark as Watched"}
+                          </Button>
+                          
+                        </div>
                       </div>
                     </div>
                   ) : (

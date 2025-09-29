@@ -27,6 +27,14 @@ export default function TraineeDashboard() {
 
   // Helper function to render modules
   const renderModules = (modules) => {
+    console.log('🔍 Rendering modules:', modules.map((m, index) => ({
+      index: index + 1,
+      name: m.moduleName,
+      completed: m.completed,
+      unlocked: m.unlocked,
+      pass: m.pass,
+      score: m.marksObtained
+    })));
     if (!modules || modules.length === 0) {
       return (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -43,12 +51,25 @@ export default function TraineeDashboard() {
       );
     }
 
-    return modules.map((module) => {
+    return modules.map((module, index) => {
       const isCompleted = module.completed;
       // For resource modules, always keep them unlocked
       const isAvailable = module.isResourceModule ? true : module.unlocked;
-      const isLocked = module.isResourceModule ? false : !module.unlocked;
+      // A module should only be locked if it's not completed AND not unlocked
+      const isLocked = !isCompleted && (module.isResourceModule ? false : !module.unlocked);
       const isCurrent = !isCompleted && isAvailable;
+      
+      // Debug logging for the first few modules
+      if (index < 5) {
+        console.log(`Module ${index + 1} (${module.moduleName}):`, {
+          completed: isCompleted,
+          unlocked: module.unlocked,
+          isResourceModule: module.isResourceModule,
+          isAvailable,
+          isLocked,
+          isCurrent
+        });
+      }
       
       return (
         <div

@@ -519,7 +519,7 @@ export default function AdminCompanyModules() {
 
       const orderUpdates = displayModules.map((module, index) => ({
         id: module.id,
-        order: index
+        order: index + 1  // Fix: Start from 1, not 0
       }));
 
       const authToken = localStorage.getItem('authToken');
