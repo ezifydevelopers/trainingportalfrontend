@@ -1,7 +1,8 @@
 import { logger } from './logger';
 
 // Get the base URL (without /api) from environment
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.PROD ? 'https://ezifytraining.com' : 'http://localhost:7001');
 // Get the API base URL (with /api) for API calls
 const API_BASE_URL = `${BASE_URL}/api`;
 

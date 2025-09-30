@@ -19,6 +19,7 @@ import {
 import { Plus, FileText, Video, Users, Upload, X, RefreshCw, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Module } from '@/shared/types/common.types';
+import { getApiBaseUrl } from '@/lib/api';
 
 // Custom hooks
 import { useManagerCompanyManagement } from '@/features/companies/hooks/useManagerCompanyManagement';
@@ -156,8 +157,29 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
         return;
       }
 
+      // Validate token format
+      try {
+        const tokenParts = authToken.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid token format');
+        }
+        
+        // Check if token is expired
+        const payload = JSON.parse(atob(tokenParts[1]));
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < currentTime) {
+          throw new Error('Token expired');
+        }
+      } catch (tokenError) {
+        console.error('Token validation failed:', tokenError);
+        toast.error('Your session has expired. Please log in again.');
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+        return;
+      }
+
       // First create the module
-      const moduleResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/api/admin/companies/${selectedCompany.id}/modules`, {
+      const moduleResponse = await fetch(`${getApiBaseUrl()}/admin/companies/${selectedCompany.id}/modules`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,7 +227,7 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
           
           formData.append('type', resourceType);
 
-          const resourceResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/api/admin/resources`, {
+          const resourceResponse = await fetch(`${getApiBaseUrl()}/admin/resources`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${authToken}`
@@ -215,6 +237,24 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
 
           if (!resourceResponse.ok) {
             const errorData = await resourceResponse.json();
+            console.error('Resource upload error:', {
+              status: resourceResponse.status,
+              statusText: resourceResponse.statusText,
+              error: errorData
+            });
+
+            // Handle specific error cases
+            if (resourceResponse.status === 401) {
+              toast.error('Your session has expired. Please log in again.');
+              // Redirect to login or refresh token
+              localStorage.removeItem('authToken');
+              window.location.href = '/login';
+              return;
+            } else if (resourceResponse.status === 400) {
+              toast.error(`Upload failed: ${errorData.message || 'Invalid request data'}`);
+            } else {
+              toast.error(`Upload failed: ${errorData.message || 'Unknown error'}`);
+            }
 
             throw new Error(`Failed to upload resource: ${errorData.message || 'Unknown error'}`);
           }

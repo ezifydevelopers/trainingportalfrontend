@@ -77,7 +77,8 @@ class WebSocketService {
 
     this.userId = userId;
     // Construct WebSocket URL properly
-    const baseUrl = import.meta.env.VITE_WS_URL || (import.meta.env.DEV ? 'ws://localhost:7001' : '');
+    const baseUrl = import.meta.env.VITE_WS_URL || 
+      (import.meta.env.DEV ? 'ws://localhost:7001' : 'wss://ezifytraining.com');
     
     if (!baseUrl) {
       console.error('WebSocket URL not configured. Please set VITE_WS_URL environment variable.');

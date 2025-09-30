@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getVideoUrl } from '@/shared/utils/imageUtils';
 import { Module } from '@/shared/types/common.types';
+import { getBaseUrl } from '@/lib/api';
 
 interface ModuleDetailProps {
   module: Module | null;
@@ -258,7 +259,7 @@ const ModuleDetail = memo<ModuleDetailProps>(({
                         onClick={() => {
                           // Open the resource in a new tab using filePath
                           // Remove /api from the base URL since static files are served directly
-                          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
+                          const baseUrl = getBaseUrl();
                           const resourceUrl = `${baseUrl}/uploads/resources/${resource.filePath}`;
                           window.open(resourceUrl, '_blank');
                         }}

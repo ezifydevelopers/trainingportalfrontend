@@ -24,7 +24,7 @@ import {
   useDeleteResource,
   useDuplicateCompanyData
 } from "@/hooks/useApi";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiBaseUrl, getBaseUrl } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -365,7 +365,7 @@ export default function AdminCompanyModules() {
     }
     
     // Use base URL without /api for static files
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
+    const baseUrl = getBaseUrl();
     
     // If videoUrl already starts with /uploads/, use it directly
     if (videoUrl.startsWith('/uploads/')) {
@@ -387,7 +387,7 @@ export default function AdminCompanyModules() {
       return logoUrl;
     }
     // Use base URL without /api for static files
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001';
+    const baseUrl = getBaseUrl();
     const fullUrl = `${baseUrl}/uploads/${logoUrl}`;
     return fullUrl;
   };

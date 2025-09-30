@@ -82,9 +82,9 @@ export const env = {
   isStaging,
   isProduction,
   isDebugMode,
-  apiUrl: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001'}/api`,
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:7001',
-  wsUrl: import.meta.env.VITE_WS_URL || (import.meta.env.DEV ? 'ws://localhost:7001' : ''),
+  apiUrl: `${import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://ezifytraining.com' : 'http://localhost:7001')}/api`,
+  baseUrl: import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://ezifytraining.com' : 'http://localhost:7001'),
+  wsUrl: import.meta.env.VITE_WS_URL || (import.meta.env.DEV ? 'ws://localhost:7001' : 'wss://ezifytraining.com'),
   appName: import.meta.env.VITE_APP_NAME || 'Training Portal',
   appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
 };
