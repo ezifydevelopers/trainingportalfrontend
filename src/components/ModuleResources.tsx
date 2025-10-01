@@ -122,6 +122,27 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
     }
   };
 
+  const getResourceUrl = (resource: any) => {
+    if (resource.url) {
+      // If url exists but doesn't include /resources/, fix it
+      if (resource.url.includes('/uploads/') && !resource.url.includes('/uploads/resources/')) {
+        return resource.url.replace('/uploads/', '/uploads/resources/');
+      }
+      // If url is relative, prepend base URL
+      if (resource.url.startsWith('/')) {
+        return `${getBaseUrl()}${resource.url}`;
+      }
+      // If url is already absolute, use as is
+      if (resource.url.startsWith('http')) {
+        return resource.url;
+      }
+      // If url doesn't start with /, treat as relative to base URL
+      return `${getBaseUrl()}/${resource.url}`;
+    }
+    // Fallback to constructing URL from filePath
+    return `${getBaseUrl()}/uploads/resources/${resource.filePath}`;
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -275,7 +296,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
               {selectedResource.type === 'PDF' ? (
                 <div className="w-full h-full">
                   <iframe
-                    src={selectedResource.url ? `${getBaseUrl()}${selectedResource.url}` : `${getBaseUrl()}/uploads/resources/${selectedResource.filePath}`}
+                    src={getResourceUrl(selectedResource)}
                     className="w-full h-[600px] border-0 rounded-lg"
                     title={selectedResource.originalName || selectedResource.filename}
                   />
@@ -283,7 +304,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
               ) : selectedResource.type === 'IMAGE' ? (
                 <div className="text-center">
                   <img
-                    src={selectedResource.url ? `${getBaseUrl()}${selectedResource.url}` : `${getBaseUrl()}/uploads/resources/${selectedResource.filePath}`}
+                    src={getResourceUrl(selectedResource)}
                     alt={selectedResource.originalName || selectedResource.filename}
                     className="max-w-full max-h-[600px] mx-auto rounded-lg shadow-lg"
                   />
@@ -291,14 +312,14 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
               ) : selectedResource.type === 'VIDEO' ? (
                 <div className="text-center">
                   <CustomVideoPlayer
-                    src={selectedResource.url ? `${getBaseUrl()}${selectedResource.url}` : `${getBaseUrl()}/uploads/resources/${selectedResource.filePath}`}
+                    src={getResourceUrl(selectedResource)}
                     className="max-w-full max-h-[600px] mx-auto rounded-lg shadow-lg"
                   />
                 </div>
               ) : selectedResource.type === 'AUDIO' ? (
                 <div className="text-center">
                   <audio
-                    src={selectedResource.url ? `${getBaseUrl()}${selectedResource.url}` : `${getBaseUrl()}/uploads/resources/${selectedResource.filePath}`}
+                    src={getResourceUrl(selectedResource)}
                     controls
                     className="w-full max-w-md mx-auto"
                   >
@@ -319,7 +340,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
                   <Button
                     onClick={() => {
                       const link = document.createElement('a');
-                      link.href = selectedResource.url ? `${getBaseUrl()}${selectedResource.url}` : `${getBaseUrl()}/uploads/resources/${selectedResource.filePath}`;
+                      link.href = getResourceUrl(selectedResource);
                       link.download = selectedResource.originalName || selectedResource.filename;
                       link.click();
                     }}
@@ -347,7 +368,7 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
                     size="sm"
                     onClick={() => {
                       const link = document.createElement('a');
-                      link.href = `${getBaseUrl()}/uploads/${selectedResource.filePath}`;
+                      link.href = getResourceUrl(selectedResource);
                       link.download = selectedResource.originalName || selectedResource.filename;
                       link.click();
                     }}
