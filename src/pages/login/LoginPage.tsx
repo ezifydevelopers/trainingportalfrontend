@@ -83,7 +83,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <Database className="h-8 w-8 sm:h-10 sm:w-10" />
           </div>
-          <h1 className="mt-4 text-lg sm:text-xl lg:text-2xl font-bold">Training Portal Login</h1>
+          <h1 className="mt-4 text-lg sm:text-xl lg:text-2xl font-bold">Training Portal</h1>
           <div className="mt-4 sm:mt-6 inline-flex items-center justify-center p-3 sm:p-4 bg-gray-100 rounded-full">
             {getRoleIcon()}
           </div>
