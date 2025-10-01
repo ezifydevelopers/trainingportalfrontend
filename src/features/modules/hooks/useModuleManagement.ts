@@ -31,7 +31,7 @@ export const useModuleManagement = (companyId: number | null) => {
   const deleteModuleMutation = useDeleteModule();
   const addVideoMutation = useAddVideoToModule();
   const addMCQsMutation = useAddMCQsToModule();
-  const addResourceMutation = useAddResource();
+  const addResourceMutation = useAddResource(companyId);
 
   // Memoized filtered modules
   const videoModules = useMemo(() => 

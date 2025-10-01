@@ -15,6 +15,7 @@ import FeedbackModal from "@/components/FeedbackModal";
 import ResourceViewer from "@/components/ResourceViewer";
 import ModuleResources from "@/components/ModuleResources";
 import { getApiBaseUrl, getBaseUrl } from "@/lib/api";
+import CustomVideoPlayer from "@/components/CustomVideoPlayer";
 
 export default function TrainingModule() {
   const { moduleId } = useParams();
@@ -79,39 +80,7 @@ export default function TrainingModule() {
     }
   }, [module?.completed]);
 
-     // Prevent video manipulation and add security measures
-   useEffect(() => {
-     const preventVideoManipulation = () => {
-       const video = (window as any).currentVideo;
-       if (video) {
-         // Keep controls enabled but restrict certain features
-         video.controls = true;
-         video.controlsList = "nodownload nofullscreen noremoteplayback";
-         video.disablePictureInPicture = true;
-         
-         // Prevent seeking beyond current progress
-         const checkProgress = () => {
-           const currentTime = video.currentTime;
-           const duration = video.duration;
-           const allowedTime = (videoProgress / 100) * duration;
-           
-           if (currentTime < allowedTime) {
-             video.currentTime = allowedTime;
-           }
-         };
-         
-         // Check progress every 100ms
-         const interval = setInterval(checkProgress, 100);
-         
-         return () => clearInterval(interval);
-       }
-     };
-     
-     // Run after video loads
-     const timer = setTimeout(preventVideoManipulation, 1000);
-     
-     return () => clearTimeout(timer);
-   }, [videoProgress]);
+  // Video manipulation prevention is now handled by CustomVideoPlayer
 
    // Detect fullscreen changes
    useEffect(() => {
@@ -294,46 +263,7 @@ export default function TrainingModule() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Video control functions
-  const togglePlayPause = () => {
-    const video = (window as any).currentVideo;
-    if (video) {
-      if (video.paused) {
-        video.play();
-        setIsVideoPaused(false);
-        setIsVideoPlaying(true);
-      } else {
-        video.pause();
-        setIsVideoPaused(true);
-        setIsVideoPlaying(false);
-      }
-    }
-  };
-
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const video = (window as any).currentVideo;
-    if (video && video.duration) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const width = rect.width;
-      const clickTime = (clickX / width) * video.duration;
-      video.currentTime = clickTime;
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const video = (window as any).currentVideo;
-    if (video) {
-      video.volume = parseFloat(e.target.value);
-    }
-  };
-
-  const toggleMute = () => {
-    const video = (window as any).currentVideo;
-    if (video) {
-      video.muted = !video.muted;
-    }
-  };
+  // Video control functions - now handled by CustomVideoPlayer
 
   const getVideoUrl = (videoUrl: string) => {
     if (!videoUrl) {
@@ -457,32 +387,9 @@ export default function TrainingModule() {
                             </div>
                           </div>
                         )}
-                        <div className="relative bg-black rounded-lg overflow-hidden">
-                          <video 
-                            ref={(el) => {
-                              if (el) {
-                                // Store video reference for controls
-                                (window as any).currentVideo = el;
-                              }
-                            }}
-                            src={getVideoUrl(module.videos?.[0]?.url)} 
-                            className="w-full h-full"
-                            preload="metadata"
-                            draggable={false}
-                          onEnded={() => {
-                            console.log('🎬 Video onEnded event triggered');
-                            handleVideoComplete();
-                          }}
-                          onTimeUpdate={(e) => {
-                            const video = e.target as HTMLVideoElement;
-                            const progress = (video.currentTime / video.duration) * 100;
-                            setVideoProgress(progress);
-                            setCurrentTime(video.currentTime);
-                          }}
-                          onLoadedMetadata={(e) => {
-                            const video = e.target as HTMLVideoElement;
-                            setVideoDuration(video.duration);
-                          }}
+                        <CustomVideoPlayer
+                          src={getVideoUrl(module.videos?.[0]?.url)}
+                          className="w-full h-full"
                           onPlay={() => {
                             setIsVideoPlaying(true);
                             setIsVideoPaused(false);
@@ -491,224 +398,36 @@ export default function TrainingModule() {
                             setIsVideoPlaying(false);
                             setIsVideoPaused(true);
                           }}
-                          onContextMenu={(e) => e.preventDefault()}
+                          onTimeUpdate={(currentTime, duration) => {
+                            const progress = (currentTime / duration) * 100;
+                            setVideoProgress(progress);
+                            setCurrentTime(currentTime);
+                          }}
+                          onLoadedMetadata={(duration) => {
+                            setVideoDuration(duration);
+                          }}
+                          onEnded={() => {
+                            console.log('🎬 Video onEnded event triggered');
+                            handleVideoComplete();
+                          }}
                           onLoadStart={() => {
                             setIsVideoLoading(true);
                             setVideoError(null);
                           }}
                           onCanPlay={() => {
+                            console.log('Video can play:', getVideoUrl(module.videos?.[0]?.url));
                             setIsVideoLoading(false);
                             setVideoError(null);
                           }}
-                          onError={(e) => {
+                          onError={(error) => {
+                            console.error('Video error:', error);
                             setIsVideoLoading(false);
                             setVideoError('Failed to load video. Please check your internet connection and try again.');
                             toast.error('Failed to load video. Please try refreshing the page.');
                           }}
-                          onSeeked={(e) => {
-                            // Prevent seeking by resetting to allowed position
-                            const video = e.target as HTMLVideoElement;
-                            const currentTime = video.currentTime;
-                            const duration = video.duration;
-                            
-                            // Only allow forward progress, not backward
-                            if (currentTime < videoProgress / 100 * duration) {
-                              video.currentTime = videoProgress / 100 * duration;
-                            }
-                          }}
-                          onSeeking={(e) => {
-                            // Prevent seeking attempts
-                            const video = e.target as HTMLVideoElement;
-                            const currentTime = video.currentTime;
-                            const duration = video.duration;
-                            
-                            // Only allow forward progress, not backward
-                            if (currentTime < videoProgress / 100 * duration) {
-                              video.currentTime = videoProgress / 100 * duration;
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            // Prevent keyboard shortcuts for video control
-                            e.preventDefault();
-                          }}
-                          onKeyUp={(e) => {
-                            // Prevent keyboard shortcuts for video control
-                            e.preventDefault();
-                          }}
-                          onKeyPress={(e) => {
-                            // Prevent keyboard shortcuts for video control
-                            e.preventDefault();
-                          }}
-                          onMouseDown={(e) => {
-                            // Prevent right-click context menu
-                            if (e.button === 2) {
-                              e.preventDefault();
-                            }
-                          }}
-                                                     onMouseUp={(e) => {
-                             // Prevent right-click context menu
-                             if (e.button === 2) {
-                               e.preventDefault();
-                             }
-                           }}
-                           onClick={() => {
-                             // Allow clicking on video to pause when playing
-                             if (isVideoPlaying) {
-                               const video = (window as any).currentVideo;
-                               if (video) {
-                                 video.pause();
-                               }
-                             }
-                           }}
+                          preload="metadata"
+                          draggable={false}
                         />
-                        
-                        {/* Custom Video Controls */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                          {/* Progress Bar */}
-                          <div className="mb-3">
-                            <div 
-                              className="w-full h-2 bg-white/30 rounded-full cursor-pointer hover:h-3 transition-all duration-200"
-                              onClick={handleProgressClick}
-                            >
-                              <div 
-                                className="h-full bg-blue-500 rounded-full transition-all duration-200"
-                                style={{ width: `${videoProgress}%` }}
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* Control Buttons */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              {/* Play/Pause Button */}
-                              <button
-                                onClick={togglePlayPause}
-                                className="text-white hover:text-blue-400 transition-colors duration-200"
-                              >
-                                {isVideoPaused ? (
-                                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8 5v14l11-7z"/>
-                                  </svg>
-                                ) : (
-                                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                                  </svg>
-                                )}
-                              </button>
-                              
-                              {/* Time Display */}
-                              <div className="text-white text-sm font-mono">
-                                {formatTime(currentTime)} / {formatTime(videoDuration)}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center space-x-4">
-                              {/* Volume Control */}
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={toggleMute}
-                                  className="text-white hover:text-blue-400 transition-colors duration-200"
-                                >
-                                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                                  </svg>
-                                </button>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="1"
-                                  step="0.1"
-                                  defaultValue="1"
-                                  onChange={handleVolumeChange}
-                                  className="w-20 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
-                                />
-                              </div>
-                              
-                              {/* Progress Percentage */}
-                              <div className="text-white text-sm font-mono">
-                                {Math.round(videoProgress)}%
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                                                 {/* Custom Play/Pause Button Overlay - Only show when video is loaded and paused */}
-                         {!isVideoPlaying && !isVideoLoading && !videoError && (
-                           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-20 transition-all duration-200">
-                             <Button
-                               size="lg"
-                               className="bg-white text-black hover:bg-gray-100 rounded-full w-16 h-16 shadow-lg"
-                               onClick={() => {
-                                 const video = (window as any).currentVideo;
-                                 if (video) {
-                                   video.play();
-                                 }
-                               }}
-                             >
-                               <Play className="h-8 w-8" />
-                             </Button>
-                           </div>
-                         )}
-                         
-                         {/* Fullscreen Button - Always visible */}
-                         <div className="absolute top-4 right-4 group">
-                           <Button
-                             size="sm"
-                             variant="ghost"
-                             className="bg-black bg-opacity-70 text-white hover:bg-black hover:bg-opacity-80 rounded-full w-8 h-8 p-0"
-                             onClick={() => {
-                              if (isFullscreen) {
-                                // Exit fullscreen
-                                if (document.exitFullscreen) {
-                                  document.exitFullscreen();
-                                } else if ((document as any).webkitExitFullscreen) {
-                                  (document as any).webkitExitFullscreen();
-                                } else if ((document as any).mozCancelFullScreen) {
-                                  (document as any).mozCancelFullScreen();
-                                } else if ((document as any).msExitFullscreen) {
-                                  (document as any).msExitFullscreen();
-                                }
-                               } else {
-                                 // Enter fullscreen
-                                 const video = (window as any).currentVideo;
-                                 if (video) {
-                                   if (video.requestFullscreen) {
-                                     video.requestFullscreen();
-                                   } else if (video.webkitRequestFullscreen) {
-                                     video.webkitRequestFullscreen();
-                                   } else if (video.msRequestFullscreen) {
-                                     video.msRequestFullscreen();
-                                   }
-                                 }
-                               }
-                             }}
-                           >
-                             {isFullscreen ? (
-                               <div className="h-4 w-4 flex items-center justify-center">
-                                 <div className="w-3 h-3 border-2 border-white rounded-sm"></div>
-                               </div>
-                             ) : (
-                               <Maximize2 className="h-4 w-4" />
-                             )}
-                           </Button>
-                           {/* Tooltip */}
-                           <div className="absolute right-0 top-10 bg-black bg-opacity-90 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-                             {isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-                           </div>
-                         </div>
-                         
-                         {/* Small pause indicator when playing - appears on hover */}
-                         {isVideoPlaying && (
-                           <div className="absolute top-4 right-12 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity duration-200">
-                             Click to pause
-                           </div>
-                         )}
-                        
-                                                 {/* Video Control Restriction Notice */}
-                         <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-70 text-white text-xs p-2 rounded text-center">
-                           ⚠️ Click play to start, click video to pause. You must watch the entire video to complete this module.
-                         </div>
-                        </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -726,7 +445,10 @@ export default function TrainingModule() {
                             {videoCompleted ? "Video Completed" : 
                               videoProgress < 100 ? `Watch Complete Video (${Math.round(videoProgress)}%)` : "Mark as Watched"}
                           </Button>
-                          
+                        </div>
+                        {/* Video Control Restriction Notice - Moved below video */}
+                        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs p-2 rounded text-center">
+                          ⚠️ You must watch the entire video to complete this module.
                         </div>
                       </div>
                     </div>

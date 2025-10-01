@@ -16,6 +16,7 @@ import { useGetModuleResources, useDeleteResource } from '@/hooks/useApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { getBaseUrl } from '@/lib/api';
+import CustomVideoPlayer from './CustomVideoPlayer';
 
 interface ModuleResourcesProps {
   moduleId: number;
@@ -289,13 +290,10 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
                 </div>
               ) : selectedResource.type === 'VIDEO' ? (
                 <div className="text-center">
-                  <video
+                  <CustomVideoPlayer
                     src={selectedResource.url ? `${getBaseUrl()}${selectedResource.url}` : `${getBaseUrl()}/uploads/resources/${selectedResource.filePath}`}
-                    controls
                     className="max-w-full max-h-[600px] mx-auto rounded-lg shadow-lg"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                  />
                 </div>
               ) : selectedResource.type === 'AUDIO' ? (
                 <div className="text-center">

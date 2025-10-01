@@ -25,6 +25,7 @@ import {
   useDuplicateCompanyData
 } from "@/hooks/useApi";
 import { getApiBaseUrl, getBaseUrl } from "@/lib/api";
+import CustomVideoPlayer from "@/components/CustomVideoPlayer";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -277,10 +278,10 @@ export default function AdminCompanyModules() {
   const deleteModuleMutation = useDeleteModule();
   const deleteCompanyMutation = useDeleteCompany();
   const updateModuleMutation = useUpdateModule();
-  const addResourceMutation = useAddResource();
   const deleteResourceMutation = useDeleteResource();
 
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const addResourceMutation = useAddResource(selectedCompany?.id);
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [showAddModule, setShowAddModule] = useState(false);
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
@@ -2783,13 +2784,10 @@ export default function AdminCompanyModules() {
                         
                         {selectedModule.videos?.[0]?.url ? (
                           <div className="relative bg-black rounded-lg overflow-hidden shadow-lg">
-                            <video 
-                              src={getVideoUrl(selectedModule.videos[0].url)} 
-                              controls 
+                            <CustomVideoPlayer
+                              src={getVideoUrl(selectedModule.videos[0].url)}
                               className="w-full h-auto max-h-[50vh] sm:max-h-[60vh]"
-                              preload="metadata"
-                              onError={(e) => {
-
+                              onError={(error) => {
                                 console.error('Video URL:', getVideoUrl(selectedModule.videos[0].url));
                               }}
                               onLoadStart={() => {
@@ -2798,6 +2796,7 @@ export default function AdminCompanyModules() {
                               onCanPlay={() => {
                                 console.log('Video can play:', getVideoUrl(selectedModule.videos[0].url));
                               }}
+                              preload="metadata"
                             />
                           </div>
                         ) : (

@@ -13,6 +13,7 @@ import {
   Plus 
 } from 'lucide-react';
 import { getVideoUrl } from '@/shared/utils/imageUtils';
+import CustomVideoPlayer from '@/components/CustomVideoPlayer';
 import { Module } from '@/shared/types/common.types';
 import { getBaseUrl } from '@/lib/api';
 
@@ -99,12 +100,9 @@ const ModuleDetail = memo<ModuleDetailProps>(({
                   </div>
                 )}
                 
-                <video
+                <CustomVideoPlayer
                   src={getVideoUrl(module.videos[0].url)}
                   className="w-full h-full"
-                  controls
-                  preload="metadata"
-                  crossOrigin="anonymous"
                   onLoadStart={() => {
                     console.log('Video loading started:', getVideoUrl(module.videos[0].url));
                     setIsVideoLoading(true);
@@ -115,15 +113,13 @@ const ModuleDetail = memo<ModuleDetailProps>(({
                     setIsVideoLoading(false);
                     setVideoError(null);
                   }}
-                  onError={(e) => {
+                  onError={(error) => {
                     setIsVideoLoading(false);
                     setVideoError('Failed to load video. Please check your internet connection and try again.');
                     console.error('Video URL:', getVideoUrl(module.videos[0].url));
                   }}
-                >
-                  <source src={getVideoUrl(module.videos[0].url)} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
+                  preload="metadata"
+                />
               </div>
             </div>
           )}

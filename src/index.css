@@ -141,31 +141,32 @@
     -webkit-user-select: none;
   }
   
-  /* Disable video controls completely */
+  /* Show play button and basic controls, hide advanced features */
   video::-webkit-media-controls-enclosure {
-    display: none !important;
+    display: block !important;
   }
   
   video::-webkit-media-controls-panel {
-    display: none !important;
+    display: block !important;
   }
   
   video::-webkit-media-controls-play-button {
-    display: none !important;
+    display: block !important;
   }
   
   video::-webkit-media-controls-timeline {
-    display: none !important;
+    display: block !important;
   }
   
   video::-webkit-media-controls-current-time-display {
-    display: none !important;
+    display: block !important;
   }
   
   video::-webkit-media-controls-time-remaining-display {
-    display: none !important;
+    display: block !important;
   }
   
+  /* Hide volume controls and fullscreen for security */
   video::-webkit-media-controls-volume-slider {
     display: none !important;
   }
@@ -175,6 +176,15 @@
   }
   
   video::-webkit-media-controls-fullscreen-button {
+    display: none !important;
+  }
+  
+  /* Hide download and picture-in-picture buttons */
+  video::-webkit-media-controls-download-button {
+    display: none !important;
+  }
+  
+  video::-webkit-media-controls-picture-in-picture-button {
     display: none !important;
   }
 }
