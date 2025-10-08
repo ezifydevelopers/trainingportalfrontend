@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { CourseModule } from "@/types/course";
-import { CheckCircle, Clock, Trophy, Target, PlayCircle } from "lucide-react";
+import { CheckCircle, Clock, Trophy, Target, PlayCircle, FileText } from "lucide-react";
 
 interface TrainingProgressCardProps {
   module: CourseModule;
@@ -99,11 +99,20 @@ export default function TrainingProgressCard({
           </div>
         )}
 
-        {module.completionCriteria.quizPassed && (
+        {module.completionCriteria.quizPassed && !module.isResourceModule && (
           <div className="flex items-center space-x-2 text-sm p-2 bg-yellow-50 rounded border border-yellow-200">
             <Trophy className="h-4 w-4 text-yellow-600 flex-shrink-0" />
             <span className="text-yellow-800">
               Quiz required (70% to pass)
+            </span>
+          </div>
+        )}
+        
+        {module.isResourceModule && (
+          <div className="flex items-center space-x-2 text-sm p-2 bg-purple-50 rounded border border-purple-200">
+            <FileText className="h-4 w-4 text-purple-600 flex-shrink-0" />
+            <span className="text-purple-800">
+              Reference Material - No quiz required
             </span>
           </div>
         )}

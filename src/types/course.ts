@@ -8,6 +8,7 @@ export interface CourseModule {
   estimatedDuration: number; // in minutes
   order: number;
   isLocked: boolean;
+  isResourceModule?: boolean;
   completionCriteria: {
     videoWatched: boolean;
     quizPassed: boolean;

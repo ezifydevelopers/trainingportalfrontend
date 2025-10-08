@@ -49,9 +49,11 @@ export default function TrainingProgress() {
     );
   }
 
-  const completedModules = modules?.filter(m => m.completed).map(m => m.moduleId) || [];
-  const currentModule = modules?.find(m => !m.completed && m.unlocked)?.moduleId || 1;
-  const totalModules = modules?.length || courseModules.length;
+  // Filter out resource modules from Module Progress section - they should not be shown here
+  const trainingModules = modules?.filter(m => !m.isResourceModule) || [];
+  const completedModules = trainingModules.filter(m => m.completed).map(m => m.moduleId) || [];
+  const currentModule = trainingModules.find(m => !m.completed && m.unlocked)?.moduleId || 1;
+  const totalModules = trainingModules.length;
   const overallProgress = dashboardData?.overallProgress || 0;
 
   return (
@@ -168,7 +170,7 @@ export default function TrainingProgress() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {modules?.map((module) => {
+              {trainingModules?.map((module) => {
                 const isCompleted = module.completed;
                 const isCurrent = module.moduleId === currentModule && !isCompleted;
                 const userScore = module.marksObtained;
@@ -185,6 +187,7 @@ export default function TrainingProgress() {
                       estimatedDuration: Math.floor(module.videoDuration / 60),
                       order: module.moduleId,
                       isLocked: !module.unlocked,
+                      isResourceModule: module.isResourceModule,
                       completionCriteria: {
                         videoWatched: module.completed,
                         quizPassed: module.pass,

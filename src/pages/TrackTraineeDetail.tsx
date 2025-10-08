@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useTraineeProgress, useAllTrainees } from "@/hooks/useApi";
-import { ArrowLeft, Clock, Trophy, CheckCircle, Target, BarChart3, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Clock, Trophy, CheckCircle, Target, BarChart3, Loader2, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
@@ -131,7 +131,7 @@ export default function TrackTraineeDetail() {
   const moduleProgressRaw = progressData?.moduleProgress || [];
   
   // Deduplicate moduleProgress by moduleId, keeping the record with highest score or most recent
-  const moduleProgress = moduleProgressRaw.reduce((acc: any[], current: any) => {
+  const moduleProgressDeduplicated = moduleProgressRaw.reduce((acc: any[], current: any) => {
     const existing = acc.find(item => item.moduleId === current.moduleId);
     if (!existing) {
       acc.push(current);
@@ -145,6 +145,12 @@ export default function TrackTraineeDetail() {
     }
     return acc;
   }, []);
+
+  // Filter out resource modules from Module Progress section - they should not be shown here
+  const moduleProgress = moduleProgressDeduplicated.filter(module => {
+    console.log('Module:', module.moduleName, 'isResourceModule:', module.isResourceModule);
+    return !module.isResourceModule;
+  });
   
   const totalModules = moduleProgress.length;
   const modulesWithScores = moduleProgress.filter(module => module.score !== null).length;
@@ -487,18 +493,32 @@ export default function TrackTraineeDetail() {
                     </div>
                   </div>
 
-                  {/* Quiz requirement */}
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-                      <span className="text-sm font-medium text-yellow-800">
-                        Quiz required (70% to pass)
-                      </span>
+                  {/* Quiz requirement - only show for non-resource modules */}
+                  {!module.isResourceModule && (
+                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-yellow-800">
+                          Quiz required (70% to pass)
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Score section */}
-                  {module.score !== null && (
+                  {/* Resource module indicator */}
+                  {module.isResourceModule && (
+                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                        <span className="text-sm font-medium text-purple-800">
+                          Reference Material - No quiz required
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Score section - only show for non-resource modules */}
+                  {!module.isResourceModule && module.score !== null && (
                     <div className="bg-gray-50 rounded-lg p-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-700">Score</span>
