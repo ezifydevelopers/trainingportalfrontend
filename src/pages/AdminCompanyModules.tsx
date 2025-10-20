@@ -29,7 +29,7 @@ import CustomVideoPlayer from "@/components/CustomVideoPlayer";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import ResourceUploadDialog from "@/components/ResourceUploadDialog";
 import ModuleResources from "@/components/ModuleResources";
@@ -2249,53 +2249,56 @@ export default function AdminCompanyModules() {
                     <p className="text-xs sm:text-sm text-gray-500">Training module overview and content</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  {selectedModule && !isEditMode && selectedModule.isResourceModule && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 sm:h-9 sm:w-9 text-green-500 hover:text-green-700 hover:bg-green-50"
-                        onClick={() => {
-                          setSelectedModuleForResource({ id: selectedModule.id, name: selectedModule.name });
-                          setShowResourceUpload(true);
-                        }}
-                        title="Add Resources"
-                      >
-                        <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 sm:h-9 sm:w-9 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => handleEditModule(selectedModule)}
-                        title="Edit Module"
-                      >
-                        <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </Button>
-                    </>
-                  )}
-                  {selectedModule && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 sm:h-9 sm:w-9 text-red-500 hover:text-red-700 hover:bg-red-50"
-                      disabled={deletingModuleId === selectedModule.id}
-                      onClick={() => {
-                        handleCloseModuleDetail();
-                        handleDeleteModule(selectedModule.id, capitalizeModuleName(selectedModule.name));
-                      }}
-                    >
-                      {deletingModuleId === selectedModule.id ? (
-                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-red-500"></div>
-                      ) : (
-                        <Trash className="h-4 w-4 sm:h-5 sm:w-5" />
-                      )}
-                    </Button>
-                  )}
-                </div>
               </DialogTitle>
+              <DialogDescription>
+                View and manage module details, videos, and resources
+              </DialogDescription>
             </DialogHeader>
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              {selectedModule && !isEditMode && selectedModule.isResourceModule && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 sm:h-9 sm:w-9 text-green-500 hover:text-green-700 hover:bg-green-50"
+                    onClick={() => {
+                      setSelectedModuleForResource({ id: selectedModule.id, name: selectedModule.name });
+                      setShowResourceUpload(true);
+                    }}
+                    title="Add Resources"
+                  >
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 sm:h-9 sm:w-9 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={() => handleEditModule(selectedModule)}
+                    title="Edit Module"
+                  >
+                    <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </Button>
+                </>
+              )}
+              {selectedModule && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 sm:h-9 sm:w-9 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  disabled={deletingModuleId === selectedModule.id}
+                  onClick={() => {
+                    handleCloseModuleDetail();
+                    handleDeleteModule(selectedModule.id, capitalizeModuleName(selectedModule.name));
+                  }}
+                >
+                  {deletingModuleId === selectedModule.id ? (
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-red-500"></div>
+                  ) : (
+                    <Trash className="h-4 w-4 sm:h-5 sm:w-5" />
+                  )}
+                </Button>
+              )}
+            </div>
             
             {selectedModule && (
               <div className="space-y-6">

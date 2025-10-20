@@ -288,7 +288,7 @@ const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .slider::-webkit-slider-thumb {
           appearance: none;
           height: 12px;
