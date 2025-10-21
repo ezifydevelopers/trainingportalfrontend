@@ -11,7 +11,7 @@ interface LightweightVideoPlayerProps {
   onLoadedMetadata?: (duration: number) => void;
   onLoadStart?: () => void;
   onCanPlay?: () => void;
-  onError?: (error: any) => void;
+  onError?: (error: React.SyntheticEvent<HTMLVideoElement, Event>) => void;
   preload?: 'none' | 'metadata' | 'auto';
   draggable?: boolean;
 }
@@ -72,7 +72,7 @@ const LightweightVideoPlayer: React.FC<LightweightVideoPlayerProps> = ({
     onCanPlay?.();
   }, [onCanPlay]);
 
-  const handleError = useCallback((error: any) => {
+  const handleError = useCallback((error: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     setIsLoading(false);
     onError?.(error);
   }, [onError]);
