@@ -169,13 +169,24 @@ const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
     onError?.(error);
   }, [onError]);
 
-  // Play/pause handlers
-  const handlePlay = useCallback(() => {
-    setIsPlaying(true);
-    onPlay?.();
+  // Play/pause handlers with error handling
+  const handlePlay = useCallback(async () => {
+    if (!videoRef.current) return;
+    
+    try {
+      await videoRef.current.play();
+      setIsPlaying(true);
+      onPlay?.();
+    } catch (error) {
+      console.warn('Play interrupted:', error);
+      // Don't update state if play was interrupted
+    }
   }, [onPlay]);
 
   const handlePause = useCallback(() => {
+    if (!videoRef.current) return;
+    
+    videoRef.current.pause();
     setIsPlaying(false);
     onPause?.();
   }, [onPause]);
@@ -356,6 +367,9 @@ const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
         onEnded={handleEnded}
         onError={handleError}
         onContextMenu={(e) => e.preventDefault()}
+        onAbort={() => console.log('Video loading aborted')}
+        onStalled={() => console.log('Video stalled')}
+        onSuspend={() => console.log('Video loading suspended')}
         playsInline
         crossOrigin="anonymous"
       />
@@ -412,11 +426,11 @@ const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
           <div className="flex items-center space-x-4">
             {/* Play/Pause button */}
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (isPlaying) {
-                  videoRef.current?.pause();
+                  handlePause();
                 } else {
-                  videoRef.current?.play();
+                  await handlePlay();
                 }
               }}
               className="text-white hover:text-blue-400 transition-colors"

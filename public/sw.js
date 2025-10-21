@@ -54,7 +54,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle video files with aggressive caching
+  // Skip chrome extensions and other unsupported schemes
+  if (url.protocol === 'chrome-extension:' || 
+      url.protocol === 'moz-extension:' ||
+      url.protocol === 'safari-extension:') {
+    return;
+  }
+
+  // Handle video files with range request support
   if (isVideoFile(url.pathname)) {
     event.respondWith(handleVideoRequest(request));
     return;
@@ -86,10 +93,20 @@ function isStaticAsset(pathname) {
   return STATIC_EXTENSIONS.some(ext => pathname.toLowerCase().endsWith(ext));
 }
 
-// Handle video requests with cache-first strategy
+// Handle video requests with range request support
 async function handleVideoRequest(request) {
   try {
-    // Try cache first
+    // Check if this is a range request
+    const rangeHeader = request.headers.get('range');
+    const isRangeRequest = !!rangeHeader;
+    
+    if (isRangeRequest) {
+      // For range requests, always go to network (don't cache partial responses)
+      console.log('Range request for video:', request.url, rangeHeader);
+      return fetch(request);
+    }
+    
+    // For non-range requests, try cache first
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       console.log('Video served from cache:', request.url);
@@ -99,15 +116,21 @@ async function handleVideoRequest(request) {
     // If not in cache, fetch from network
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
-      // Clone response for caching
-      const responseToCache = networkResponse.clone();
-      
-      // Cache the video
-      const cache = await caches.open(VIDEO_CACHE_NAME);
-      cache.put(request, responseToCache);
-      
-      console.log('Video cached:', request.url);
+    // Only cache complete responses (status 200, not 206)
+    if (networkResponse.ok && networkResponse.status === 200) {
+      try {
+        // Clone response for caching
+        const responseToCache = networkResponse.clone();
+        
+        // Cache the complete video
+        const cache = await caches.open(VIDEO_CACHE_NAME);
+        await cache.put(request, responseToCache);
+        console.log('Complete video cached:', request.url);
+      } catch (cacheError) {
+        console.warn('Failed to cache video:', request.url, cacheError);
+      }
+    } else if (networkResponse.status === 206) {
+      console.log('Partial video response (range request):', request.url);
     }
     
     return networkResponse;
@@ -120,6 +143,13 @@ async function handleVideoRequest(request) {
 // Handle static asset requests
 async function handleStaticAssetRequest(request) {
   try {
+    // Skip chrome-extension and other unsupported schemes
+    if (request.url.startsWith('chrome-extension:') || 
+        request.url.startsWith('moz-extension:') ||
+        request.url.startsWith('safari-extension:')) {
+      return fetch(request);
+    }
+
     // Try cache first
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
@@ -129,10 +159,14 @@ async function handleStaticAssetRequest(request) {
     // Fetch from network
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
-      const responseToCache = networkResponse.clone();
-      const cache = await caches.open(STATIC_CACHE_NAME);
-      cache.put(request, responseToCache);
+    if (networkResponse.ok && networkResponse.status !== 206) {
+      try {
+        const responseToCache = networkResponse.clone();
+        const cache = await caches.open(STATIC_CACHE_NAME);
+        await cache.put(request, responseToCache);
+      } catch (cacheError) {
+        console.warn('Failed to cache static asset:', request.url, cacheError);
+      }
     }
     
     return networkResponse;

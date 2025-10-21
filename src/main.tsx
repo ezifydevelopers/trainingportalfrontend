@@ -2,12 +2,12 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// Register service worker for video caching
+// Register simple service worker for basic caching
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/sw-simple.js')
       .then((registration) => {
-        console.log('Service Worker registered successfully:', registration);
+        console.log('Simple Service Worker registered successfully:', registration);
       })
       .catch((error) => {
         console.log('Service Worker registration failed:', error);

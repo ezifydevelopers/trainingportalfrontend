@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import LightweightVideoPlayer from './LightweightVideoPlayer';
 import { getVideoUrl } from '@/shared/utils/imageUtils';
-import LightweightVideoPlayer from '@/components/LightweightVideoPlayer';
 
-interface SmartVideoManagerProps {
+interface SimpleVideoManagerProps {
   videoUrls: string[];
   currentIndex: number;
   onVideoChange?: (index: number) => void;
   className?: string;
 }
 
-const SmartVideoManager: React.FC<SmartVideoManagerProps> = ({
+const SimpleVideoManager: React.FC<SimpleVideoManagerProps> = ({
   videoUrls,
   currentIndex,
   onVideoChange,
@@ -121,4 +121,4 @@ const SmartVideoManager: React.FC<SmartVideoManagerProps> = ({
   );
 };
 
-export default SmartVideoManager;
+export default SimpleVideoManager;
