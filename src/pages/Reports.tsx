@@ -1,15 +1,7 @@
 
 import Layout from "@/components/Layout";
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
-
-interface ReportsProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-function Reports({ user, isAuthenticated }: ReportsProps) {
+export default function Reports() {
   return (
     <Layout>
       <div className="p-6">
@@ -25,6 +17,3 @@ function Reports({ user, isAuthenticated }: ReportsProps) {
     </Layout>
   );
 }
-// Export with authentication and role protection
-// Export with comprehensive HOC protection
-export default HOCPresets.managerPage(Reports);

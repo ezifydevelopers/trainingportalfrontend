@@ -21,9 +21,6 @@ import {
 } from 'lucide-react';
 import { useAllTrainees, useAllCompanies, useUpdateTrainee } from '@/hooks/useApi';
 import { toast } from 'sonner';
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
 interface PendingTrainee {
   id: number;
@@ -39,12 +36,7 @@ interface PendingTrainee {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
-
-interface PendingTraineesProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-function PendingTrainees({ user, isAuthenticated }: PendingTraineesProps) {
+export default function PendingTrainees() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
   const [selectedTrainee, setSelectedTrainee] = useState<PendingTrainee | null>(null);
@@ -332,6 +324,3 @@ function PendingTrainees({ user, isAuthenticated }: PendingTraineesProps) {
     </Layout>
   );
 }
-// Export with authentication and role protection
-// Export with essential HOCs (no auth since handled by routing)
-export default HOCPresets.publicPage(PendingTrainees);

@@ -1,15 +1,7 @@
 
 import Layout from "@/components/Layout";
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
-
-interface EmailMarketingProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-function EmailMarketing({ user, isAuthenticated }: EmailMarketingProps) {
+export default function EmailMarketing() {
   return (
     <Layout>
       <div className="p-6">
@@ -25,6 +17,3 @@ function EmailMarketing({ user, isAuthenticated }: EmailMarketingProps) {
     </Layout>
   );
 }
-// Export with authentication and role protection
-// Export with comprehensive HOC protection
-export default HOCPresets.adminPage(EmailMarketing);

@@ -5,14 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Database, ArrowLeft } from "lucide-react";
-import { HOCPresets } from "@/components/HOCComposer";
 
-interface ForgotPasswordPageProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-function ForgotPasswordPage({ user, isAuthenticated }: ForgotPasswordPageProps) {
+export default function ForgotPasswordPage() {
   const { role } = useParams<{ role: string }>();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -96,5 +90,3 @@ function ForgotPasswordPage({ user, isAuthenticated }: ForgotPasswordPageProps) 
     </div>
   );
 }
-// Export with comprehensive HOC protection
-export default HOCPresets.publicPage(ForgotPasswordPage);

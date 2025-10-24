@@ -6,14 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { Users, Building2, Trophy, Eye, CheckCircle, Clock, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAllTrainees, useAllCompanies, useGetManagerCompanies } from "@/hooks/useApi";
-import { HOCPresets } from "@/components/HOCComposer";
 
-interface ManagerProgressProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-const ManagerProgress = ({ user, isAuthenticated }: ManagerProgressProps) => {
+const ManagerProgress = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
 
   // Get all trainees and companies (like admin does)
@@ -253,5 +248,4 @@ const ManagerProgress = ({ user, isAuthenticated }: ManagerProgressProps) => {
   );
 };
 
-// Export with essential HOCs (no auth since handled by routing)
-export default HOCPresets.publicPage(ManagerProgress);
+export default ManagerProgress;

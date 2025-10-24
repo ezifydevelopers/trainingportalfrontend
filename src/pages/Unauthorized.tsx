@@ -3,16 +3,10 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { HOCPresets } from "@/components/HOCComposer";
 
-interface UnauthorizedProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-function Unauthorized({ user, isAuthenticated }: UnauthorizedProps) {
+export default function Unauthorized() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   
   const handleBack = () => {
     navigate(-1);
@@ -49,5 +43,3 @@ function Unauthorized({ user, isAuthenticated }: UnauthorizedProps) {
     </div>
   );
 }
-// Export with comprehensive HOC protection
-export default HOCPresets.publicPage(Unauthorized);

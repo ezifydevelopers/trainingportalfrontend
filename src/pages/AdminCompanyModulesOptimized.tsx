@@ -37,17 +37,11 @@ import ResourceUploadForm from '@/features/modules/components/ResourceUploadForm
 import NewCompanyDialog from '@/components/NewCompanyDialog';
 import CompanyEditDialog from '@/features/companies/components/CompanyEditDialog';
 import ConfirmationDialog from '@/shared/components/ConfirmationDialog';
-import { HOCPresets } from "@/components/HOCComposer";
 
 interface AdminCompanyModulesOptimizedProps {
   selectedCompanyId?: number;
   isManagerView?: boolean;
   managerId?: number;
-}
-
-interface AdminCompanyModulesOptimizedProps {
-  user?: any;
-  isAuthenticated?: boolean;
 }
 
 const AdminCompanyModulesOptimized = memo<AdminCompanyModulesOptimizedProps>(({ 
@@ -297,5 +291,4 @@ const AdminCompanyModulesOptimized = memo<AdminCompanyModulesOptimizedProps>(({
 
 AdminCompanyModulesOptimized.displayName = 'AdminCompanyModulesOptimized';
 
-// Export with comprehensive HOC protection
-export default HOCPresets.adminPage(AdminCompanyModulesOptimized);
+export default AdminCompanyModulesOptimized;

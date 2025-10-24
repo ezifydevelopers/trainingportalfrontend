@@ -10,22 +10,18 @@ import { Trophy, Clock, Target, CheckCircle, BarChart3, Loader2, Award, Star } f
 import { toast } from "sonner";
 import HelpRequestButton from "@/components/HelpRequestButton";
 import { useNavigate } from "react-router-dom";
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
-
-interface TrainingProgressProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-function TrainingProgress({ user, isAuthenticated }: TrainingProgressProps) {
+export default function TrainingProgress() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   // Fetch data from API
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useDashboard();
   const { data: modules, isLoading: modulesLoading, error: modulesError } = useModules();
 
+  if (!user || user.role !== "TRAINEE") {
+    return <div>Access denied</div>;
+  }
 
   if (dashboardLoading || modulesLoading) {
     return (
@@ -175,26 +171,26 @@ function TrainingProgress({ user, isAuthenticated }: TrainingProgressProps) {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {trainingModules?.map((module) => {
-                const isCompleted = module?.completed || false;
-                const isCurrent = module?.moduleId || 0 === currentModule && !isCompleted;
-                const userScore = module?.marksObtained || 0;
-                const timeSpent = module?.timeSpentOnVideo || 0;
+                const isCompleted = module.completed;
+                const isCurrent = module.moduleId === currentModule && !isCompleted;
+                const userScore = module.marksObtained;
+                const timeSpent = module.timeSpentOnVideo;
 
                 return (
                   <TrainingProgressCard
-                    key={module?.moduleId || 0}
+                    key={module.moduleId}
                     module={{
-                      id: module?.moduleId || 0,
-                      title: module?.moduleName || 'Unknown Module',
-                      description: module?.moduleName || 'Unknown Module',
+                      id: module.moduleId,
+                      title: module.moduleName,
+                      description: module.moduleName,
                       content: "",
-                      estimatedDuration: Math.floor(module?.videoDuration || 0 / 60),
-                      order: module?.moduleId || 0,
-                      isLocked: !module?.unlocked || false,
-                      isResourceModule: module?.isResourceModule || false,
+                      estimatedDuration: Math.floor(module.videoDuration / 60),
+                      order: module.moduleId,
+                      isLocked: !module.unlocked,
+                      isResourceModule: module.isResourceModule,
                       completionCriteria: {
-                        videoWatched: module?.completed || false,
-                        quizPassed: module?.pass || false,
+                        videoWatched: module.completed,
+                        quizPassed: module.pass,
                         minimumScore: 70
                       }
                     }}
@@ -216,6 +212,3 @@ function TrainingProgress({ user, isAuthenticated }: TrainingProgressProps) {
     </Layout>
   );
 }
-// Export with authentication and role protection
-// Export with essential HOCs (no auth since handled by routing)
-export default HOCPresets.publicPage(TrainingProgress);

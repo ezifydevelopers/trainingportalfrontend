@@ -1,15 +1,9 @@
 
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { HOCPresets } from "@/components/HOCComposer";
 
-interface IndexProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-const Index = ({ user, isAuthenticated }: IndexProps) => {
-  const { isLoading } = useAuth();
+const Index = () => {
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -41,5 +35,4 @@ const Index = ({ user, isAuthenticated }: IndexProps) => {
   return <Navigate to="/login/TRAINEE" />;
 };
 
-// Export with comprehensive HOC protection
-export default HOCPresets.publicPage(Index);
+export default Index;

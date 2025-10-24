@@ -5,14 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Database, User, Users, ShieldCheck, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
-import { HOCPresets } from "@/components/HOCComposer";
 
-interface LoginPageProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-function LoginPage({ user, isAuthenticated }: LoginPageProps) {
+export default function LoginPage() {
   const { role } = useParams<{ role: string }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -159,5 +153,3 @@ function LoginPage({ user, isAuthenticated }: LoginPageProps) {
     </div>
   );
 }
-// Export with comprehensive HOC protection
-export default HOCPresets.publicPage(LoginPage);

@@ -21,16 +21,8 @@ import {
 } from 'lucide-react';
 import { useTimeTrackingStats, useAllTrainees, useAllCompanies } from '@/hooks/useApi';
 import { toast } from 'sonner';
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
-
-interface TimeTrackingDashboardProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-function TimeTrackingDashboard({ user, isAuthenticated }: TimeTrackingDashboardProps) {
+export default function TimeTrackingDashboard() {
   const [filters, setFilters] = useState({
     traineeId: 'all',
     companyId: 'all',
@@ -426,6 +418,3 @@ function TimeTrackingDashboard({ user, isAuthenticated }: TimeTrackingDashboardP
     </div>
   );
 }
-// Export with authentication and role protection
-// Export with comprehensive HOC protection
-export default HOCPresets.managerPage(TimeTrackingDashboard);

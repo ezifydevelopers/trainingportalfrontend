@@ -16,18 +16,11 @@ import ResourceViewer from "@/components/ResourceViewer";
 import ModuleResources from "@/components/ModuleResources";
 import { getApiBaseUrl, getBaseUrl } from "@/lib/api";
 import UniversalVideoPlayer from "@/components/UniversalVideoPlayer";
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
-interface TrainingModuleProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-function TrainingModule({ user, isAuthenticated }: TrainingModuleProps) {
+export default function TrainingModule() {
   const { moduleId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [videoProgress, setVideoProgress] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -671,6 +664,3 @@ function TrainingModule({ user, isAuthenticated }: TrainingModuleProps) {
     </Layout>
   );
 }
-
-// Export with essential HOCs (no auth since handled by routing)
-export default HOCPresets.publicPage(TrainingModule);

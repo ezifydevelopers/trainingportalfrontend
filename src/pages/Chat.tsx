@@ -14,9 +14,6 @@ import NotificationSettings from "@/components/NotificationSettings";
 import { useRealTimeChat } from "@/hooks/useRealTimeChat";
 import websocketService from "@/services/websocketService";
 import { getApiBaseUrl } from "@/lib/api";
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
 interface User {
   id: number;
@@ -63,12 +60,8 @@ interface ChatRoom {
   updatedAt: string;
 }
 
-interface ChatProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-function Chat({ user, isAuthenticated }: ChatProps) {
+export default function Chat() {
+  const { user } = useAuth();
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -76,22 +69,9 @@ function Chat({ user, isAuthenticated }: ChatProps) {
   const [companyUsers, setCompanyUsers] = useState<User[]>([]);
   const [showUserList, setShowUserList] = useState(false);
   
-  // Get user from AuthContext as fallback
-  const authContext = useAuth();
-  const currentUser = user || authContext.user;
-  
-  // Debug logging
-  console.log('Chat component rendered:', { 
-    user, 
-    isAuthenticated, 
-    authUser: authContext.user,
-    currentUser,
-    isLoading: authContext.isLoading 
-  });
-  
   // Debug logging for showUserList state changes
   useEffect(() => {
-    // Debug logging can be added here if needed
+
   }, [showUserList]);
 
   // When a chat room is selected, hide the user list
@@ -140,7 +120,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
     }
 
     // Don't add messages that the current user just sent (they're already in local state)
-    if (message.senderId === currentUser?.id) {
+    if (message.senderId === user?.id) {
       return;
     }
 
@@ -164,7 +144,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
     );
     
     // Update unread count if message is not from current user
-    if (message.senderId !== currentUser?.id) {
+    if (message.senderId !== user?.id) {
       setUnreadCount(prev => prev + 1);
       
       // Show notification for new message only once
@@ -231,14 +211,13 @@ function Chat({ user, isAuthenticated }: ChatProps) {
   }, [messages]);
 
   useEffect(() => {
-    if (currentUser) {
+    if (user) {
       
       // Request notification permission
       if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
       }
       
-      // Fetch fresh data to ensure we have the latest users
       fetchChatRooms();
       fetchCompanyUsers();
       fetchUnreadCount();
@@ -253,34 +232,34 @@ function Chat({ user, isAuthenticated }: ChatProps) {
       
       return () => clearInterval(messagePollingInterval);
     }
-  }, [currentUser, fetchUnreadCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, fetchUnreadCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selectedChatRoom) {
       fetchMessages(selectedChatRoom.id);
       
       // Join chat room via WebSocket for real-time updates
-      if (isConnected && currentUser?.id) {
+      if (isConnected && user?.id) {
         websocketService.send({
           type: 'JOIN_CHAT_ROOM',
           data: { chatRoomId: selectedChatRoom.id }
         });
       }
     }
-  }, [selectedChatRoom, isConnected, currentUser?.id]);
+  }, [selectedChatRoom, isConnected, user?.id]);
 
   // Cleanup effect for leaving chat rooms
   useEffect(() => {
     return () => {
       // Leave current chat room when component unmounts
-      if (selectedChatRoom && isConnected && currentUser?.id) {
+      if (selectedChatRoom && isConnected && user?.id) {
         websocketService.send({
           type: 'LEAVE_CHAT_ROOM',
           data: { chatRoomId: selectedChatRoom.id }
         });
       }
     };
-  }, [selectedChatRoom, isConnected, currentUser?.id]);
+  }, [selectedChatRoom, isConnected, user?.id]);
 
   const fetchChatRooms = async () => {
     try {
@@ -292,21 +271,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
       
       if (response.ok) {
         const data = await response.json();
-        // Filter out chat rooms with invalid participants
-        const validChatRooms = data.filter(room => 
-          room && 
-          room.id && 
-          room.participants && 
-          Array.isArray(room.participants) &&
-          room.participants.length > 0 &&
-          room.participants.every(participant => 
-            participant && 
-            participant.user && 
-            participant.user.id && 
-            participant.user.name
-          )
-        );
-        setChatRooms(validChatRooms);
+        setChatRooms(data);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -325,23 +290,12 @@ function Chat({ user, isAuthenticated }: ChatProps) {
 
       if (response.ok) {
         const data = await response.json();
-        // Filter out invalid users and ensure they are active
-        const validUsers = data.filter(user => 
-          user && 
-          user.id && 
-          user.name && 
-          user.email &&
-          user.role &&
-          user.isVerified !== false // Ensure user is verified
-        );
-        console.log('Fetched users:', validUsers.length, 'valid users out of', data.length, 'total');
-        setCompanyUsers(validUsers);
+        setCompanyUsers(data);
       } else {
         const errorData = await response.json();
         toast.error(`Failed to fetch users: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error fetching company users:', error);
       toast.error('Failed to fetch company users');
     }
   };
@@ -415,7 +369,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
         body: JSON.stringify({
           chatRoomId: selectedChatRoom.id,
           content: newMessage.trim(),
-          senderId: currentUser?.id
+          senderId: user?.id
         })
       });
       
@@ -738,7 +692,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
   };
 
   const getOtherParticipant = (chatRoom: ChatRoom) => {
-    return chatRoom.participants.find(p => p.user.id !== currentUser?.id)?.user;
+    return chatRoom.participants.find(p => p.user.id !== user?.id)?.user;
   };
 
   const getLastMessage = (chatRoom: ChatRoom) => {
@@ -760,51 +714,19 @@ function Chat({ user, isAuthenticated }: ChatProps) {
   };
 
   const filteredUsers = companyUsers.filter(user => 
-    // Only show users that exist and are valid
-    user && 
-    user.id && 
-    user.name && 
-    user.email &&
-    user.role &&
-    // Filter by search query
-    (user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Show loading state while authentication is being checked
-  if (authContext.isLoading) {
-    console.log('Chat: Authentication loading, showing loading state');
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading chat...</p>
-          </div>
-        </div>
-      </Layout>
-    );
+  if (!user) {
+    return null;
   }
 
-  if (!currentUser) {
-    console.log('Chat: No user found, showing loading state');
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading chat...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  return (
     <Layout>
       <div className="flex flex-col sm:flex-row h-[calc(100vh-4rem)] bg-white">
         {/* Enhanced Chat Rooms Sidebar */}
-        <div className="w-full sm:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col shadow-xl h-full">
+        <div className={`w-full sm:w-80 lg:w-96 border-r border-gray-200 bg-white flex flex-col shadow-xl h-full ${selectedChatRoom ? 'hidden sm:flex' : 'flex'}`}>
           <div className="p-3 sm:p-4 lg:p-6 text-gray-900">
             <div className="mb-3 sm:mb-4 lg:mb-6">
               <h2 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold mb-1 sm:mb-2 lg:mb-3">Cross-Company Chat</h2>
@@ -875,9 +797,10 @@ function Chat({ user, isAuthenticated }: ChatProps) {
             )}
           </div>
 
-          <div className="flex-1 overflow-hidden bg-white">
-            <ScrollArea className="h-full bg-white overflow-y-auto">
-              <div className="p-2 sm:p-3 space-y-1 sm:space-y-2 pb-4 bg-white">
+          {!showUserList && (
+            <div className="flex-1 overflow-hidden bg-white">
+              <ScrollArea className="h-full bg-white overflow-y-auto">
+                <div className="p-2 sm:p-3 space-y-1 sm:space-y-2 pb-4 bg-white">
                   {chatRooms.length === 0 ? (
                     <div className="text-center py-8 sm:py-12 lg:py-16">
                       <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
@@ -929,7 +852,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
                               <div className="space-y-1">
                                 <p className="text-xs sm:text-sm text-gray-600 truncate">
                                   <span className="font-medium text-blue-600">
-                                    {lastMessage.sender.id === currentUser.id ? 'You: ' : `${otherUser?.name}: `}
+                                    {lastMessage.sender.id === user.id ? 'You: ' : `${otherUser?.name}: `}
                                   </span>
                                   {lastMessage.content}
                                 </p>
@@ -974,6 +897,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
                 </div>
               </ScrollArea>
             </div>
+          )}
         </div>
 
         {/* Enhanced Chat Area */}
@@ -1095,11 +1019,11 @@ function Chat({ user, isAuthenticated }: ChatProps) {
                         {messages.map((message) => (
                           <div
                             key={message.id}
-                            className={`flex ${message.senderId === currentUser.id ? 'justify-end' : 'justify-start'} group relative`}
+                            className={`flex ${message.senderId === user.id ? 'justify-end' : 'justify-start'} group relative`}
                           >
                             <div
                               className={`max-w-xs sm:max-w-sm px-3 py-2 rounded-2xl transition-all duration-200 group relative ${
-                                message.senderId === currentUser.id
+                                message.senderId === user.id
                                   ? 'bg-blue-500 text-white rounded-br-md'
                                   : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md'
                               } ${isSelectionMode ? 'cursor-pointer' : ''} ${
@@ -1123,11 +1047,11 @@ function Chat({ user, isAuthenticated }: ChatProps) {
                               <p className="text-sm leading-relaxed break-words pr-8">{message.content}</p>
                               <div className="flex items-center justify-between mt-1">
                                 <p className={`text-xs ${
-                                  message.senderId === currentUser.id ? 'text-blue-100' : 'text-gray-500'
+                                  message.senderId === user.id ? 'text-blue-100' : 'text-gray-500'
                                 }`}>
                                   {formatTime(message.createdAt)}
                                 </p>
-                                {message.senderId === currentUser.id && (
+                                {message.senderId === user.id && (
                                   <div className="flex items-center ml-2">
                                     <span className="text-xs text-blue-100">✓✓</span>
                                   </div>
@@ -1256,27 +1180,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
                 </div>
               </div>
             </>
-          ) : (
-            /* Welcome State - No Chat Selected */
-            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 p-8">
-              <div className="text-center max-w-md">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MessageCircle className="h-8 w-8 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Welcome to Cross-Company Chat</h3>
-                <p className="text-gray-600 mb-6">
-                  Select a conversation from the sidebar or start a new chat with someone from your company.
-                </p>
-                <Button
-                  onClick={() => setShowUserList(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Start New Chat
-                </Button>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -1358,7 +1262,7 @@ function Chat({ user, isAuthenticated }: ChatProps) {
               <span className="text-gray-900">Delete for me</span>
             </button>
             
-            {contextMenuMessage.senderId === currentUser?.id && (
+            {contextMenuMessage.senderId === user?.id && (
               <button
                 className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center space-x-3"
                 onClick={() => handleContextMenuAction('delete-for-everyone')}
@@ -1373,7 +1277,3 @@ function Chat({ user, isAuthenticated }: ChatProps) {
     </Layout>
   );
 }
-
-// Export with authentication (all authenticated users can access chat)
-// Export with essential HOCs (no auth since handled by routing)
-export default HOCPresets.publicPage(Chat);

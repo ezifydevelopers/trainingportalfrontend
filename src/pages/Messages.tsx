@@ -8,9 +8,6 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
 interface Message {
   id: string;
@@ -29,12 +26,7 @@ interface Conversation {
   lastMessageTimestamp: Date;
 }
 
-
-interface MessagesProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-function Messages({ user, isAuthenticated }: MessagesProps) {
+export default function Messages() {
   const { allUsers, user } = useAuth();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -609,6 +601,3 @@ function Messages({ user, isAuthenticated }: MessagesProps) {
     </Layout>
   );
 }
-// Export with authentication and role protection
-// Export with comprehensive HOC protection
-export default HOCPresets.managerPage(Messages);

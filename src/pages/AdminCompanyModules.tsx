@@ -37,8 +37,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Progress } from "@/components/ui/progress";
 import ResourceUploadDialog from "@/components/ResourceUploadDialog";
 import ModuleResources from "@/components/ModuleResources";
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -69,7 +67,6 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { HOCPresets } from "@/components/HOCComposer";
 
 // Sortable Module Component
 interface Module {
@@ -270,12 +267,7 @@ function SortableModule({
   );
 }
 
-interface AdminCompanyModulesProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-function AdminCompanyModules({ user, isAuthenticated }: AdminCompanyModulesProps) {
+export default function AdminCompanyModules() {
   const queryClient = useQueryClient();
   
   // Fetch companies from API
@@ -3745,6 +3737,3 @@ function AdminCompanyModules({ user, isAuthenticated }: AdminCompanyModulesProps
     </Layout>
   );
 }
-
-// Export with essential HOCs (no auth since handled by routing)
-export default HOCPresets.publicPage(AdminCompanyModules);

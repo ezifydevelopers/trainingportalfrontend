@@ -4,14 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { HOCPresets } from "@/components/HOCComposer";
 
-interface TraineeSignupProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-
-function TraineeSignup({ user, isAuthenticated }: TraineeSignupProps) {
+export default function TraineeSignup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -120,6 +114,4 @@ function TraineeSignup({ user, isAuthenticated }: TraineeSignupProps) {
       </div>
     </div>
   );
-}
-// Export with comprehensive HOC protection
-export default HOCPresets.publicPage(TraineeSignup);
+} 

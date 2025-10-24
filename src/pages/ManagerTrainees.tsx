@@ -10,7 +10,6 @@ import { useAllTrainees, useAllCompanies, useGetManagerCompanies, useDeleteTrain
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { HOCPresets } from "@/components/HOCComposer";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -22,18 +21,8 @@ import {
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
 
-interface ManagerTraineesProps {
-  user?: {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-    companyId?: number;
-  };
-  isAuthenticated?: boolean;
-}
-
-const ManagerTrainees = ({ user, isAuthenticated }: ManagerTraineesProps) => {
+const ManagerTrainees = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -390,5 +379,4 @@ const ManagerTrainees = ({ user, isAuthenticated }: ManagerTraineesProps) => {
   );
 };
 
-// Export with essential HOCs (no auth since handled by routing)
-export default HOCPresets.publicPage(ManagerTrainees);
+export default ManagerTrainees;

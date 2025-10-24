@@ -12,20 +12,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-
-interface ContactDetailsProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-function ContactDetails({ user, isAuthenticated }: ContactDetailsProps) {
+export default function ContactDetails() {
   const { contactId } = useParams<{ contactId: string }>();
   const navigate = useNavigate();
   const [contact, setContact] = useState<Contact | null>(null);
@@ -284,6 +276,3 @@ function ContactDetails({ user, isAuthenticated }: ContactDetailsProps) {
     </Layout>
   );
 }
-// Export with authentication and role protection
-// Export with comprehensive HOC protection
-export default HOCPresets.managerPage(ContactDetails);

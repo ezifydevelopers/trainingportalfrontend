@@ -6,16 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGetAllFeedback, useGetFeedbackStats } from "@/hooks/useApi";
 import { Star, MessageSquare, Users, TrendingUp, Filter } from "lucide-react";
-import withAuth from "@/components/withAuth";
-import withRole from "@/components/withRole";
-import { HOCPresets } from "@/components/HOCComposer";
 
-
-interface AdminFeedbackProps {
-  user?: any;
-  isAuthenticated?: boolean;
-}
-function AdminFeedback({ user, isAuthenticated }: AdminFeedbackProps) {
+export default function AdminFeedback() {
   const { data: feedback = [], isLoading, error } = useGetAllFeedback();
   const { data: stats } = useGetFeedbackStats();
   const [filterModule, setFilterModule] = useState<string>('all');
@@ -303,7 +295,4 @@ function AdminFeedback({ user, isAuthenticated }: AdminFeedbackProps) {
       </div>
     </Layout>
   );
-}
-// Export with authentication and role protection
-// Export with essential HOCs (no auth since handled by routing)
-export default HOCPresets.publicPage(AdminFeedback);
+} 
