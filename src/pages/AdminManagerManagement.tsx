@@ -26,8 +26,15 @@ import {
 import { useAllCompanies } from "@/hooks/useApi";
 import { toast } from "sonner";
 import type { Manager, Company } from "@/lib/api";
+import { HOCPresets } from "@/components/HOCComposer";
 
-const AdminManagerManagement = () => {
+
+interface AdminManagerManagementProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+const AdminManagerManagement = ({ user, isAuthenticated }: AdminManagerManagementProps) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
@@ -565,4 +572,5 @@ const AdminManagerManagement = () => {
   );
 };
 
-export default AdminManagerManagement;
+// Export with essential HOCs (no auth since handled by routing)
+export default HOCPresets.publicPage(AdminManagerManagement);

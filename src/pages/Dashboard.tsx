@@ -4,9 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { Users, Database, ArrowRight, BarChart2, MessageSquare } from "lucide-react";
+import withAuth from "@/components/withAuth";
+import withRole from "@/components/withRole";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function Dashboard() {
-  const { user } = useAuth();
+interface DashboardProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+function Dashboard({ user, isAuthenticated }: DashboardProps) {
 
   const stats = [
     {
@@ -214,3 +221,6 @@ export default function Dashboard() {
     </Layout>
   );
 }
+
+// Export with comprehensive HOC protection (ADMIN and MANAGER)
+export default HOCPresets.managerPage(Dashboard);

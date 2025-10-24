@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HOCPresets } from "@/components/HOCComposer";
 import {
   Pagination,
   PaginationContent,
@@ -42,7 +43,12 @@ interface UserData {
   status: "Active" | "Inactive";
 }
 
-export default function UserManagement() {
+interface UserManagementProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+function UserManagement({ user, isAuthenticated }: UserManagementProps) {
   const { createUser, updateUserById, deleteUser, user: currentUser, allUsers } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -655,3 +661,7 @@ export default function UserManagement() {
     </Layout>
   );
 }
+
+// Export with authentication and role protection (ADMIN only)
+// Export with comprehensive HOC protection
+export default HOCPresets.adminPage(UserManagement);

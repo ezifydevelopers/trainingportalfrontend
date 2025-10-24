@@ -15,12 +15,19 @@ import FeedbackModal from "@/components/FeedbackModal";
 import ResourceViewer from "@/components/ResourceViewer";
 import ModuleResources from "@/components/ModuleResources";
 import { getApiBaseUrl, getBaseUrl } from "@/lib/api";
-import CustomVideoPlayer from "@/components/CustomVideoPlayer";
+import UniversalVideoPlayer from "@/components/UniversalVideoPlayer";
+import withAuth from "@/components/withAuth";
+import withRole from "@/components/withRole";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function TrainingModule() {
+interface TrainingModuleProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+function TrainingModule({ user, isAuthenticated }: TrainingModuleProps) {
   const { moduleId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [videoProgress, setVideoProgress] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -66,7 +73,7 @@ export default function TrainingModule() {
   // Reset video states when module changes
   useEffect(() => {
     if (module) {
-      setIsVideoLoading(true);
+      setIsVideoLoading(false); // Never show loading
       setVideoError(null);
       setIsVideoPlaying(false);
     }
@@ -270,20 +277,20 @@ export default function TrainingModule() {
       return '';
     }
     
-    let fullUrl;
+    // If it's already a complete URL (YouTube or other), return as is
     if (videoUrl.startsWith('http')) {
-      fullUrl = videoUrl;
-    } else if (videoUrl.startsWith('/uploads/')) {
-      // Video URL already has /uploads/ prefix, just add the base URL
-      const baseUrl = getBaseUrl();
-      fullUrl = `${baseUrl}${videoUrl}`;
-    } else {
-      // Video URL is just a filename, add /uploads/ prefix
-      const baseUrl = getBaseUrl();
-      fullUrl = `${baseUrl}/uploads/${videoUrl}`;
+      return videoUrl;
     }
     
-    return fullUrl;
+    // For file uploads, construct the full URL
+    const baseUrl = getBaseUrl();
+    if (videoUrl.startsWith('/uploads/')) {
+      // Video URL already has /uploads/ prefix, just add the base URL
+      return `${baseUrl}${videoUrl}`;
+    } else {
+      // Video URL is just a filename, add /uploads/ prefix
+      return `${baseUrl}/uploads/${videoUrl}`;
+    }
   };
 
   const capitalizeModuleName = (name: string) => {
@@ -353,15 +360,6 @@ export default function TrainingModule() {
                   {module.videos?.[0] ? (
                     <div className="space-y-3">
                       <div className="aspect-video bg-black rounded-lg overflow-hidden select-none relative">
-                        {/* Loading indicator */}
-                        {isVideoLoading && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                            <div className="text-center text-white">
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                              <p className="text-sm">Loading video...</p>
-                            </div>
-                          </div>
-                        )}
                         
                         {/* Error state */}
                         {videoError && (
@@ -376,9 +374,10 @@ export default function TrainingModule() {
                                 onClick={() => {
                                   setVideoError(null);
                                   setIsVideoLoading(true);
-                                  const video = (window as any).currentVideo;
-                                  if (video) {
-                                    video.load();
+                                  // Force re-render of the video player
+                                  const videoElement = document.querySelector('video');
+                                  if (videoElement) {
+                                    videoElement.load();
                                   }
                                 }}
                               >
@@ -387,9 +386,9 @@ export default function TrainingModule() {
                             </div>
                           </div>
                         )}
-                        <CustomVideoPlayer
-                          src={getVideoUrl(module.videos?.[0]?.url)}
-                          className="w-full h-full"
+                        <UniversalVideoPlayer
+                          src={getVideoUrl(module.videos?.[0]?.url || '')}
+                          className="w-full aspect-video"
                           onPlay={() => {
                             setIsVideoPlaying(true);
                             setIsVideoPaused(false);
@@ -421,9 +420,11 @@ export default function TrainingModule() {
                           }}
                           onError={(error) => {
                             console.error('Video error:', error);
+                            console.error('Video URL:', getVideoUrl(module.videos?.[0]?.url || ''));
+                            console.error('Original video URL:', module.videos?.[0]?.url);
                             setIsVideoLoading(false);
                             setVideoError('Failed to load video. Please check your internet connection and try again.');
-                            toast.error('Failed to load video. Please try refreshing the page.');
+                            toast.error('Failed to load video. Please try again.');
                           }}
                           preload="metadata"
                           draggable={false}
@@ -440,11 +441,22 @@ export default function TrainingModule() {
                             onClick={handleVideoComplete} 
                             size="sm" 
                             className="mt-1"
-                            disabled={videoCompleted || videoProgress < 100}
+                            disabled={videoCompleted}
                           >
                             {videoCompleted ? "Video Completed" : 
                               videoProgress < 100 ? `Watch Complete Video (${Math.round(videoProgress)}%)` : "Mark as Watched"}
                           </Button>
+                          {videoProgress < 10 && (
+                            <Button 
+                              onClick={handleVideoComplete} 
+                              size="sm" 
+                              variant="outline"
+                              className="mt-1"
+                              disabled={videoCompleted}
+                            >
+                              Skip Video
+                            </Button>
+                          )}
                         </div>
                         {/* Video Control Restriction Notice - Moved below video */}
                         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs p-2 rounded text-center">
@@ -659,3 +671,6 @@ export default function TrainingModule() {
     </Layout>
   );
 }
+
+// Export with essential HOCs (no auth since handled by routing)
+export default HOCPresets.publicPage(TrainingModule);

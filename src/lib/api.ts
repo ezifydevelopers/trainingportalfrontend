@@ -305,9 +305,13 @@ class ApiClient {
     const url = `${API_BASE_URL}${endpoint}`;
     
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
+
+    // Only set Content-Type for JSON requests, not for FormData
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
@@ -616,6 +620,10 @@ class ApiClient {
     return this.request('/admin/modules');
   }
 
+  async getModule(id: number): Promise<TrainingModule> {
+    return this.request<TrainingModule>(`/admin/modules/${id}`);
+  }
+
   async addModuleToCompany(companyId: number, name: string): Promise<{
     message: string;
     module: { id: number; name: string; companyId: number };
@@ -626,14 +634,83 @@ class ApiClient {
     });
   }
 
-  async updateModule(id: number, name: string): Promise<{
-    message: string;
+  async updateModule(id: number, data: {
+    name: string;
+    videoFile?: File;
+    duration?: number;
+    mcqs?: Array<{
+      question: string;
+      options: string[];
+      answer: string;
+      explanation?: string;
+    }>;
+    youtubeUrl?: string;
+    youtubeTitle?: string;
+    youtubeThumbnail?: string;
+    videoType?: 'file' | 'youtube';
+    removeVideo?: boolean;
+  }): Promise<{
+    success: boolean;
     module: { id: number; name: string; companyId: number };
   }> {
-    return this.request(`/admin/modules/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ name }),
-    });
+    // If we have a video file, use FormData, otherwise use JSON
+    console.log('API updateModule - data.videoFile:', data.videoFile ? `File: ${data.videoFile.name} (${data.videoFile.size} bytes)` : 'No file');
+    if (data.videoFile) {
+      console.log('API updateModule - Using FormData for file upload');
+      const formData = new FormData();
+      formData.append('name', data.name);
+      formData.append('videoFile', data.videoFile);
+      
+      if (data.duration) {
+        formData.append('duration', data.duration.toString());
+      }
+      if (data.mcqs) {
+        formData.append('mcqs', JSON.stringify(data.mcqs));
+      }
+      if (data.youtubeUrl) {
+        formData.append('youtubeUrl', data.youtubeUrl);
+      }
+      if (data.youtubeTitle) {
+        formData.append('youtubeTitle', data.youtubeTitle);
+      }
+      if (data.youtubeThumbnail) {
+        formData.append('youtubeThumbnail', data.youtubeThumbnail);
+      }
+      if (data.videoType) {
+        formData.append('videoType', data.videoType);
+      }
+      if (data.removeVideo !== undefined) {
+        formData.append('removeVideo', data.removeVideo.toString());
+      }
+
+      console.log('Sending FormData with video file');
+      return this.request(`/admin/modules/${id}`, {
+        method: 'PUT',
+        body: formData,
+      });
+    } else {
+      // No file upload, send as JSON
+      console.log('API updateModule - Using JSON (no file upload)');
+      const jsonData = {
+        name: data.name,
+        duration: data.duration,
+        mcqs: data.mcqs,
+        youtubeUrl: data.youtubeUrl,
+        youtubeTitle: data.youtubeTitle,
+        youtubeThumbnail: data.youtubeThumbnail,
+        videoType: data.videoType,
+        removeVideo: data.removeVideo
+      };
+
+      console.log('Sending JSON data:', jsonData);
+      return this.request(`/admin/modules/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData),
+      });
+    }
   }
 
   async deleteModule(id: number): Promise<{ message: string }> {
@@ -642,13 +719,31 @@ class ApiClient {
     });
   }
 
-  async addVideoToModule(moduleId: number, videoFile: File, duration: number): Promise<{
+  async addVideoToModule(moduleId: number, videoFile: File | null, duration: number, youtubeUrl?: string, youtubeTitle?: string, youtubeThumbnail?: string, videoType?: string): Promise<{
     message: string;
     video: { id: number; url: string; duration: number };
   }> {
     const formData = new FormData();
-    formData.append('video', videoFile);
+    
+    if (videoFile) {
+      formData.append('video', videoFile);
+    }
     formData.append('duration', duration.toString());
+    
+    // Add YouTube-specific fields if provided
+    if (youtubeUrl) {
+      formData.append('youtubeUrl', youtubeUrl);
+    }
+    if (youtubeTitle) {
+      formData.append('youtubeTitle', youtubeTitle);
+    }
+    if (youtubeThumbnail) {
+      formData.append('youtubeThumbnail', youtubeThumbnail);
+    }
+    if (videoType) {
+      formData.append('videoType', videoType);
+    }
+
 
     const url = `${API_BASE_URL}/admin/modules/${moduleId}/video`;
     

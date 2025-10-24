@@ -7,8 +7,16 @@ import { useTraineeProgress, useAllTrainees } from "@/hooks/useApi";
 import { ArrowLeft, Clock, Trophy, CheckCircle, Target, BarChart3, Loader2, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import withAuth from "@/components/withAuth";
+import withRole from "@/components/withRole";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function TrackTraineeDetail() {
+
+interface TrackTraineeDetailProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+function TrackTraineeDetail({ user, isAuthenticated }: TrackTraineeDetailProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { id, traineeId: urlTraineeId } = useParams();
@@ -558,4 +566,7 @@ export default function TrackTraineeDetail() {
       </div>
     </div>
   );
-} 
+}
+// Export with authentication and role protection
+// Export with essential HOCs (no auth since handled by routing)
+export default HOCPresets.publicPage(TrackTraineeDetail);

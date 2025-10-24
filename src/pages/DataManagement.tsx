@@ -9,7 +9,12 @@ import CompanyDetails from "@/components/CompanyDetails";
 import ComprehensiveDataTable from "@/components/ComprehensiveDataTable";
 import { Contact, Company, ContactStatus } from "@/types/contact";
 
-export default function DataManagement() {
+
+interface DataManagementProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+function DataManagement({ user, isAuthenticated }: DataManagementProps) {
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -224,6 +229,9 @@ export default function DataManagement() {
         }
       } catch (error) {
         toast.error("Failed to import contacts. Please check your CSV format.");
+import withAuth from "@/components/withAuth";
+import withRole from "@/components/withRole";
+import { HOCPresets } from "@/components/HOCComposer";
       }
     };
     
@@ -342,3 +350,6 @@ export default function DataManagement() {
     </Layout>
   );
 }
+// Export with authentication and role protection
+// Export with comprehensive HOC protection
+export default HOCPresets.adminPage(DataManagement);

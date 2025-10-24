@@ -12,9 +12,16 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "sonner";
 import HelpRequestButton from "@/components/HelpRequestButton";
+import withAuth from "@/components/withAuth";
+import withRole from "@/components/withRole";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function TraineeDashboard() {
-  const { user } = useAuth();
+interface TraineeDashboardProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+function TraineeDashboard({ user, isAuthenticated }: TraineeDashboardProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("videos");
   
@@ -22,18 +29,18 @@ export default function TraineeDashboard() {
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useDashboard();
 
   // Separate video and resource modules
-  const videoModules = dashboardData?.moduleProgress?.filter(module => !module.isResourceModule) || [];
-  const resourceModules = dashboardData?.moduleProgress?.filter(module => module.isResourceModule) || [];
+  const videoModules = dashboardData?.moduleProgress?.filter(module => !module?.isResourceModule || false) || [];
+  const resourceModules = dashboardData?.moduleProgress?.filter(module => module?.isResourceModule || false) || [];
 
   // Helper function to render modules
   const renderModules = (modules) => {
     console.log('🔍 Rendering modules:', modules.map((m, index) => ({
       index: index + 1,
-      name: m.moduleName,
-      completed: m.completed,
-      unlocked: m.unlocked,
-      pass: m.pass,
-      score: m.marksObtained
+      name: m?.moduleName || 'Unknown Module',
+      completed: m?.completed || false,
+      unlocked: m?.unlocked || false,
+      pass: m?.pass || false,
+      score: m?.marksObtained || 0
     })));
     if (!modules || modules.length === 0) {
       return (
@@ -52,19 +59,19 @@ export default function TraineeDashboard() {
     }
 
     return modules.map((module, index) => {
-      const isCompleted = module.completed;
+      const isCompleted = module?.completed || false;
       // For resource modules, always keep them unlocked
-      const isAvailable = module.isResourceModule ? true : module.unlocked;
+      const isAvailable = module?.isResourceModule ? true : (module?.unlocked || false);
       // A module should only be locked if it's not completed AND not unlocked
-      const isLocked = !isCompleted && (module.isResourceModule ? false : !module.unlocked);
+      const isLocked = !isCompleted && (module?.isResourceModule ? false : !(module?.unlocked || false));
       const isCurrent = !isCompleted && isAvailable;
       
       // Debug logging for the first few modules
       if (index < 5) {
-        console.log(`Module ${index + 1} (${module.moduleName}):`, {
+        console.log(`Module ${index + 1} (${module?.moduleName || 'Unknown'}):`, {
           completed: isCompleted,
-          unlocked: module.unlocked,
-          isResourceModule: module.isResourceModule,
+          unlocked: module?.unlocked || false,
+          isResourceModule: module?.isResourceModule || false,
           isAvailable,
           isLocked,
           isCurrent
@@ -73,7 +80,7 @@ export default function TraineeDashboard() {
       
       return (
         <div
-          key={module.moduleId}
+          key={module?.moduleId || index}
           className={`rounded-lg border p-0.5 sm:p-4 transition-colors ${
             isCompleted ? 'bg-green-50 border-green-200' :
             isCurrent ? 'bg-blue-50 border-blue-200' :
@@ -93,7 +100,7 @@ export default function TraineeDashboard() {
                   <CheckCircle className="h-2 w-2 sm:h-5 sm:w-5 text-green-600" />
                 ) : isLocked ? (
                   <Lock className="h-2 w-2 sm:h-5 sm:w-5 text-gray-400" />
-                ) : module.isResourceModule ? (
+                ) : module?.isResourceModule || false ? (
                   <FileText className="h-2 w-2 sm:h-5 sm:w-5 text-purple-600" />
                 ) : (
                   <Play className="h-2 w-2 sm:h-5 sm:w-5 text-blue-600" />
@@ -102,18 +109,18 @@ export default function TraineeDashboard() {
               <div className="flex-1">
                 <h3 
                   className={`font-semibold text-xs sm:text-base text-gray-900 break-words leading-tight ${!isLocked ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''}`}
-                  onClick={!isLocked ? () => handleStartModule(module.moduleId) : undefined}
+                  onClick={!isLocked ? () => handleStartModule(module?.moduleId || index) : undefined}
                 >
-                  {module.moduleName}
+                  {module?.moduleName || 'Unknown Module'}
                 </h3>
                 <div className="flex items-center space-x-1 sm:space-x-4 mt-1 sm:mt-2">
                   <span className="text-xs text-gray-500 flex items-center">
                     <Clock className="h-2 w-2 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
-                    {formatTime(module.videoDuration)}
+                    {formatTime(module?.videoDuration || 0)}
                   </span>
-                  {module.marksObtained > 0 && (
+                  {module?.marksObtained || 0 > 0 && (
                     <span className="text-xs text-gray-500">
-                      <span className="hidden sm:inline">Score: </span>{module.marksObtained}%
+                      <span className="hidden sm:inline">Score: </span>{module?.marksObtained || 0}%
                     </span>
                   )}
                 </div>
@@ -144,7 +151,7 @@ export default function TraineeDashboard() {
               {!isLocked && (
                 <Button
                   size="sm"
-                  onClick={() => handleStartModule(module.moduleId)}
+                  onClick={() => handleStartModule(module?.moduleId || index)}
                   className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-3 px-0.5 sm:h-auto sm:px-3 sm:py-2"
                 >
                   <span className="hidden sm:inline">{isCompleted ? 'Review' : 'Start'}</span>
@@ -158,9 +165,6 @@ export default function TraineeDashboard() {
     });
   };
 
-  if (!user || user.role !== "TRAINEE") {
-    return <div>Access denied</div>;
-  }
 
   if (dashboardLoading) {
     return (
@@ -183,7 +187,7 @@ export default function TraineeDashboard() {
           <div className="flex items-center space-x-3">
             <BookOpen className="h-8 w-8 text-blue-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name || 'Trainee'}!</h1>
               <p className="text-gray-600">Continue your learning journey</p>
             </div>
           </div>
@@ -228,7 +232,7 @@ export default function TraineeDashboard() {
         <div className="flex items-center space-x-2 sm:space-x-3">
           <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 truncate">Welcome back, {user.name}!</h1>
+            <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 truncate">Welcome back, {user?.name || 'Trainee'}!</h1>
             <p className="text-xs sm:text-sm lg:text-base text-gray-600">Continue your learning journey</p>
           </div>
         </div>
@@ -294,8 +298,12 @@ export default function TraineeDashboard() {
               <Play className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {dashboardData?.currentModule ? dashboardData.currentModule.moduleName : 'None'}
+              <div className="text-2xl font-bold truncate max-w-[200px]">
+                {dashboardData?.currentModule ? 
+                  (dashboardData.currentModule.moduleName?.length > 30 
+                    ? dashboardData.currentModule.moduleName.substring(0, 30) + '...' 
+                    : dashboardData.currentModule.moduleName) 
+                  : 'None'}
               </div>
               <p className="text-xs text-muted-foreground">
                 {dashboardData?.currentModule?.moduleName ? 'Current training module' : 'All modules completed'}
@@ -355,14 +363,14 @@ export default function TraineeDashboard() {
               <TabsContent value="videos" className="space-y-1 sm:space-y-4">
                 {videoModules.length > 0 ? (
                   videoModules.map((module) => {
-                  const isCompleted = module.completed;
-                  const isAvailable = module.unlocked;
-                  const isLocked = !module.unlocked;
+                  const isCompleted = module?.completed || false;
+                  const isAvailable = module?.unlocked || false;
+                  const isLocked = !module?.unlocked || false;
                   const isCurrent = !isCompleted && isAvailable;
                   
                   return (
                     <div
-                      key={module.moduleId}
+                      key={module?.moduleId || index}
                       className={`rounded-lg border p-3 sm:p-4 transition-colors ${
                         isCompleted ? 'bg-green-50 border-green-200' :
                         isCurrent ? 'bg-blue-50 border-blue-200' :
@@ -389,18 +397,18 @@ export default function TraineeDashboard() {
                           <div className="flex-1">
                             <h3 
                               className={`font-semibold text-gray-900 ${!isLocked ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''}`}
-                              onClick={!isLocked ? () => handleStartModule(module.moduleId) : undefined}
+                              onClick={!isLocked ? () => handleStartModule(module?.moduleId || index) : undefined}
                             >
-                              {module.moduleName}
+                              {module?.moduleName || 'Unknown Module'}
                             </h3>
                             <div className="flex items-center space-x-4 mt-2">
                               <span className="text-xs text-gray-500 flex items-center">
                                 <Clock className="h-3 w-3 mr-1" />
-                                {formatTime(module.videoDuration)}
+                                {formatTime(module?.videoDuration || 0)}
                               </span>
-                              {module.marksObtained > 0 && (
+                              {module?.marksObtained || 0 > 0 && (
                                 <span className="text-xs text-gray-500">
-                                  Score: {module.marksObtained}%
+                                  Score: {module?.marksObtained || 0}%
                                 </span>
                               )}
                               {isCompleted && (
@@ -425,7 +433,7 @@ export default function TraineeDashboard() {
                           <Button
                             variant={isCompleted ? "outline" : "default"}
                             disabled={isLocked}
-                            onClick={() => handleStartModule(module.moduleId)}
+                            onClick={() => handleStartModule(module?.moduleId || index)}
                           >
                             {isCompleted ? "Review" : isLocked ? "Locked" : "Start"}
                           </Button>
@@ -448,15 +456,15 @@ export default function TraineeDashboard() {
               <TabsContent value="resources" className="space-y-1 sm:space-y-4">
                 {resourceModules.length > 0 ? (
                   resourceModules.map((module) => {
-                    const isCompleted = module.completed;
+                    const isCompleted = module?.completed || false;
                     // Always keep resource modules unlocked/available
-                    const isAvailable = true; // module.unlocked;
-                    const isLocked = false; // !module.unlocked;
+                    const isAvailable = true; // module?.unlocked || false;
+                    const isLocked = false; // !module?.unlocked || false;
                     const isCurrent = !isCompleted && isAvailable;
                     
                     return (
                       <div
-                        key={module.moduleId}
+                        key={module?.moduleId || index}
                         className={`rounded-lg border p-0.5 sm:p-4 transition-colors ${
                           isCompleted ? 'bg-green-50 border-green-200' :
                           isCurrent ? 'bg-blue-50 border-blue-200' :
@@ -481,14 +489,14 @@ export default function TraineeDashboard() {
                               )}
                             </div>
                             <div className="flex-1">
-                              <h3 className="text-xs sm:text-lg font-medium text-gray-900 break-words leading-tight">{module.moduleName}</h3>
+                              <h3 className="text-xs sm:text-lg font-medium text-gray-900 break-words leading-tight">{module?.moduleName || 'Unknown Module'}</h3>
                               <div className="flex items-center space-x-1 sm:space-x-4 mt-0.5 sm:mt-1">
                                 <span className="text-xs text-gray-500">
                                   {isCompleted ? 'Completed' : isCurrent ? 'Current' : isLocked ? 'Locked' : 'Available'}
                                 </span>
-                                {module.timeSpentOnVideo > 0 && (
+                                {module?.timeSpentOnVideo || 0 > 0 && (
                                   <span className="text-xs text-gray-500">
-                                    {formatTime(module.timeSpentOnVideo)}<span className="hidden sm:inline"> spent</span>
+                                    {formatTime(module?.timeSpentOnVideo || 0)}<span className="hidden sm:inline"> spent</span>
                                   </span>
                                 )}
                               </div>
@@ -520,7 +528,7 @@ export default function TraineeDashboard() {
                               <Button
                                 size="sm"
                                 disabled={isLocked}
-                                onClick={() => handleStartModule(module.moduleId)}
+                                onClick={() => handleStartModule(module?.moduleId || index)}
                                 className="text-xs h-3 px-0.5 sm:h-auto sm:px-3 sm:py-2"
                               >
                                 <span className="hidden sm:inline">{isCompleted ? "Review" : isLocked ? "Locked" : "View Resources"}</span>
@@ -555,3 +563,7 @@ export default function TraineeDashboard() {
     </Layout>
   );
 }
+
+// Export with authentication and role protection (TRAINEE only)
+// Export with essential HOCs (no auth since handled by routing)
+export default HOCPresets.publicPage(TraineeDashboard);

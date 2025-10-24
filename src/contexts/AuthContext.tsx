@@ -293,6 +293,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
+    // During hot reload or development, return a default context instead of throwing
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('useAuth called outside AuthProvider, returning default context');
+      return {
+        user: null,
+        allUsers: [],
+        isLoading: false,
+        login: async () => ({ success: false, message: 'Not authenticated' }),
+        signup: async () => ({ success: false, message: 'Not authenticated' }),
+        logout: () => {},
+        updateUser: () => {},
+        refreshUser: async () => {},
+        createUser: async () => ({ success: false, message: 'Not authenticated' }),
+        updateUserRole: async () => ({ success: false, message: 'Not authenticated' }),
+        deleteUser: async () => ({ success: false, message: 'Not authenticated' }),
+        getAllUsers: async () => [],
+        resendVerificationEmail: async () => ({ success: false, message: 'Not authenticated' }),
+        verifyEmail: async () => ({ success: false, message: 'Not authenticated' }),
+        forgotPassword: async () => ({ success: false, message: 'Not authenticated' }),
+        resetPassword: async () => ({ success: false, message: 'Not authenticated' }),
+      };
+    }
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

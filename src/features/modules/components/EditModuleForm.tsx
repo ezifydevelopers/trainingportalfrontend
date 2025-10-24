@@ -15,7 +15,9 @@ import {
   Check,
   Trash2,
   Save,
-  Plus
+  Plus,
+  Youtube,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Module } from '@/shared/types/common.types';
@@ -38,6 +40,11 @@ interface EditModuleFormProps {
     videoFile?: File;
     duration?: number;
     mcqs?: MCQ[];
+    youtubeUrl?: string;
+    youtubeTitle?: string;
+    youtubeThumbnail?: string;
+    videoType?: 'file' | 'youtube';
+    removeVideo?: boolean;
   }) => Promise<void>;
   isLoading?: boolean;
 }
@@ -54,6 +61,14 @@ const EditModuleForm = memo<EditModuleFormProps>(({
   const [videoPreview, setVideoPreview] = useState('');
   const [videoDuration, setVideoDuration] = useState(0);
   const [isCalculatingDuration, setIsCalculatingDuration] = useState(false);
+  
+  // YouTube video states
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeTitle, setYoutubeTitle] = useState('');
+  const [youtubeThumbnail, setYoutubeThumbnail] = useState('');
+  const [videoType, setVideoType] = useState<'file' | 'youtube'>('file');
+  const [showYouTubeUpload, setShowYouTubeUpload] = useState(false);
+  const [removeVideo, setRemoveVideo] = useState(false);
   
   // MCQ state
   const [mcqs, setMcqs] = useState<MCQ[]>([]);
@@ -77,6 +92,22 @@ const EditModuleForm = memo<EditModuleFormProps>(({
       setVideoPreview(module.videos?.[0]?.url ? getVideoUrl(module.videos[0].url) : '');
       setVideoDuration(module.videos?.[0]?.duration || 0);
       setMcqs(module.mcqs ? [...module.mcqs] : []);
+      
+      // Check if current video is YouTube
+      const currentVideo = module.videos?.[0];
+      if (currentVideo?.url && (currentVideo.url.includes('youtube.com') || currentVideo.url.includes('youtu.be'))) {
+        setVideoType('youtube');
+        setYoutubeUrl(currentVideo.url);
+        setYoutubeTitle(currentVideo.title || 'YouTube Video');
+        setYoutubeThumbnail(currentVideo.thumbnail || '');
+      } else {
+        setVideoType('file');
+        setYoutubeUrl('');
+        setYoutubeTitle('');
+        setYoutubeThumbnail('');
+      }
+      
+      setRemoveVideo(false);
     }
   }, [module]);
 
@@ -101,6 +132,35 @@ const EditModuleForm = memo<EditModuleFormProps>(({
 
   const handleBoxClick = useCallback(() => {
     fileInputRef.current?.click();
+  }, []);
+
+  // YouTube video handling
+  const handleYouTubeVideoAdd = useCallback((videoData: { url: string; title: string; duration: number; thumbnail: string }) => {
+    setYoutubeUrl(videoData.url);
+    setYoutubeTitle(videoData.title);
+    setYoutubeThumbnail(videoData.thumbnail);
+    setVideoDuration(videoData.duration);
+    setShowYouTubeUpload(false);
+    setRemoveVideo(false);
+  }, []);
+
+  const handleYouTubeVideoCancel = useCallback(() => {
+    setShowYouTubeUpload(false);
+  }, []);
+
+  const handleRemoveYouTubeVideo = useCallback(() => {
+    setYoutubeUrl('');
+    setYoutubeTitle('');
+    setYoutubeThumbnail('');
+    setVideoDuration(0);
+    setRemoveVideo(true);
+  }, []);
+
+  const handleRemoveCurrentVideo = useCallback(() => {
+    setVideoFile(null);
+    setVideoPreview('');
+    setVideoDuration(0);
+    setRemoveVideo(true);
   }, []);
 
   // MCQ handling
@@ -205,7 +265,12 @@ const EditModuleForm = memo<EditModuleFormProps>(({
         name: moduleName,
         videoFile: videoFile || undefined,
         duration: videoDuration || undefined,
-        mcqs: mcqs.length > 0 ? mcqs : undefined
+        mcqs: mcqs.length > 0 ? mcqs : undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeTitle: youtubeTitle || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
+        videoType: videoType,
+        removeVideo: removeVideo
       });
       
       // Reset form
@@ -217,6 +282,11 @@ const EditModuleForm = memo<EditModuleFormProps>(({
       setQuestion('');
       setOptions(['', '', '', '']);
       setCorrectAnswer(0);
+      setYoutubeUrl('');
+      setYoutubeTitle('');
+      setYoutubeThumbnail('');
+      setVideoType('file');
+      setRemoveVideo(false);
     } catch (error) {
     }
   }, [module, moduleName, videoFile, videoDuration, mcqs, onSubmit]);
@@ -236,6 +306,11 @@ const EditModuleForm = memo<EditModuleFormProps>(({
     setEditExistingQuestion('');
     setEditExistingOptions(['', '', '', '']);
     setEditExistingCorrectAnswer(0);
+    setYoutubeUrl('');
+    setYoutubeTitle('');
+    setYoutubeThumbnail('');
+    setVideoType('file');
+    setRemoveVideo(false);
   }, [onClose]);
 
   return (
@@ -265,48 +340,182 @@ const EditModuleForm = memo<EditModuleFormProps>(({
             />
           </div>
           
-          {/* Video Upload */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium text-gray-700">Update Video Tutorial</Label>
-            <div
-              className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-blue-400 transition group bg-gray-50 hover:bg-blue-50"
-              onClick={handleBoxClick}
-            >
-              <Upload className="h-12 w-12 text-gray-400 group-hover:text-blue-500 mb-3" />
-              <span className="text-gray-600 group-hover:text-blue-600 font-medium text-lg">
-                {videoPreview ? 'Click to replace video' : 'Click to upload video'}
-              </span>
-              <span className="text-sm text-gray-400 mt-2">MP4, WebM, or Ogg (max 100MB)</span>
-              <Input
-                ref={fileInputRef}
-                type="file"
-                accept="video/*"
-                onChange={handleVideoChange}
-                className="hidden"
-              />
+          {/* Video Upload - Enhanced with YouTube and Remove Options */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium text-gray-700">Video Tutorial</Label>
+              {videoPreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRemoveCurrentVideo}
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Remove Video
+                </Button>
+              )}
             </div>
             
-            {/* Video Preview */}
-            {videoPreview && (
-              <div className="mt-4">
-                <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video">
-                  <video
-                    src={videoPreview}
-                    className="w-full h-full object-cover"
-                    controls
-                    preload="metadata"
-                  />
-                </div>
-                <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {isCalculatingDuration ? 'Calculating...' : `${Math.floor(videoDuration / 60)}:${(videoDuration % 60).toString().padStart(2, '0')}`}
+            {/* Video Type Selection */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-gray-700">Choose Video Source</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant={videoType === 'file' ? 'default' : 'outline'}
+                  onClick={() => setVideoType('file')}
+                  className={`flex items-center justify-center space-x-2 h-12 ${
+                    videoType === 'file' 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                      : 'border-2 border-gray-300 hover:border-blue-400'
+                  }`}
+                >
+                  <Upload className="h-5 w-5" />
+                  <span className="font-medium">Upload File</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={videoType === 'youtube' ? 'default' : 'outline'}
+                  onClick={() => setVideoType('youtube')}
+                  className={`flex items-center justify-center space-x-2 h-12 ${
+                    videoType === 'youtube' 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : 'border-2 border-gray-300 hover:border-red-400'
+                  }`}
+                >
+                  <Youtube className="h-5 w-5" />
+                  <span className="font-medium">YouTube Link</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            {videoType === 'file' && (
+              <div className="space-y-4">
+                {!videoFile && !videoPreview ? (
+                  <div
+                    className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-blue-400 transition group bg-gray-50 hover:bg-blue-50"
+                    onClick={handleBoxClick}
+                  >
+                    <Upload className="h-12 w-12 text-gray-400 group-hover:text-blue-500 mb-3" />
+                    <span className="text-gray-600 group-hover:text-blue-600 font-medium text-lg">
+                      Click to upload video
+                    </span>
+                    <span className="text-sm text-gray-400 mt-2">MP4, WebM, or Ogg (max 100MB)</span>
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoChange}
+                      className="hidden"
+                    />
                   </div>
-                  <div className="flex items-center">
-                    <FileText className="h-4 w-4 mr-1" />
-                    {videoFile?.name || 'Current video'}
+                ) : (
+                  <div className="space-y-4">
+                    <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video">
+                      <video
+                        src={videoPreview}
+                        className="w-full h-full object-cover"
+                        controls
+                        preload="metadata"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {isCalculatingDuration ? 'Calculating...' : `${Math.floor(videoDuration / 60)}:${(videoDuration % 60).toString().padStart(2, '0')}`}
+                      </div>
+                      <div className="flex items-center">
+                        <FileText className="h-4 w-4 mr-1" />
+                        {videoFile?.name || 'Current video'}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
+            )}
+
+            {/* YouTube Section */}
+            {videoType === 'youtube' && (
+              <div className="space-y-4">
+                {!youtubeUrl ? (
+                  <div className="border-2 border-dashed border-red-300 rounded-lg p-8 text-center bg-red-50 hover:bg-red-100 transition-colors">
+                    <div className="flex flex-col items-center">
+                      <div className="bg-red-100 rounded-full p-4 mb-4">
+                        <Youtube className="h-12 w-12 text-red-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">Add YouTube Video</h3>
+                      <p className="text-sm text-gray-600 mb-2">Paste a YouTube link to add video content</p>
+                      <p className="text-xs text-gray-500 mb-6">Supports YouTube, YouTube Shorts, and YouTube Music links</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowYouTubeUpload(true)}
+                        className="flex items-center space-x-2 border-red-300 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                      >
+                        <Youtube className="h-4 w-4" />
+                        <span>Add YouTube Video</span>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* YouTube Video Header */}
+                    <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg p-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-red-100 rounded-full p-2">
+                          <Youtube className="h-5 w-5 text-red-600" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-gray-800">{youtubeTitle}</span>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">YouTube Video</span>
+                            {videoDuration > 0 && (
+                              <span className="text-xs text-gray-500">
+                                {Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveYouTubeVideo}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    {/* YouTube Thumbnail Preview */}
+                    {youtubeThumbnail && (
+                      <div className="relative group">
+                        <img
+                          src={youtubeThumbnail}
+                          alt="YouTube thumbnail"
+                          className="w-full h-48 object-cover rounded-lg shadow-md"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg group-hover:bg-black/60 transition-colors">
+                          <div className="bg-red-600 rounded-full p-3 group-hover:scale-110 transition-transform">
+                            <Youtube className="h-8 w-8 text-white" />
+                          </div>
+                        </div>
+                        {videoDuration > 0 && (
+                          <div className="absolute top-3 right-3 bg-black/80 text-white text-xs px-2 py-1 rounded-full font-medium">
+                            {Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')}
+                          </div>
+                        )}
+                        <div className="absolute bottom-3 left-3 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                          YouTube
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -594,6 +803,90 @@ const EditModuleForm = memo<EditModuleFormProps>(({
           </div>
         </form>
       </div>
+
+      {/* YouTube Upload Dialog */}
+      {showYouTubeUpload && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add YouTube Video</h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleYouTubeVideoCancel}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="youtube-url" className="text-sm font-medium text-gray-700">
+                  YouTube Video URL *
+                </Label>
+                <Input
+                  id="youtube-url"
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supports YouTube, YouTube Shorts, and YouTube Music links
+                </p>
+              </div>
+              
+              <div>
+                <Label htmlFor="duration" className="text-sm font-medium text-gray-700">
+                  Video Duration (seconds) *
+                </Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  placeholder="300"
+                  value={videoDuration}
+                  onChange={(e) => setVideoDuration(Number(e.target.value))}
+                  className="mt-1 max-w-xs"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the video duration in seconds (e.g., 300 for 5 minutes)
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleYouTubeVideoCancel}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (youtubeUrl.trim() && videoDuration > 0) {
+                      handleYouTubeVideoAdd({
+                        url: youtubeUrl,
+                        title: 'YouTube Video',
+                        duration: videoDuration,
+                        thumbnail: `https://img.youtube.com/vi/${youtubeUrl.match(/[?&]v=([^&]+)/)?.[1] || youtubeUrl.split('/').pop()}/maxresdefault.jpg`
+                      });
+                    } else {
+                      toast.error('Please enter a valid YouTube URL and duration');
+                    }
+                  }}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  <Youtube className="h-4 w-4 mr-2" />
+                  Add YouTube Video
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </ModalDialog>
   );
 });

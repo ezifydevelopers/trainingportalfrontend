@@ -16,7 +16,7 @@ import { useGetModuleResources, useDeleteResource } from '@/hooks/useApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { getBaseUrl } from '@/lib/api';
-import CustomVideoPlayer from './CustomVideoPlayer';
+import UniversalVideoPlayer from './UniversalVideoPlayer';
 
 interface ModuleResourcesProps {
   moduleId: number;
@@ -311,9 +311,9 @@ const ModuleResources: React.FC<ModuleResourcesProps> = ({
                 </div>
               ) : selectedResource.type === 'VIDEO' ? (
                 <div className="text-center">
-                  <CustomVideoPlayer
+                  <UniversalVideoPlayer
                     src={getResourceUrl(selectedResource)}
-                    className="max-w-full max-h-[600px] mx-auto rounded-lg shadow-lg"
+                    className="max-w-full aspect-video mx-auto rounded-lg shadow-lg"
                   />
                 </div>
               ) : selectedResource.type === 'AUDIO' ? (

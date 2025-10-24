@@ -1,7 +1,15 @@
 
 import Layout from "@/components/Layout";
+import withAuth from "@/components/withAuth";
+import withRole from "@/components/withRole";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function AdminPanel() {
+interface AdminPanelProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+function AdminPanel({ user, isAuthenticated }: AdminPanelProps) {
   return (
     <Layout>
       <div className="p-6">
@@ -23,3 +31,7 @@ export default function AdminPanel() {
     </Layout>
   );
 }
+
+// Export with authentication and role protection (ADMIN only)
+// Export with comprehensive HOC protection
+export default HOCPresets.adminPage(AdminPanel);

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 // Use the working admin hooks
 import { useAllTrainees, useAllCompanies, useGetManagerCompanies, useDeleteTrainee } from "@/hooks/useApi";
 import ManagerTraineeCard from "@/features/trainees/components/ManagerTraineeCard";
+import { HOCPresets } from "@/components/HOCComposer";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -23,8 +24,12 @@ import {
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
 
-const ManagerDashboard = () => {
-  const { user } = useAuth();
+interface ManagerDashboardProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+const ManagerDashboard = ({ user, isAuthenticated }: ManagerDashboardProps) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [traineeToDelete, setTraineeToDelete] = useState<{ id: number; name: string } | null>(null);
@@ -345,4 +350,5 @@ const ManagerDashboard = () => {
   );
 };
 
-export default ManagerDashboard;
+// Export with essential HOCs (no auth since handled by routing)
+export default HOCPresets.publicPage(ManagerDashboard);

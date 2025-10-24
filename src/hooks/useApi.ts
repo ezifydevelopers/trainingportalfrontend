@@ -265,8 +265,24 @@ export const useAddModuleToCompany = () => {
 export const useUpdateModule = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, name }: { id: number; name: string }) =>
-      apiClient.updateModule(id, name),
+    mutationFn: ({ id, ...data }: { 
+      id: number; 
+      name: string;
+      videoFile?: File;
+      duration?: number;
+      mcqs?: Array<{
+        question: string;
+        options: string[];
+        answer: string;
+        explanation?: string;
+      }>;
+      youtubeUrl?: string;
+      youtubeTitle?: string;
+      youtubeThumbnail?: string;
+      videoType?: 'file' | 'youtube';
+      removeVideo?: boolean;
+    }) =>
+      apiClient.updateModule(id, data),
     onSuccess: () => {
       // Invalidate all module-related queries to ensure data consistency across the app
       queryClient.invalidateQueries({ queryKey: ["admin-modules"] });
@@ -312,8 +328,16 @@ export const useDeleteModule = () => {
 export const useAddVideoToModule = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ moduleId, videoFile, duration }: { moduleId: number; videoFile: File; duration: number }) =>
-      apiClient.addVideoToModule(moduleId, videoFile, duration),
+    mutationFn: ({ moduleId, videoFile, duration, youtubeUrl, youtubeTitle, youtubeThumbnail, videoType }: { 
+      moduleId: number; 
+      videoFile: File | null; 
+      duration: number;
+      youtubeUrl?: string;
+      youtubeTitle?: string;
+      youtubeThumbnail?: string;
+      videoType?: string;
+    }) =>
+      apiClient.addVideoToModule(moduleId, videoFile, duration, youtubeUrl, youtubeTitle, youtubeThumbnail, videoType),
     onSuccess: () => {
       // Invalidate all module-related queries to ensure data consistency across the app
       queryClient.invalidateQueries({ queryKey: ["admin-modules"] });

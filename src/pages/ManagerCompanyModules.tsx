@@ -42,10 +42,16 @@ import ResourceUploadForm from '@/features/modules/components/ResourceUploadForm
 import NewCompanyDialog from '@/components/NewCompanyDialog';
 import CompanyEditDialog from '@/features/companies/components/CompanyEditDialog';
 import ConfirmationDialog from '@/shared/components/ConfirmationDialog';
+import { HOCPresets } from "@/components/HOCComposer";
 
 interface ManagerCompanyModulesProps {
   selectedCompanyId?: number;
   managerId: number;
+}
+
+interface ManagerCompanyModulesProps {
+  user?: any;
+  isAuthenticated?: boolean;
 }
 
 const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({ 
@@ -570,4 +576,5 @@ const ManagerCompanyModules = memo<ManagerCompanyModulesProps>(({
 
 ManagerCompanyModules.displayName = 'ManagerCompanyModules';
 
-export default ManagerCompanyModules;
+// Export with comprehensive HOC protection
+export default HOCPresets.managerPage(ManagerCompanyModules);

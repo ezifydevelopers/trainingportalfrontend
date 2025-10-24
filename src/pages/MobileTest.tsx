@@ -5,8 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Menu, X, Smartphone, Tablet, Monitor } from 'lucide-react';
+import withAuth from "@/components/withAuth";
+import withRole from "@/components/withRole";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function MobileTest() {
+
+interface MobileTestProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+function MobileTest({ user, isAuthenticated }: MobileTestProps) {
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const [breakpoint, setBreakpoint] = useState('');
 
@@ -198,4 +206,6 @@ export default function MobileTest() {
     </Layout>
   );
 }
-
+// Export with authentication and role protection
+// Export with essential HOCs (no auth since handled by routing)
+export default HOCPresets.publicPage(MobileTest);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getVideoUrl } from '@/shared/utils/imageUtils';
-import LightweightVideoPlayer from '@/components/LightweightVideoPlayer';
+import UniversalVideoPlayer from '@/components/UniversalVideoPlayer';
 
 interface SmartVideoManagerProps {
   videoUrls: string[];
@@ -19,10 +19,18 @@ const SmartVideoManager: React.FC<SmartVideoManagerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if URL is YouTube
+  const isYouTubeUrl = (url: string): boolean => {
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+    return youtubeRegex.test(url);
+  };
+
   // Update current video URL when index changes
   useEffect(() => {
     if (videoUrls[currentIndex]) {
-      const videoUrl = getVideoUrl(videoUrls[currentIndex]);
+      const url = videoUrls[currentIndex];
+      // If it's a YouTube URL, use it directly, otherwise process it
+      const videoUrl = isYouTubeUrl(url) ? url : getVideoUrl(url);
       setCurrentVideoUrl(videoUrl);
       setError(null);
     }
@@ -92,7 +100,7 @@ const SmartVideoManager: React.FC<SmartVideoManagerProps> = ({
   // Render video player
   return (
     <div className="relative">
-      <LightweightVideoPlayer
+      <UniversalVideoPlayer
         src={currentVideoUrl}
         className={className}
         onPlay={() => handleVideoEvents('play')}

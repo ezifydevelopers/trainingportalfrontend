@@ -5,9 +5,10 @@ import { Label } from '../../../components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Progress } from '../../../components/ui/progress';
-import { Upload, X, Plus, Trash2, Play, Pause, CheckCircle } from 'lucide-react';
+import { Upload, X, Plus, Trash2, Play, Pause, CheckCircle, Youtube, Video } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import EnhancedModuleCreationProgress from '../../../components/EnhancedModuleCreationProgress';
+import YouTubeVideoUpload from '../../../components/YouTubeVideoUpload';
 
 interface MCQ {
   question: string;
@@ -38,6 +39,13 @@ const EnhancedAddModuleForm: React.FC<EnhancedAddModuleFormProps> = ({
   const [showProgress, setShowProgress] = useState(false);
   const [sessionId, setSessionId] = useState('');
   
+  // YouTube video states
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeTitle, setYoutubeTitle] = useState('');
+  const [youtubeThumbnail, setYoutubeThumbnail] = useState('');
+  const [videoType, setVideoType] = useState<'file' | 'youtube'>('file');
+  const [showYouTubeUpload, setShowYouTubeUpload] = useState(false);
+  
   // MCQ states
   const [mcqs, setMcqs] = useState<MCQ[]>([]);
   const [question, setQuestion] = useState('');
@@ -66,6 +74,11 @@ const EnhancedAddModuleForm: React.FC<EnhancedAddModuleFormProps> = ({
       setSessionId('');
       setIsUploading(false);
       setUploadProgress(0);
+      setYoutubeUrl('');
+      setYoutubeTitle('');
+      setYoutubeThumbnail('');
+      setVideoType('file');
+      setShowYouTubeUpload(false);
     }
   }, [isOpen]);
 
@@ -132,6 +145,29 @@ const EnhancedAddModuleForm: React.FC<EnhancedAddModuleFormProps> = ({
     toast.success('MCQ removed');
   }, []);
 
+  // YouTube video handlers
+  const handleYouTubeVideoAdd = useCallback((videoData: { url: string; title: string; duration: number; thumbnail: string }) => {
+    setYoutubeUrl(videoData.url);
+    setYoutubeTitle(videoData.title);
+    setYoutubeThumbnail(videoData.thumbnail);
+    setVideoDuration(videoData.duration);
+    setVideoType('youtube');
+    setShowYouTubeUpload(false);
+    toast.success('YouTube video added successfully');
+  }, []);
+
+  const handleYouTubeVideoCancel = useCallback(() => {
+    setShowYouTubeUpload(false);
+  }, []);
+
+  const handleRemoveYouTubeVideo = useCallback(() => {
+    setYoutubeUrl('');
+    setYoutubeTitle('');
+    setYoutubeThumbnail('');
+    setVideoDuration(0);
+    setVideoType('file');
+  }, []);
+
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,8 +177,13 @@ const EnhancedAddModuleForm: React.FC<EnhancedAddModuleFormProps> = ({
       return;
     }
 
-    if (!videoFile) {
-      toast.error('Please select a video file');
+    if (videoType === 'file' && !videoFile) {
+      toast.error('Please select a video file or add a YouTube video');
+      return;
+    }
+
+    if (videoType === 'youtube' && !youtubeUrl) {
+      toast.error('Please add a YouTube video');
       return;
     }
 
@@ -161,7 +202,15 @@ const EnhancedAddModuleForm: React.FC<EnhancedAddModuleFormProps> = ({
       formData.append('name', moduleName.trim());
       formData.append('isResourceModule', isResourceModule.toString());
       formData.append('duration', videoDuration.toString());
-      formData.append('video', videoFile);
+      formData.append('videoType', videoType);
+      
+      if (videoType === 'file' && videoFile) {
+        formData.append('video', videoFile);
+      } else if (videoType === 'youtube') {
+        formData.append('youtubeUrl', youtubeUrl);
+        formData.append('youtubeTitle', youtubeTitle);
+        formData.append('youtubeThumbnail', youtubeThumbnail);
+      }
       
       if (mcqs.length > 0) {
         formData.append('mcqs', JSON.stringify(mcqs));
@@ -245,9 +294,34 @@ const EnhancedAddModuleForm: React.FC<EnhancedAddModuleFormProps> = ({
 
               {/* Video Upload */}
               <div className="space-y-4">
-                <Label>Video File *</Label>
+                <Label>Video Tutorial *</Label>
                 
-                {!videoFile ? (
+                {/* Video Type Selection */}
+                <div className="flex space-x-2 mb-4">
+                  <Button
+                    type="button"
+                    variant={videoType === 'file' ? 'default' : 'outline'}
+                    onClick={() => setVideoType('file')}
+                    disabled={isUploading}
+                    className="flex items-center space-x-2"
+                  >
+                    <Video className="h-4 w-4" />
+                    <span>Upload File</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={videoType === 'youtube' ? 'default' : 'outline'}
+                    onClick={() => setVideoType('youtube')}
+                    disabled={isUploading}
+                    className="flex items-center space-x-2"
+                  >
+                    <Youtube className="h-4 w-4" />
+                    <span>YouTube Link</span>
+                  </Button>
+                </div>
+
+                {/* File Upload */}
+                {videoType === 'file' && !videoFile ? (
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                     <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                     <p className="text-gray-600 mb-2">Click to upload video or drag and drop</p>
@@ -314,6 +388,72 @@ const EnhancedAddModuleForm: React.FC<EnhancedAddModuleFormProps> = ({
                     {videoDuration === 0 && (
                       <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
                         Loading video duration...
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* YouTube Video Section */}
+                {videoType === 'youtube' && (
+                  <div className="space-y-4">
+                    {!youtubeUrl ? (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <Youtube className="h-12 w-12 mx-auto text-red-500 mb-4" />
+                        <p className="text-gray-600 mb-2">Add YouTube Video</p>
+                        <p className="text-sm text-gray-500 mb-4">Paste a YouTube link to add video content</p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowYouTubeUpload(true)}
+                          disabled={isUploading}
+                          className="flex items-center space-x-2"
+                        >
+                          <Youtube className="h-4 w-4" />
+                          <span>Add YouTube Video</span>
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Youtube className="h-4 w-4 text-red-500" />
+                            <span className="text-sm font-medium">{youtubeTitle}</span>
+                            <span className="text-xs text-gray-500">YouTube Video</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveYouTubeVideo}
+                            disabled={isUploading}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {youtubeThumbnail && (
+                          <div className="relative">
+                            <img
+                              src={youtubeThumbnail}
+                              alt="YouTube thumbnail"
+                              className="w-full h-48 object-cover rounded-lg"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                              <Youtube className="h-12 w-12 text-white" />
+                            </div>
+                            {videoDuration > 0 && (
+                              <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                {Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {videoDuration === 0 && (
+                          <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+                            Loading video duration...
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -484,6 +624,18 @@ const EnhancedAddModuleForm: React.FC<EnhancedAddModuleFormProps> = ({
         onSuccess={handleProgressSuccess}
         onError={handleProgressError}
       />
+
+      {/* YouTube Video Upload Modal */}
+      {showYouTubeUpload && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <YouTubeVideoUpload
+              onVideoAdd={handleYouTubeVideoAdd}
+              onCancel={handleYouTubeVideoCancel}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 };

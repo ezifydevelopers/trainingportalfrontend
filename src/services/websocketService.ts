@@ -106,6 +106,7 @@ class WebSocketService {
     this.ws.onopen = () => {
       this.isConnected = true;
       this.reconnectAttempts = 0;
+      console.log('✅ WebSocket connected successfully!');
       logger.websocketEvent('connected', { userId: this.userId });
       
       // Send user online status
@@ -118,23 +119,28 @@ class WebSocketService {
     this.ws.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
+        console.log('📨 WebSocket message received:', message.type, message.data);
         logger.websocketEvent('message_received', message);
         this.handleMessage(message);
       } catch (error) {
+        console.log('❌ WebSocket message parsing error:', error);
         logger.error('WebSocket message parsing error:', error);
       }
     };
 
     this.ws.onclose = (event) => {
       this.isConnected = false;
+      console.log('❌ WebSocket disconnected:', event.code, event.reason);
       
       // Only attempt reconnection if it wasn't a clean close
       if (!event.wasClean && this.userId) {
+        console.log('🔄 Attempting to reconnect...');
         this.scheduleReconnect();
       }
     };
 
     this.ws.onerror = (error) => {
+      console.log('❌ WebSocket error:', error);
       // Don't set isConnected to false here, let onclose handle it
     };
   }
@@ -145,6 +151,7 @@ class WebSocketService {
       try {
         handler(message.data);
       } catch (error) {
+        logger.error('WebSocket message handler error:', error);
       }
     });
   }

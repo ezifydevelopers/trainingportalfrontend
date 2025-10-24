@@ -13,7 +13,7 @@ import {
   Plus 
 } from 'lucide-react';
 import { getVideoUrl } from '@/shared/utils/imageUtils';
-import CustomVideoPlayer from '@/components/CustomVideoPlayer';
+import UniversalVideoPlayer from '@/components/UniversalVideoPlayer';
 import { Module } from '@/shared/types/common.types';
 import { getBaseUrl } from '@/lib/api';
 
@@ -100,16 +100,16 @@ const ModuleDetail = memo<ModuleDetailProps>(({
                   </div>
                 )}
                 
-                <CustomVideoPlayer
-                  src={getVideoUrl(module.videos[0].url)}
-                  className="w-full h-full"
+                <UniversalVideoPlayer
+                  src={module.videos[0].url}
+                  className="w-full aspect-video"
                   onLoadStart={() => {
-                    console.log('Video loading started:', getVideoUrl(module.videos[0].url));
+                    console.log('Video loading started:', module.videos[0].url);
                     setIsVideoLoading(true);
                     setVideoError(null);
                   }}
                   onCanPlay={() => {
-                    console.log('Video can play:', getVideoUrl(module.videos[0].url));
+                    console.log('Video can play:', module.videos[0].url);
                     setIsVideoLoading(false);
                     setVideoError(null);
                   }}

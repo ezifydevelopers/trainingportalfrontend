@@ -1,7 +1,13 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { HOCPresets } from "@/components/HOCComposer";
 
-const NotFound = () => {
+interface NotFoundProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+const NotFound = ({ user, isAuthenticated }: NotFoundProps) => {
   const location = useLocation();
 
   useEffect(() => {
@@ -20,4 +26,5 @@ const NotFound = () => {
   );
 };
 
-export default NotFound;
+// Export with comprehensive HOC protection
+export default HOCPresets.publicPage(NotFound);

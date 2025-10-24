@@ -21,9 +21,14 @@ import { useAllTrainees, useDeleteTrainee, useTraineeProgress } from "@/hooks/us
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function TrackTrainee() {
-  const { user } = useAuth();
+
+interface TrackTraineeProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+function TrackTrainee({ user, isAuthenticated }: TrackTraineeProps) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,9 +72,9 @@ export default function TrackTrainee() {
 
   // Filter trainees based on search term
   const filteredTrainees = trainees.filter(trainee =>
-    trainee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trainee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trainee.company?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    (trainee?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (trainee?.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (trainee?.company?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Pagination
@@ -83,7 +88,7 @@ export default function TrackTrainee() {
     
     try {
       await deleteTraineeMutation.mutateAsync(traineeToDelete.id);
-      toast.success(`Trainee "${traineeToDelete.name}" deleted successfully!`);
+      toast.success(`Trainee "${traineeToDelete?.name || 'Unknown'}" deleted successfully!`);
       setTraineeToDelete(null);
     } catch (error) {
       let errorMessage = 'Unknown error occurred';
@@ -100,9 +105,6 @@ export default function TrackTrainee() {
     navigate(`/admin/track-trainee/${traineeId}`);
   };
 
-  if (!user || user.role !== "ADMIN") {
-    return <div>Access denied</div>;
-  }
 
   return (
     <Layout>
@@ -310,8 +312,8 @@ export default function TrackTrainee() {
                           <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-white"></div>
                         </div>
                         <div className="min-w-0">
-                          <div className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg truncate">{trainee.name}</div>
-                          <div className="text-xs sm:text-sm text-gray-500 truncate">{trainee.email}</div>
+                          <div className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg truncate">{trainee?.name || 'Unknown'}</div>
+                          <div className="text-xs sm:text-sm text-gray-500 truncate">{trainee?.email || 'No email'}</div>
                         </div>
                       </div>
                     </TableCell>
@@ -320,7 +322,7 @@ export default function TrackTrainee() {
                         <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                           <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
                         </div>
-                        <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">{trainee.company?.name || 'Unknown'}</span>
+                        <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">{trainee?.company?.name || 'Unknown'}</span>
                       </div>
                     </TableCell>
                     <TableCell className="py-4 sm:py-6">
@@ -491,4 +493,6 @@ export default function TrackTrainee() {
       </div>
     </Layout>
   );
-} 
+}
+// Export with essential HOCs (no auth since handled by routing)
+export default HOCPresets.publicPage(TrackTrainee);

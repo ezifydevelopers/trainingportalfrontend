@@ -44,6 +44,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { HOCPresets } from "@/components/HOCComposer";
 
 // Simple interface for company data
 interface Company {
@@ -85,8 +86,12 @@ interface Module {
   }>;
 }
 
-const ManagerDashboard = () => {
-  const { user } = useAuth();
+interface ManagerDashboardProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+const ManagerDashboard = ({ user, isAuthenticated }: ManagerDashboardProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -1393,4 +1398,5 @@ const ManagerDashboard = () => {
   );
 };
 
-export default ManagerDashboard;
+// Export with comprehensive HOC protection
+export default HOCPresets.managerPage(ManagerDashboard);

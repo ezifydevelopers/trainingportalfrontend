@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import CompanyCard from "@/components/CompanyCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash, Upload, Play, FileText, Check, ArrowLeft, X, Clock, Users, Eye, Edit, Save, XIcon, GripVertical, File, Image, Music, Copy } from "lucide-react";
+import { Plus, Trash, Trash2, Upload, Play, FileText, Check, ArrowLeft, X, Clock, Users, Eye, Edit, Save, XIcon, GripVertical, File, Image, Music, Copy, Youtube, Link, AlertCircle } from "lucide-react";
 import NewCompanyDialog from "@/components/NewCompanyDialog";
 import EditCompanyDialog from "@/components/EditCompanyDialog";
 import { DuplicateCompanyDialog } from "@/components/DuplicateCompanyDialog";
@@ -24,8 +26,10 @@ import {
   useDeleteResource,
   useDuplicateCompanyData
 } from "@/hooks/useApi";
-import { getApiBaseUrl, getBaseUrl } from "@/lib/api";
-import CustomVideoPlayer from "@/components/CustomVideoPlayer";
+import { getApiBaseUrl, getBaseUrl, apiClient } from "@/lib/api";
+import UniversalVideoPlayer from "@/components/UniversalVideoPlayer";
+import YouTubeVideoUpload from "@/components/YouTubeVideoUpload";
+import YouTubePlayerWrapper from "@/components/YouTubePlayerWrapper";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +37,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Progress } from "@/components/ui/progress";
 import ResourceUploadDialog from "@/components/ResourceUploadDialog";
 import ModuleResources from "@/components/ModuleResources";
+import withAuth from "@/components/withAuth";
+import withRole from "@/components/withRole";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -43,7 +49,6 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DndContext,
@@ -64,6 +69,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { HOCPresets } from "@/components/HOCComposer";
 
 // Sortable Module Component
 interface Module {
@@ -264,7 +270,12 @@ function SortableModule({
   );
 }
 
-export default function AdminCompanyModules() {
+interface AdminCompanyModulesProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+function AdminCompanyModules({ user, isAuthenticated }: AdminCompanyModulesProps) {
   const queryClient = useQueryClient();
   
   // Fetch companies from API
@@ -280,8 +291,10 @@ export default function AdminCompanyModules() {
   const updateModuleMutation = useUpdateModule();
   const deleteResourceMutation = useDeleteResource();
 
+  const { companyId } = useParams();
+  const navigate = useNavigate();
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const addResourceMutation = useAddResource(selectedCompany?.id);
+  const addResourceMutation = useAddResource();
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [showAddModule, setShowAddModule] = useState(false);
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
@@ -297,6 +310,14 @@ export default function AdminCompanyModules() {
   const [isCalculatingDuration, setIsCalculatingDuration] = useState(false);
   const [isCreatingModule, setIsCreatingModule] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  
+  // YouTube video states
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeTitle, setYoutubeTitle] = useState('');
+  const [youtubeThumbnail, setYoutubeThumbnail] = useState('');
+  const [videoType, setVideoType] = useState<'file' | 'youtube'>('file');
+  const [showYouTubeUpload, setShowYouTubeUpload] = useState(false);
+
   const [showResourceUpload, setShowResourceUpload] = useState(false);
   const [selectedModuleForResource, setSelectedModuleForResource] = useState(null);
   const [deletingModuleId, setDeletingModuleId] = useState<number | null>(null);
@@ -325,6 +346,16 @@ export default function AdminCompanyModules() {
   const [isCalculatingEditDuration, setIsCalculatingEditDuration] = useState(false);
   const editFileInputRef = React.useRef(null);
 
+  // Edit mode YouTube states
+  const [editYoutubeUrl, setEditYoutubeUrl] = useState('');
+  const [editYoutubeTitle, setEditYoutubeTitle] = useState('');
+  const [editYoutubeThumbnail, setEditYoutubeThumbnail] = useState('');
+  const [editVideoType, setEditVideoType] = useState<'file' | 'youtube'>('file');
+  
+  const [editRemoveVideo, setEditRemoveVideo] = useState(false);
+  
+  
+
   // State for editing existing MCQs
   const [editingMcqIndex, setEditingMcqIndex] = useState(null);
   const [editExistingQuestion, setEditExistingQuestion] = useState("");
@@ -337,6 +368,19 @@ export default function AdminCompanyModules() {
   const [isReordering, setIsReordering] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
 
+  // Fetch company data when companyId is available
+  useEffect(() => {
+    if (companyId && companies.length > 0) {
+      const company = companies.find(c => c.id === parseInt(companyId));
+      if (company) {
+        setSelectedCompany(company);
+      } else {
+        // Company not found, redirect back to companies page
+        navigate('/admin/companies');
+      }
+    }
+  }, [companyId, companies, navigate]);
+
   // Fetch modules for selected company
   const { data: modules = [], isLoading: modulesLoading, isError: modulesError } = useCompanyModules(selectedCompany?.id || null);
 
@@ -348,15 +392,16 @@ export default function AdminCompanyModules() {
     return modules.filter(module => !module.isResourceModule);
   }, [orderedModules, modules]);
 
-  // Refresh selectedModule when modules data changes
+  // Refresh selectedModule when modules data changes (but not during edit mode)
   useEffect(() => {
-    if (selectedModule && modules.length > 0) {
+    if (selectedModule && modules.length > 0 && !isEditMode) {
       const updatedModule = modules.find(m => m.id === selectedModule.id);
       if (updatedModule) {
+        console.log('Updating selectedModule, isEditMode:', isEditMode);
         setSelectedModule(updatedModule);
       }
     }
-  }, [modules, selectedModule]);
+  }, [modules, selectedModule, isEditMode]);
 
   // Helper function to construct video URL
   const getVideoUrl = (videoUrl: string) => {
@@ -387,8 +432,17 @@ export default function AdminCompanyModules() {
     if (logoUrl.startsWith('http')) {
       return logoUrl;
     }
+    
     // Use base URL without /api for static files
     const baseUrl = getBaseUrl();
+    
+    // If logoUrl already starts with /uploads/, use it directly
+    if (logoUrl.startsWith('/uploads/')) {
+      const fullUrl = `${baseUrl}${logoUrl}`;
+      return fullUrl;
+    }
+    
+    // Otherwise, add /uploads/ prefix
     const fullUrl = `${baseUrl}/uploads/${logoUrl}`;
     return fullUrl;
   };
@@ -688,6 +742,31 @@ export default function AdminCompanyModules() {
     }
   };
 
+  // YouTube video handlers
+  const handleYouTubeVideoAdd = useCallback((videoData: { url: string; title: string; duration: number; thumbnail: string }) => {
+    console.log('handleYouTubeVideoAdd called with:', videoData);
+    setYoutubeUrl(videoData.url);
+    setYoutubeTitle(videoData.title);
+    setYoutubeThumbnail(videoData.thumbnail);
+    setVideoDuration(videoData.duration);
+    setVideoType('youtube');
+    setShowYouTubeUpload(false);
+    toast.success('YouTube video added successfully');
+  }, []);
+
+  const handleYouTubeVideoCancel = useCallback(() => {
+    console.log('handleYouTubeVideoCancel called');
+    setShowYouTubeUpload(false);
+  }, []);
+
+  const handleRemoveYouTubeVideo = useCallback(() => {
+    setYoutubeUrl('');
+    setYoutubeTitle('');
+    setYoutubeThumbnail('');
+    setVideoDuration(0);
+    setVideoType('file');
+  }, []);
+
   const handleBoxClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -735,7 +814,7 @@ export default function AdminCompanyModules() {
   };
 
   const handleSaveModule = async () => {
-    if (!videoFile || !moduleName.trim() || !selectedCompany || isCreatingModule) return;
+    if ((!videoFile && !youtubeUrl) || !moduleName.trim() || !selectedCompany || isCreatingModule) return;
     
     // Validate video duration
     if (!videoDuration || videoDuration <= 0) {
@@ -764,8 +843,21 @@ export default function AdminCompanyModules() {
       
       // 2. Add video to module (this is the critical step that needs to complete)
       setUploadProgress(30);
-      toast.loading("Step 2/3: Uploading video... Please wait for complete upload.", { id: loadingToast });
-      await addVideoMutation.mutateAsync({ moduleId, videoFile, duration: videoDuration });
+      if (videoType === 'youtube' && youtubeUrl) {
+        toast.loading("Step 2/3: Adding YouTube video...", { id: loadingToast });
+        await addVideoMutation.mutateAsync({ 
+          moduleId, 
+          videoFile: null, 
+          duration: videoDuration,
+          youtubeUrl: youtubeUrl,
+          youtubeTitle: youtubeTitle,
+          youtubeThumbnail: youtubeThumbnail,
+          videoType: 'youtube'
+        });
+      } else if (videoFile) {
+        toast.loading("Step 2/3: Uploading video... Please wait for complete upload.", { id: loadingToast });
+        await addVideoMutation.mutateAsync({ moduleId, videoFile, duration: videoDuration });
+      }
       setUploadProgress(80);
       
       // 3. Add MCQs to module (optional)
@@ -779,15 +871,10 @@ export default function AdminCompanyModules() {
         })));
         setUploadProgress(90);
         toast.loading("Step 3/3: Adding quiz questions...", { id: loadingToast });
-        try {
-          await addMCQsMutation.mutateAsync({ moduleId, mcqs });
+        await addMCQsMutation.mutateAsync({ moduleId, mcqs });
 
-          setUploadProgress(100);
-          toast.success("✅ Module, video, and MCQs added successfully!", { id: loadingToast });
-        } catch (mcqError) {
-
-          throw mcqError;
-        }
+        setUploadProgress(100);
+        toast.success("✅ Module, video, and MCQs added successfully!", { id: loadingToast });
         
         // Update selectedModule with the new MCQs
         if (selectedModule && selectedModule.id === moduleId) {
@@ -809,6 +896,11 @@ export default function AdminCompanyModules() {
       setMcqs([]);
       setModuleName("");
       setVideoDuration(0);
+      setYoutubeUrl('');
+      setYoutubeTitle('');
+      setYoutubeThumbnail('');
+      setVideoType('file');
+      setIsCalculatingDuration(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast.error(`❌ Failed to add module, video, or MCQs: ${errorMessage}`);
@@ -997,29 +1089,23 @@ export default function AdminCompanyModules() {
       return;
     }
 
-    try {
-      await addResourceMutation.mutateAsync({
-        moduleId: selectedModuleForResource.id,
-        resourceFile,
-        type,
-        duration,
-        estimatedReadingTime
-      });
-      toast.success(`Resource uploaded successfully to ${selectedModuleForResource.name}`);
-      
-      // Close the dialog and refresh the selected module
-      setShowResourceUpload(false);
-      setSelectedModuleForResource(null);
-      
-      // Refresh the modules data to show the new resource
-      queryClient.invalidateQueries({ queryKey: ['company-modules'] });
-      queryClient.invalidateQueries({ queryKey: ['modules'] });
-      queryClient.invalidateQueries({ queryKey: ['module-resources', selectedModuleForResource.id] });
-      
-    } catch (error) {
-
-      throw error; // Re-throw so ResourceUploadDialog can handle it
-    }
+    await addResourceMutation.mutateAsync({
+      moduleId: selectedModuleForResource.id,
+      resourceFile,
+      type,
+      duration,
+      estimatedReadingTime
+    });
+    toast.success(`Resource uploaded successfully to ${selectedModuleForResource.name}`);
+    
+    // Close the dialog and refresh the selected module
+    setShowResourceUpload(false);
+    setSelectedModuleForResource(null);
+    
+    // Refresh the modules data to show the new resource
+    queryClient.invalidateQueries({ queryKey: ['company-modules'] });
+    queryClient.invalidateQueries({ queryKey: ['modules'] });
+    queryClient.invalidateQueries({ queryKey: ['module-resources', selectedModuleForResource.id] });
   };
 
   const handleEditCompany = (company) => {
@@ -1058,6 +1144,7 @@ export default function AdminCompanyModules() {
 
   // Edit mode handler functions
   const handleEditModule = (module: Module) => {
+    
     setSelectedModule(module);
     setEditModuleName(module.name);
     setEditVideoFile(null);
@@ -1070,6 +1157,21 @@ export default function AdminCompanyModules() {
     setEditCorrectAnswer(0);
     setIsEditMode(true);
     setShowModuleDetail(true);
+
+    // Initialize YouTube states
+    const currentVideo = module.videos?.[0];
+    if (currentVideo?.url && (currentVideo.url.includes('youtube.com') || currentVideo.url.includes('youtu.be'))) {
+      setEditVideoType('youtube');
+      setEditYoutubeUrl(currentVideo.url);
+      setEditYoutubeTitle((currentVideo as { title?: string }).title || 'YouTube Video');
+      setEditYoutubeThumbnail((currentVideo as { thumbnail?: string }).thumbnail || '');
+    } else {
+      setEditVideoType('file');
+      setEditYoutubeUrl('');
+      setEditYoutubeTitle('');
+      setEditYoutubeThumbnail('');
+    }
+    setEditRemoveVideo(false);
   };
 
   const handleCancelEdit = () => {
@@ -1087,14 +1189,89 @@ export default function AdminCompanyModules() {
     setEditExistingQuestion("");
     setEditExistingOptions(["", "", "", ""]);
     setEditExistingCorrectAnswer(0);
+    // Reset YouTube states
+    setEditYoutubeUrl('');
+    setEditYoutubeTitle('');
+    setEditYoutubeThumbnail('');
+    setEditVideoType('file');
+    setEditRemoveVideo(false);
   };
+
+  // Edit mode YouTube handling
+  const handleEditYouTubeVideoAdd = useCallback((videoData: { url: string; title: string; duration: number; thumbnail: string }) => {
+    setEditYoutubeUrl(videoData.url);
+    setEditYoutubeTitle(videoData.title);
+    setEditYoutubeThumbnail(videoData.thumbnail);
+    setEditVideoDuration(videoData.duration);
+    setEditRemoveVideo(false);
+    setEditVideoType('youtube');
+  }, []);
+
+
+  // Keyboard escape handler for modals
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showYouTubeUpload) {
+          handleYouTubeVideoCancel();
+        }
+      }
+    };
+
+    if (showYouTubeUpload) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [showYouTubeUpload, handleYouTubeVideoCancel]);
+
+
+  const handleEditRemoveYouTubeVideo = useCallback(() => {
+    setEditYoutubeUrl('');
+    setEditYoutubeTitle('');
+    setEditYoutubeThumbnail('');
+    setEditVideoDuration(0);
+    setEditRemoveVideo(true);
+  }, []);
+
+  const handleEditRemoveCurrentVideo = useCallback(() => {
+    console.log('Remove video button clicked');
+    setEditVideoFile(null);
+    setEditVideoPreview('');
+    setEditVideoDuration(0);
+    setEditRemoveVideo(true);
+    console.log('Video removal state set to true');
+    
+    // Force a re-render to update the UI
+    setTimeout(() => {
+      console.log('Current editRemoveVideo state:', editRemoveVideo);
+    }, 100);
+  }, [editRemoveVideo]);
+
+  // Debug state changes
+  useEffect(() => {
+    if (selectedModule) {
+      console.log('Edit state changed:', {
+        editVideoFile: editVideoFile ? editVideoFile.name : null,
+        editYoutubeUrl,
+        editRemoveVideo,
+        hasExistingVideo: !!selectedModule.videos?.[0]?.url
+      });
+    }
+  }, [editVideoFile, editYoutubeUrl, editRemoveVideo, selectedModule]);
 
   const handleEditVideoChange = (e) => {
     const file = e.target.files[0];
+    console.log('Video file selected:', file);
     if (file) {
       setEditVideoFile(file);
       setEditVideoPreview(URL.createObjectURL(file));
+      console.log('Video file state updated:', file.name);
       setIsCalculatingEditDuration(true);
+      
+      // Reset remove video flag when new video is selected
+      setEditRemoveVideo(false);
+      // Set video type to file when file is selected
+      setEditVideoType('file');
       
       // Calculate video duration
       const video = document.createElement('video');
@@ -1186,26 +1363,47 @@ export default function AdminCompanyModules() {
   };
 
   const handleSaveEdit = async () => {
-    if (!editModuleName.trim() || !selectedModule) return;
+    if (!editModuleName.trim() || !selectedModule) {
+      console.error('Save edit failed: missing module name or selected module');
+      return;
+    }
+    
+    console.log('Saving edit with data:', {
+      id: selectedModule.id,
+      name: editModuleName,
+      videoFile: editVideoFile,
+      duration: editVideoDuration,
+      youtubeUrl: editYoutubeUrl,
+      youtubeTitle: editYoutubeTitle,
+      youtubeThumbnail: editYoutubeThumbnail,
+      videoType: editVideoType,
+      removeVideo: editRemoveVideo
+    });
     
     try {
       // Validate MCQs before sending
       const validatedMCQs = validateMCQs([...editMcqs]); // Create a copy to avoid mutating original
       
-      // Update module name
-      await updateModuleMutation.mutateAsync({ 
+      // Update module with all parameters
+      const updateData = { 
         id: selectedModule.id, 
-        name: editModuleName 
-      });
+        name: editModuleName,
+        videoFile: editVideoFile || undefined,
+        duration: editVideoDuration > 0 ? editVideoDuration : undefined,
+        mcqs: validatedMCQs.length > 0 ? validatedMCQs : undefined,
+        youtubeUrl: editYoutubeUrl?.trim() || undefined,
+        youtubeTitle: editYoutubeTitle?.trim() || undefined,
+        youtubeThumbnail: editYoutubeThumbnail?.trim() || undefined,
+        videoType: editVideoType,
+        removeVideo: editRemoveVideo
+      };
       
-      // If new video is uploaded, update video
-      if (editVideoFile) {
-        await addVideoMutation.mutateAsync({ 
-          moduleId: selectedModule.id, 
-          videoFile: editVideoFile, 
-          duration: editVideoDuration 
-        });
-      }
+      console.log('Sending update data:', {
+        ...updateData,
+        videoFile: updateData.videoFile ? `File: ${updateData.videoFile.name} (${updateData.videoFile.size} bytes)` : 'No file'
+      });
+      const updateResult = await updateModuleMutation.mutateAsync(updateData);
+      console.log('Update result:', updateResult);
       
       // Always update MCQs (this will replace existing ones with current editMcqs)
       await addMCQsMutation.mutateAsync({ 
@@ -1214,8 +1412,28 @@ export default function AdminCompanyModules() {
       });
       
       toast.success("Module updated successfully");
-      handleCancelEdit();
-      setShowModuleDetail(false);
+      
+      // Invalidate and refetch the modules data to get the updated video
+      await queryClient.invalidateQueries({ queryKey: ["company-modules", selectedCompany?.id] });
+      
+      // Wait for the query to refetch and then update the selectedModule
+      const updatedModules = await queryClient.fetchQuery({
+        queryKey: ["company-modules", selectedCompany?.id],
+        queryFn: async () => {
+          const result = await apiClient.getCompanyModules(selectedCompany.id);
+          return result.modules || [];
+        }
+      });
+      
+      // Find the updated module and update selectedModule
+      const updatedModule = updatedModules.find(m => m.id === selectedModule.id);
+      if (updatedModule) {
+        console.log('Updating selectedModule with new video data:', updatedModule);
+        setSelectedModule(updatedModule);
+      }
+      
+      // Exit edit mode to show the updated module
+      setIsEditMode(false);
     } catch (error) {
       // Provide more specific error message
       let errorMessage = 'Failed to update module';
@@ -1514,23 +1732,61 @@ export default function AdminCompanyModules() {
                   
                   {/* Video Upload */}
                   <div className="space-y-3">
-                    <label className="block text-sm font-medium text-gray-700">Upload Video Tutorial</label>
-                    <div
-                      className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-blue-400 transition group bg-gray-50 hover:bg-blue-50"
-                      onClick={handleBoxClick}
-                    >
-                      <Upload className="h-12 w-12 text-gray-400 group-hover:text-blue-500 mb-3" />
-                      <span className="text-gray-600 group-hover:text-blue-600 font-medium text-lg">Click to upload video</span>
-                      <span className="text-sm text-gray-400 mt-2">MP4, WebM, or Ogg (max 100MB)</span>
-                      <Input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="video/*"
-                        className="hidden"
-                        onChange={handleVideoChange}
-                      />
+                    <label className="block text-sm font-medium text-gray-700">Video Tutorial *</label>
+                    
+                    {/* Video Type Selection - Enhanced UI */}
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">Choose Video Source</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          type="button"
+                          variant={videoType === 'file' ? 'default' : 'outline'}
+                          onClick={() => setVideoType('file')}
+                          disabled={isCreatingModule}
+                          className={`flex items-center justify-center space-x-2 h-12 ${
+                            videoType === 'file' 
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                              : 'border-2 border-gray-300 hover:border-blue-400'
+                          }`}
+                        >
+                          <Upload className="h-5 w-5" />
+                          <span className="font-medium">Upload File</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={videoType === 'youtube' ? 'default' : 'outline'}
+                          onClick={() => setVideoType('youtube')}
+                          disabled={isCreatingModule}
+                          className={`flex items-center justify-center space-x-2 h-12 ${
+                            videoType === 'youtube' 
+                              ? 'bg-red-600 hover:bg-red-700 text-white' 
+                              : 'border-2 border-gray-300 hover:border-red-400'
+                          }`}
+                        >
+                          <Youtube className="h-5 w-5" />
+                          <span className="font-medium">YouTube Link</span>
+                        </Button>
+                      </div>
                     </div>
-                    {videoPreview && (
+
+                    {/* File Upload */}
+                    {videoType === 'file' && !videoFile ? (
+                      <div
+                        className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-blue-400 transition group bg-gray-50 hover:bg-blue-50"
+                        onClick={handleBoxClick}
+                      >
+                        <Upload className="h-12 w-12 text-gray-400 group-hover:text-blue-500 mb-3" />
+                        <span className="text-gray-600 group-hover:text-blue-600 font-medium text-lg">Click to upload video</span>
+                        <span className="text-sm text-gray-400 mt-2">MP4, WebM, or Ogg (max 100MB)</span>
+                        <Input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={handleVideoChange}
+                        />
+                      </div>
+                    ) : videoPreview && (
                       <div className="mt-4">
                         <video src={videoPreview} controls className="w-full max-w-2xl rounded-lg shadow-md border" />
                         <div className="mt-2 flex items-center space-x-2">
@@ -1554,7 +1810,101 @@ export default function AdminCompanyModules() {
                         </div>
                       </div>
                       )}
-                    </div>
+
+                    {/* YouTube Video Section - Enhanced UI */}
+                    {videoType === 'youtube' && (
+                      <div className="space-y-4">
+                        {!youtubeUrl ? (
+                          <div className="border-2 border-dashed border-red-300 rounded-lg p-8 text-center bg-red-50 hover:bg-red-100 transition-colors">
+                            <div className="flex flex-col items-center">
+                              <div className="bg-red-100 rounded-full p-4 mb-4">
+                                <Youtube className="h-12 w-12 text-red-600" />
+                              </div>
+                              <h3 className="text-lg font-semibold text-gray-800 mb-2">Add YouTube Video</h3>
+                              <p className="text-sm text-gray-600 mb-2">Paste a YouTube link to add video content</p>
+                              <p className="text-xs text-gray-500 mb-6">Supports YouTube, YouTube Shorts, and YouTube Music links</p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  console.log('YouTube button clicked, opening modal');
+                                  setShowYouTubeUpload(true);
+                                }}
+                                disabled={isCreatingModule}
+                                className="flex items-center space-x-2 border-red-300 text-red-600 hover:bg-red-600 hover:text-white transition-colors"
+                              >
+                                <Youtube className="h-4 w-4" />
+                                <span>Add YouTube Video</span>
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* YouTube Video Header */}
+                            <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg p-3">
+                              <div className="flex items-center space-x-3">
+                                <div className="bg-red-100 rounded-full p-2">
+                                  <Youtube className="h-5 w-5 text-red-600" />
+                                </div>
+                                <div>
+                                  <span className="text-sm font-semibold text-gray-800">{youtubeTitle}</span>
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">YouTube Video</span>
+                                    {videoDuration > 0 && (
+                                      <span className="text-xs text-gray-500">
+                                        {Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleRemoveYouTubeVideo}
+                                disabled={isCreatingModule}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            {/* YouTube Thumbnail Preview */}
+                            {youtubeThumbnail && (
+                              <div className="relative group">
+                                <img
+                                  src={youtubeThumbnail}
+                                  alt="YouTube thumbnail"
+                                  className="w-full h-48 object-cover rounded-lg shadow-md"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg group-hover:bg-black/60 transition-colors">
+                                  <div className="bg-red-600 rounded-full p-3 group-hover:scale-110 transition-transform">
+                                    <Youtube className="h-8 w-8 text-white" />
+                                  </div>
+                                </div>
+                                {videoDuration > 0 && (
+                                  <div className="absolute top-3 right-3 bg-black/80 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                    {Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')}
+                                  </div>
+                                )}
+                                <div className="absolute bottom-3 left-3 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                  YouTube
+                                </div>
+                              </div>
+                            )}
+                            
+                            {videoDuration === 0 && (
+                              <div className="flex items-center space-x-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                                <Clock className="h-4 w-4" />
+                                <span>Loading video duration...</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   {/* MCQ Section - Only show for video modules */}
                   {!showResourceModuleDialog && (
@@ -1748,7 +2098,7 @@ export default function AdminCompanyModules() {
                   <div className="flex space-x-3 pt-4 border-t border-gray-200">
                     <Button 
                       onClick={handleSaveModule} 
-                      disabled={!videoFile || !moduleName.trim() || isCalculatingDuration || !videoDuration || videoDuration <= 0 || isCreatingModule}
+                      disabled={(!videoFile && !youtubeUrl) || !moduleName.trim() || isCalculatingDuration || !videoDuration || videoDuration <= 0 || isCreatingModule}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       {isCreatingModule ? (
@@ -2329,132 +2679,376 @@ export default function AdminCompanyModules() {
                           <h3 className="text-lg font-semibold text-gray-900">Video Tutorial</h3>
                         </div>
                       
-                      {/* Current Video */}
-                      {selectedModule.videos?.[0]?.url && !editVideoFile && (
+                      {/* Current Video - Show in both edit and view modes */}
+                      {(() => {
+                        console.log('Video debug:', {
+                          hasVideos: !!selectedModule.videos,
+                          videosLength: selectedModule.videos?.length,
+                          firstVideoUrl: selectedModule.videos?.[0]?.url,
+                          processedUrl: getVideoUrl(selectedModule.videos?.[0]?.url || ''),
+                          editRemoveVideo,
+                          editVideoFile: editVideoFile ? editVideoFile.name : null,
+                          editVideoPreview,
+                          editYoutubeUrl,
+                          isEditMode,
+                          selectedModule: selectedModule,
+                          moduleId: selectedModule.id,
+                          moduleName: selectedModule.name
+                        });
+                        console.log('Video display condition check:', {
+                          condition1: selectedModule.videos?.[0]?.url && !editRemoveVideo,
+                          condition2: editVideoFile,
+                          condition3: editYoutubeUrl,
+                          finalResult: (selectedModule.videos?.[0]?.url && !editRemoveVideo) || editVideoFile || editYoutubeUrl
+                        });
+                        // Show video if: (has existing video and not marked for removal) OR (has new video file) OR (has new YouTube URL)
+                        const hasExistingVideo = selectedModule.videos?.[0]?.url && !editRemoveVideo;
+                        const hasNewVideoFile = !!editVideoFile;
+                        const hasNewYouTubeUrl = !!editYoutubeUrl;
+                        const shouldShowVideo = hasExistingVideo || hasNewVideoFile || hasNewYouTubeUrl;
+                        
+                        // Debug: Always show video if we have any video data
+                        const hasAnyVideo = selectedModule.videos && selectedModule.videos.length > 0;
+                        console.log('Video existence check:', {
+                          hasAnyVideo,
+                          videosArray: selectedModule.videos,
+                          shouldShowVideo
+                        });
+                        
+                        console.log('Video display logic:', {
+                          hasExistingVideo,
+                          hasNewVideoFile,
+                          hasNewYouTubeUrl,
+                          shouldShowVideo,
+                          editRemoveVideo,
+                          existingVideoUrl: selectedModule.videos?.[0]?.url
+                        });
+                        
+                        // Fallback: Show video if we have any video data, even if display condition fails
+                        // Also show video if we're not in edit mode and have videos
+                        const shouldShowVideoFallback = shouldShowVideo || hasAnyVideo || (!isEditMode && selectedModule.videos && selectedModule.videos.length > 0);
+                        console.log('Final video display decision:', {
+                          shouldShowVideo,
+                          hasAnyVideo,
+                          shouldShowVideoFallback,
+                          isEditMode,
+                          videosCount: selectedModule.videos?.length
+                        });
+                        return shouldShowVideoFallback;
+                      })() && (
                         <div className="space-y-3">
                           <p className="text-sm text-gray-600">Current video:</p>
                           <div className="relative bg-black rounded-lg overflow-hidden shadow-lg min-h-[200px]">
-                            <video 
-                              src={getVideoUrl(selectedModule.videos?.[0].url)} 
-                              controls 
-                              controlsList="nodownload nofullscreen noremoteplayback"
-                              disablePictureInPicture
+                            <UniversalVideoPlayer
+                              src={
+                                editVideoFile 
+                                  ? URL.createObjectURL(editVideoFile) 
+                                  : editYoutubeUrl 
+                                    ? editYoutubeUrl 
+                                    : getVideoUrl(selectedModule.videos?.[0].url)
+                              }
                               className="w-full h-auto"
                               preload="metadata"
                               onError={(e) => {
-
-                                console.error('Video URL:', getVideoUrl(selectedModule.videos?.[0].url));
-
-                                // Show error message
-                                const videoElement = e.target as HTMLVideoElement;
-                                const errorDiv = document.createElement('div');
-                                errorDiv.className = 'absolute inset-0 flex items-center justify-center bg-red-900 text-white p-4';
-                                errorDiv.innerHTML = `
-                                  <div class="text-center">
-                                    <div class="text-2xl mb-2">⚠️</div>
-                                    <div class="font-semibold">Video failed to load</div>
-                                    <div class="text-sm mt-1">Check console for details</div>
-                                    <div class="text-xs mt-2 opacity-75">URL: ${getVideoUrl(selectedModule.videos?.[0].url)}</div>
-                                  </div>
-                                `;
-                                videoElement.parentNode?.appendChild(errorDiv);
+                                const videoSrc = editVideoFile 
+                                  ? URL.createObjectURL(editVideoFile) 
+                                  : editYoutubeUrl 
+                                    ? editYoutubeUrl 
+                                    : getVideoUrl(selectedModule.videos?.[0].url);
+                                console.error('Video URL:', videoSrc);
+                                console.error('Video error details:', e);
+                                toast.error('Video format not supported. Please upload an MP4 or WebM video file.');
                               }}
                               onLoadStart={() => {
-                                console.log('Video loading started:', getVideoUrl(selectedModule.videos?.[0].url));
-                                // Test if the video URL is accessible
-                                fetch(getVideoUrl(selectedModule.videos?.[0].url), { method: 'HEAD' })
-                                  .then(response => {
-
-                                    if (!response.ok) {
-
-                                    }
-                                  })
-                                  .catch(error => {
-
-                                  });
+                                const videoSrc = editVideoFile 
+                                  ? URL.createObjectURL(editVideoFile) 
+                                  : editYoutubeUrl 
+                                    ? editYoutubeUrl 
+                                    : getVideoUrl(selectedModule.videos?.[0].url);
+                                console.log('Video loading started:', videoSrc);
                               }}
                               onCanPlay={() => {
-                                console.log('Video can play:', getVideoUrl(selectedModule.videos?.[0].url));
-                                // Hide loading placeholder
-                                const placeholder = document.getElementById('video-loading-placeholder');
-                                if (placeholder) {
-                                  placeholder.style.display = 'none';
-                                }
+                                const videoSrc = editVideoFile 
+                                  ? URL.createObjectURL(editVideoFile) 
+                                  : editYoutubeUrl 
+                                    ? editYoutubeUrl 
+                                    : getVideoUrl(selectedModule.videos?.[0].url);
+                                console.log('Video can play:', videoSrc);
                               }}
                               onLoadedMetadata={() => {
-                                console.log('Video metadata loaded:', getVideoUrl(selectedModule.videos?.[0].url));
+                                const videoSrc = editVideoFile 
+                                  ? URL.createObjectURL(editVideoFile) 
+                                  : editYoutubeUrl 
+                                    ? editYoutubeUrl 
+                                    : getVideoUrl(selectedModule.videos?.[0].url);
+                                console.log('Video metadata loaded:', videoSrc);
                               }}
                             />
-                            {/* Loading placeholder */}
-                            <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-white" id="video-loading-placeholder">
-                              <div className="text-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                                <div>Loading video...</div>
-                              </div>
-                            </div>
                           </div>
                         </div>
                       )}
                       
-                      {/* New Video Upload */}
-                      <div className="space-y-3">
-                        <p className="text-sm text-gray-600">
-                          {selectedModule.videos?.[0]?.url ? "Upload new video (optional):" : "Upload video:"}
-                        </p>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                          <input
-                            type="file"
-                            ref={editFileInputRef}
-                            onChange={handleEditVideoChange}
-                            accept="video/*"
-                            className="hidden"
-                          />
-                          {editVideoPreview ? (
-                            <div className="space-y-3">
-                              <video 
-                                src={editVideoPreview} 
-                                controls 
-                                controlsList="nodownload nofullscreen noremoteplayback"
-                                disablePictureInPicture
-                                className="w-full max-w-md mx-auto rounded-lg shadow-md"
-                                preload="metadata"
-                                draggable={false}
-                                onContextMenu={(e) => e.preventDefault()}
-                              />
-                              <div className="flex justify-center space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditVideoFile(null);
-                                    setEditVideoPreview("");
-                                    setEditVideoDuration(0);
-                                  }}
-                                >
-                                  Remove
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div 
-                              className="cursor-pointer"
-                              onClick={() => editFileInputRef.current?.click()}
+                      {/* Enhanced Video Upload with YouTube and Remove Options */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">
+                            {editRemoveVideo ? "Video will be removed" : 
+                             selectedModule.videos?.[0]?.url ? "Update video (optional):" : "Add video:"}
+                          </p>
+                          {selectedModule.videos?.[0]?.url && !editVideoFile && !editRemoveVideo && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                console.log('Remove Video button clicked');
+                                handleEditRemoveCurrentVideo();
+                              }}
+                              className="text-red-600 border-red-300 hover:bg-red-50"
                             >
-                              <div className="p-4 bg-blue-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                                <Play className="h-8 w-8 text-blue-600" />
-                              </div>
-                              <p className="text-gray-600 mb-2">Click to upload video</p>
-                              <p className="text-xs text-gray-500">MP4, WebM, or OGG up to 100MB</p>
-                            </div>
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Remove Video
+                            </Button>
                           )}
                         </div>
-                        {isCalculatingEditDuration && (
-                          <p className="text-sm text-blue-600">Calculating video duration...</p>
+                        
+                        {/* Video Removal Indicator */}
+                        {editRemoveVideo && (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                            <div className="text-red-600 font-medium mb-2">Video will be removed</div>
+                            <div className="text-sm text-red-500">The current video will be deleted when you save changes</div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                console.log('Cancel video removal');
+                                setEditRemoveVideo(false);
+                              }}
+                              className="mt-2 text-gray-600 border-gray-300 hover:bg-gray-50"
+                            >
+                              Cancel Removal
+                            </Button>
+                          </div>
                         )}
-                        {editVideoDuration > 0 && (
-                          <p className="text-sm text-green-600">
-                            Duration: {Math.floor(editVideoDuration / 60)}:{(editVideoDuration % 60).toString().padStart(2, '0')}
-                          </p>
+                        
+                        {/* Video Type Selection */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">Choose Video Source</Label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <Button
+                              type="button"
+                              variant={editVideoType === 'file' ? 'default' : 'outline'}
+                              onClick={() => setEditVideoType('file')}
+                              className={`flex items-center justify-center space-x-2 h-12 ${
+                                editVideoType === 'file' 
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                  : 'border-2 border-gray-300 hover:border-blue-400'
+                              }`}
+                            >
+                              <Upload className="h-5 w-5" />
+                              <span className="font-medium">Upload File</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={editVideoType === 'youtube' ? 'default' : 'outline'}
+                              onClick={() => setEditVideoType('youtube')}
+                              className={`flex items-center justify-center space-x-2 h-12 ${
+                                editVideoType === 'youtube' 
+                                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                                  : 'border-2 border-gray-300 hover:border-red-400'
+                              }`}
+                            >
+                              <Youtube className="h-5 w-5" />
+                              <span className="font-medium">YouTube Link</span>
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* File Upload Section */}
+                        {editVideoType === 'file' && (
+                          <div className="space-y-4">
+                            {!editVideoFile && !editVideoPreview ? (
+                              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                                <input
+                                  type="file"
+                                  ref={editFileInputRef}
+                                  onChange={handleEditVideoChange}
+                                  accept="video/*"
+                                  className="hidden"
+                                />
+                                <div 
+                                  className="cursor-pointer"
+                                  onClick={() => editFileInputRef.current?.click()}
+                                >
+                                  <div className="p-4 bg-blue-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                    <Play className="h-8 w-8 text-blue-600" />
+                                  </div>
+                                  <p className="text-gray-600 mb-2">Click to upload video</p>
+                                  <p className="text-xs text-gray-500">MP4, WebM, or OGG up to 100MB</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <video 
+                                  src={editVideoPreview} 
+                                  controls 
+                                  controlsList="nodownload nofullscreen noremoteplayback"
+                                  disablePictureInPicture
+                                  className="w-full max-w-md mx-auto rounded-lg shadow-md"
+                                  preload="metadata"
+                                  draggable={false}
+                                  onContextMenu={(e) => e.preventDefault()}
+                                />
+                                <div className="flex justify-center space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditVideoFile(null);
+                                      setEditVideoPreview("");
+                                      setEditVideoDuration(0);
+                                    }}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            {isCalculatingEditDuration && (
+                              <p className="text-sm text-blue-600">Calculating video duration...</p>
+                            )}
+                            {editVideoDuration > 0 && (
+                              <p className="text-sm text-green-600">
+                                Duration: {Math.floor(editVideoDuration / 60)}:{(editVideoDuration % 60).toString().padStart(2, '0')}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* YouTube Section - Using HOC */}
+                        {editVideoType === 'youtube' && (
+                          <div className="space-y-4">
+                            {/* Always show the input form in edit mode */}
+                            <div className="border-2 border-red-200 rounded-lg p-6 bg-red-50">
+                              <div className="flex items-center space-x-3 mb-4">
+                                <div className="bg-red-100 rounded-full p-2">
+                                  <Youtube className="h-6 w-6 text-red-600" />
+                                </div>
+                                <div>
+                                  <h3 className="text-lg font-semibold text-gray-800">YouTube Video</h3>
+                                  <p className="text-sm text-gray-600">Update or add a YouTube link</p>
+                                </div>
+                              </div>
+                              
+                              {/* YouTube Form */}
+                              <div className="space-y-4">
+                                {/* URL Input */}
+                                <div className="space-y-2">
+                                  <Label htmlFor="edit-youtube-url" className="text-sm font-medium text-gray-700">
+                                    YouTube Video URL *
+                                  </Label>
+                                  <div className="flex space-x-3">
+                                    <Input
+                                      id="edit-youtube-url"
+                                      type="url"
+                                      placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                                      value={editYoutubeUrl}
+                                      onChange={(e) => {
+                                        setEditYoutubeUrl(e.target.value);
+                                      }}
+                                      className="flex-1"
+                                    />
+                                    <Button
+                                      type="button"
+                                      onClick={() => {
+                                        if (editYoutubeUrl.trim()) {
+                                          // Extract video ID using the same logic as HOC
+                                          const patterns = [
+                                            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                                            /youtube\.com\/v\/([^&\n?#]+)/,
+                                            /youtube\.com\/user\/[^/]+\/?#\/v\/([^&\n?#]+)/
+                                          ];
+
+                                          let videoId = null;
+                                          for (const pattern of patterns) {
+                                            const match = editYoutubeUrl.match(pattern);
+                                            if (match) {
+                                              videoId = match[1];
+                                              break;
+                                            }
+                                          }
+
+                                          if (videoId) {
+                                            setEditYoutubeTitle('YouTube Video');
+                                            setEditYoutubeThumbnail(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
+                                            setEditVideoDuration(editVideoDuration || 300);
+                                          }
+                                        }
+                                      }}
+                                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2"
+                                    >
+                                      <Link className="w-4 h-4 mr-2" />
+                                      Validate
+                                    </Button>
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    Supports YouTube, YouTube Shorts, and YouTube Music links
+                                  </p>
+                                </div>
+                                
+                                {/* Duration Input */}
+                                <div className="space-y-2">
+                                  <Label htmlFor="edit-duration" className="text-sm font-medium text-gray-700">
+                                    Video Duration (seconds) *
+                                  </Label>
+                                  <Input
+                                    id="edit-duration"
+                                    type="number"
+                                    min="1"
+                                    value={editVideoDuration}
+                                    onChange={(e) => setEditVideoDuration(Number(e.target.value))}
+                                    placeholder="300"
+                                    className="max-w-xs"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Show YouTube player if URL is provided */}
+                            {editYoutubeUrl && (
+                              <div className="space-y-4">
+                                {/* YouTube Video Header */}
+                                <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg p-3">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="bg-red-100 rounded-full p-2">
+                                      <Youtube className="h-5 w-5 text-red-600" />
+                                    </div>
+                                    <div>
+                                      <span className="text-sm font-semibold text-gray-800">{editYoutubeTitle}</span>
+                                      <div className="flex items-center space-x-2 mt-1">
+                                        <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">YouTube Video</span>
+                                        {editVideoDuration > 0 && (
+                                          <span className="text-xs text-gray-500">
+                                            {Math.floor(editVideoDuration / 60)}:{(editVideoDuration % 60).toString().padStart(2, '0')}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleEditRemoveYouTubeVideo}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                
+                                {/* YouTube Player using HOC - Hidden in edit mode to avoid duplicate */}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -2787,11 +3381,13 @@ export default function AdminCompanyModules() {
                         
                         {selectedModule.videos?.[0]?.url ? (
                           <div className="relative bg-black rounded-lg overflow-hidden shadow-lg">
-                            <CustomVideoPlayer
+                            <UniversalVideoPlayer
                               src={getVideoUrl(selectedModule.videos[0].url)}
-                              className="w-full h-auto max-h-[50vh] sm:max-h-[60vh]"
+                              className="w-full aspect-video"
                               onError={(error) => {
                                 console.error('Video URL:', getVideoUrl(selectedModule.videos[0].url));
+                                console.error('Video error details:', error);
+                                toast.error('Video format not supported. Please upload an MP4 or WebM video file.');
                               }}
                               onLoadStart={() => {
                                 console.log('Video loading started:', getVideoUrl(selectedModule.videos[0].url));
@@ -3104,7 +3700,51 @@ export default function AdminCompanyModules() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* YouTube Video Upload Modal */}
+        {showYouTubeUpload && (
+          <div 
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
+            style={{ 
+              pointerEvents: 'auto',
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 9999
+            }}
+            onClick={(e) => {
+              console.log('Modal overlay clicked', e.target, e.currentTarget);
+              if (e.target === e.currentTarget) {
+                handleYouTubeVideoCancel();
+              }
+            }}
+          >
+            <div 
+              className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+              style={{ 
+                pointerEvents: 'auto',
+                position: 'relative',
+                zIndex: 10000
+              }}
+              onClick={(e) => {
+                console.log('Modal content clicked');
+                e.stopPropagation();
+              }}
+            >
+              <YouTubeVideoUpload
+                onVideoAdd={handleYouTubeVideoAdd}
+                onCancel={handleYouTubeVideoCancel}
+              />
+            </div>
+          </div>
+        )}
+
       </div>
     </Layout>
   );
-} 
+}
+
+// Export with essential HOCs (no auth since handled by routing)
+export default HOCPresets.publicPage(AdminCompanyModules);

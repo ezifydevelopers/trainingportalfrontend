@@ -5,8 +5,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Database } from "lucide-react";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function ResetPasswordPage() {
+interface ResetPasswordPageProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+function ResetPasswordPage({ user, isAuthenticated }: ResetPasswordPageProps) {
   const { token } = useParams<{ token: string }>();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -90,3 +96,5 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
+// Export with comprehensive HOC protection
+export default HOCPresets.publicPage(ResetPasswordPage);

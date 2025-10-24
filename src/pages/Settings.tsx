@@ -1,7 +1,14 @@
 
 import Layout from "@/components/Layout";
+import withAuth from "@/components/withAuth";
+import { HOCPresets } from "@/components/HOCComposer";
 
-export default function Settings() {
+interface SettingsProps {
+  user?: any;
+  isAuthenticated?: boolean;
+}
+
+function Settings({ user, isAuthenticated }: SettingsProps) {
   return (
     <Layout>
       <div className="p-6">
@@ -17,3 +24,7 @@ export default function Settings() {
     </Layout>
   );
 }
+
+// Export with authentication (all authenticated users can access settings)
+// Export with comprehensive HOC protection
+export default HOCPresets.authPage(Settings);
